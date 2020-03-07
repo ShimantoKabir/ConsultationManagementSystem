@@ -1,5 +1,6 @@
 package com.dannygroupllc.ConsultantWebService.daos.implementers;
 
+import com.dannygroupllc.ConsultantWebService.Utility.NotificationSender;
 import com.dannygroupllc.ConsultantWebService.daos.interfaces.CalendarDao;
 import com.dannygroupllc.ConsultantWebService.models.Calendar;
 import com.dannygroupllc.ConsultantWebService.models.Plan;
@@ -202,28 +203,13 @@ public class CalendarDaoImp implements CalendarDao {
                         plan.setTopic(p.getTopic());
                         entityManager.persist(plan);
 
+                        Notification notification = new Notification();
+                        notification.setUid(c.getConUid());
+                        notification.setTitle("Booking Request");
+                        notification.setBody("Topic: "+p.getTopic()+", Start Time: "+p.getStartTime().toString()
+                                + ", End Time: "+p.getEndTime());
 
-                        DocumentReference dr = db.collection("userInfoList").document(c.getConUid());
-                        ApiFuture<DocumentSnapshot> future = dr.get();
-
-                        DocumentSnapshot document = future.get();
-                        if (document.exists()) {
-
-                            UserInfo userInfo = document.toObject(UserInfo.class);
-
-                            Notification notification = new Notification();
-                            notification.setFcmRegistrationToken(userInfo.getFcmRegistrationToken());
-                            notification.setUid(c.getConUid());
-                            notification.setSeen(false);
-                            notification.setTitle("Booking Request");
-                            notification.setBody("Topic: "+p.getTopic()+", Start Time: "+p.getStartTime().toString()
-                                    + ", End Time: "+p.getEndTime());
-
-                            db.collection("notificationList").add(notification);
-
-                        } else {
-                            System.out.println(getClass().getName()+"No userInfo found!");
-                        }
+                        NotificationSender.send(db,notification);
 
                         calendarRes.setCode(200);
                         calendarRes.setMsg("Event created successfully!");

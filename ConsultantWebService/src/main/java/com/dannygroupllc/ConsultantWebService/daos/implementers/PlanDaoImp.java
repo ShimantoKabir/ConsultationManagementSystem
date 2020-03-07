@@ -1,7 +1,15 @@
 package com.dannygroupllc.ConsultantWebService.daos.implementers;
 
+import com.dannygroupllc.ConsultantWebService.Utility.NotificationSender;
 import com.dannygroupllc.ConsultantWebService.daos.interfaces.PlanDao;
 import com.dannygroupllc.ConsultantWebService.models.Plan;
+import com.dannygroupllc.ConsultantWebService.pojos.Notification;
+import com.dannygroupllc.ConsultantWebService.pojos.UserInfo;
+import com.google.api.core.ApiFuture;
+import com.google.cloud.firestore.DocumentReference;
+import com.google.cloud.firestore.DocumentSnapshot;
+import com.google.cloud.firestore.Firestore;
+import com.google.firebase.cloud.FirestoreClient;
 import com.google.gson.Gson;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -19,11 +27,13 @@ public class PlanDaoImp implements PlanDao {
     public static String PLAN_DAO_CLASS_NAME = "com.dannygroupllc.ConsultantWebService.daos.implementers.PlanDao";
     public EntityManager entityManager;
     public Gson gson;
+    public Firestore db;
 
     @Autowired
     public PlanDaoImp(EntityManager entityManager) {
         this.entityManager = entityManager;
         gson = new Gson();
+        db = FirestoreClient.getFirestore();
     }
 
     @Override
@@ -32,6 +42,26 @@ public class PlanDaoImp implements PlanDao {
         Plan planRes = new Plan();
 
         try {
+
+            String planSelectSql = "SELECT * FROM plan WHERE id = :id";
+
+            Query planSelectQry = entityManager.createNativeQuery(planSelectSql,Plan.class);
+            planSelectQry.setParameter("id", p.getId());
+            List<Plan> planList = planSelectQry.getResultList();
+
+            if (planList.size() > 0){
+
+                Plan plan = planList.get(0);
+
+                Notification notification = new Notification();
+                notification.setUid(plan.getCusUid());
+                notification.setTitle("Booking Request Cancellation");
+                notification.setBody("Topic: "+plan.getTopic()+", Start Time: "+plan.getStartTime().toString()
+                        + ", End Time: "+plan.getEndTime());
+
+                NotificationSender.send(db,notification);
+
+            }
 
             String planDeleteSql = "DELETE FROM plan WHERE id = :id";
 
@@ -60,6 +90,27 @@ public class PlanDaoImp implements PlanDao {
         Plan planRes = new Plan();
 
         try {
+
+
+            String planSelectSql = "SELECT * FROM plan WHERE id = :id";
+
+            Query planSelectQry = entityManager.createNativeQuery(planSelectSql,Plan.class);
+            planSelectQry.setParameter("id", p.getId());
+            List<Plan> planList = planSelectQry.getResultList();
+
+            if (planList.size() > 0){
+
+                Plan plan = planList.get(0);
+
+                Notification notification = new Notification();
+                notification.setUid(plan.getCusUid());
+                notification.setTitle("Booking Request Acceptation");
+                notification.setBody("Topic: "+plan.getTopic()+", Start Time: "+plan.getStartTime().toString()
+                        + ", End Time: "+plan.getEndTime());
+
+                NotificationSender.send(db,notification);
+
+            }
 
             String planCasSql = "UPDATE \n" +
                     "  plan \n" +

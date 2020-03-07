@@ -7,7 +7,7 @@ public class Notification {
     public String fcmRegistrationToken;
     public String title;
     public String body;
-    public Boolean isSeen;
+    public Integer seenStatus;
 
     public Notification() {}
 
@@ -51,11 +51,11 @@ public class Notification {
         this.body = body;
     }
 
-    public Boolean getSeen() {
-        return isSeen;
+    public Integer getSeenStatus() {
+        return seenStatus;
     }
 
-    public void setSeen(Boolean seen) {
-        isSeen = seen;
+    public void setSeenStatus(Integer seenStatus) {
+        this.seenStatus = seenStatus;
     }
 }
