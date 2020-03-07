@@ -3,6 +3,14 @@ package com.dannygroupllc.ConsultantWebService.daos.implementers;
 import com.dannygroupllc.ConsultantWebService.daos.interfaces.CalendarDao;
 import com.dannygroupllc.ConsultantWebService.models.Calendar;
 import com.dannygroupllc.ConsultantWebService.models.Plan;
+import com.dannygroupllc.ConsultantWebService.pojos.Notification;
+import com.dannygroupllc.ConsultantWebService.pojos.UserInfo;
+import com.google.api.core.ApiFuture;
+import com.google.cloud.firestore.DocumentReference;
+import com.google.cloud.firestore.DocumentSnapshot;
+import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.QuerySnapshot;
+import com.google.firebase.cloud.FirestoreClient;
 import com.google.gson.Gson;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -12,6 +20,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.math.BigInteger;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 @Repository
 public class CalendarDaoImp implements CalendarDao {
@@ -19,11 +28,13 @@ public class CalendarDaoImp implements CalendarDao {
     public static String CLASS_NAME = "com.dannygroupllc.ConsultantWebService.daos.implementers.CalendarDao";
     public EntityManager entityManager;
     public Gson gson;
+    public Firestore db;
 
     @Autowired
     public CalendarDaoImp(EntityManager entityManager) {
         this.entityManager = entityManager;
         gson = new Gson();
+        db = FirestoreClient.getFirestore();
     }
 
     @Override
@@ -122,6 +133,7 @@ public class CalendarDaoImp implements CalendarDao {
                     }
 
                     // event should be created for customer
+                    // also send notification to consultant
                 }else {
 
                     // check if this customer have an event with this consultant before
@@ -189,6 +201,29 @@ public class CalendarDaoImp implements CalendarDao {
                         plan.setHourlyRate(p.getHourlyRate());
                         plan.setTopic(p.getTopic());
                         entityManager.persist(plan);
+
+
+                        DocumentReference dr = db.collection("userInfoList").document(c.getConUid());
+                        ApiFuture<DocumentSnapshot> future = dr.get();
+
+                        DocumentSnapshot document = future.get();
+                        if (document.exists()) {
+
+                            UserInfo userInfo = document.toObject(UserInfo.class);
+
+                            Notification notification = new Notification();
+                            notification.setFcmRegistrationToken(userInfo.getFcmRegistrationToken());
+                            notification.setUid(c.getConUid());
+                            notification.setSeen(false);
+                            notification.setTitle("Booking Request");
+                            notification.setBody("Topic: "+p.getTopic()+", Start Time: "+p.getStartTime().toString()
+                                    + ", End Time: "+p.getEndTime());
+
+                            db.collection("notificationList").add(notification);
+
+                        } else {
+                            System.out.println(getClass().getName()+"No userInfo found!");
+                        }
 
                         calendarRes.setCode(200);
                         calendarRes.setMsg("Event created successfully!");

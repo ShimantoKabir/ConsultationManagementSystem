@@ -53,6 +53,19 @@ public class PlanCtl {
 
     }
 
+    @PostMapping("/save-review-and-rating")
+    public Response saveReviewAndRating(@RequestBody Request request, HttpServletRequest httpServletRequest){
+
+        Response response = new Response();
+
+        Plan plan = planService.saveReviewAndRating(httpServletRequest,request.getPlan());
+        response.setMsg(plan.getMsg());
+        response.setCode(plan.getCode());
+
+        return response;
+
+    }
+
     @PostMapping("/get-all-plan-by-user")
     public Response getAllPlanByUser(@RequestBody Request request, HttpServletRequest httpServletRequest){
 

@@ -21,6 +21,10 @@ public class Plan {
     public String paymentTransId;
     public Integer freeMinutesForNewCustomer;
     public Integer hourlyRate;
+    public String conReview;
+    public String cusReview;
+    public Integer conRating;
+    public Integer cusRating;
     public String ip;
     public String modifiedBy;
     @CreationTimestamp
@@ -42,6 +46,39 @@ public class Plan {
     public String fStartTime;
     @Transient
     public String fEndTime;
+
+
+    public Integer getConRating() {
+        return conRating;
+    }
+
+    public void setConRating(Integer conRating) {
+        this.conRating = conRating;
+    }
+
+    public Integer getCusRating() {
+        return cusRating;
+    }
+
+    public void setCusRating(Integer cusRating) {
+        this.cusRating = cusRating;
+    }
+
+    public String getConReview() {
+        return conReview;
+    }
+
+    public void setConReview(String conReview) {
+        this.conReview = conReview;
+    }
+
+    public String getCusReview() {
+        return cusReview;
+    }
+
+    public void setCusReview(String cusReview) {
+        this.cusReview = cusReview;
+    }
 
     public String getfStartTime() {
         return fStartTime;
@@ -74,7 +111,6 @@ public class Plan {
     public void setCode(Integer code) {
         this.code = code;
     }
-
 
     public String getMsg() {
         return msg;

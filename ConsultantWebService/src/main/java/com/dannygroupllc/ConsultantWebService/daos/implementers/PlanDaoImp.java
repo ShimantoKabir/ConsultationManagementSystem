@@ -100,7 +100,7 @@ public class PlanDaoImp implements PlanDao {
                         "  DATE_FORMAT(p.start_time,'%Y-%m-%d %T') AS f_start_time, \n" +
                         "  DATE_FORMAT(p.end_time,'%Y-%m-%d %T') AS f_end_time \n" +
                         "FROM\n" +
-                        "  Plan AS p\n" +
+                        "  plan AS p\n" +
                         "WHERE con_uid = :conUid AND cus_uid IS NOT NULL\n" +
                         "  AND DATE(start_time) >= CURDATE()"+
                         "  AND is_accept_by_con IS TRUE";
@@ -112,7 +112,7 @@ public class PlanDaoImp implements PlanDao {
                         "  DATE_FORMAT(p.start_time,'%Y-%m-%d %T') AS f_start_time, \n" +
                         "  DATE_FORMAT(p.end_time,'%Y-%m-%d %T') AS f_end_time \n" +
                         "FROM\n" +
-                        "  Plan AS p \n" +
+                        "  plan AS p \n" +
                         "WHERE cus_uid = :cusUid \n" +
                         "  AND DATE(start_time) >= CURDATE()"+
                         "  AND is_accept_by_con IS TRUE";
@@ -154,8 +154,8 @@ public class PlanDaoImp implements PlanDao {
                 np.setPaymentTransId((String) result[11]);
                 np.setStartTime((Date) result[12]);
                 np.setTopic((String) result[13]);
-                np.setfStartTime((String) result[14]);
-                np.setfEndTime((String) result[15]);
+                np.setfStartTime((String) result[18]);
+                np.setfEndTime((String) result[19]);
 
                 planList.add(np);
             }
@@ -170,4 +170,65 @@ public class PlanDaoImp implements PlanDao {
         }
 
     }
+
+    @Override
+    public Plan saveReviewAndRating(HttpServletRequest httpServletRequest, Plan plan) {
+
+        Plan planRes = new Plan();
+
+        try {
+
+            String sql;
+
+            if (plan.cusUid == null){
+
+                sql = "UPDATE \n" +
+                        "  plan \n" +
+                        "SET\n" +
+                        "  con_review = :conReview,\n" +
+                        "  con_rating = :conRating \n" +
+                        "WHERE id = :id ";
+
+            }else {
+
+                sql = "UPDATE \n" +
+                        "  plan \n" +
+                        "SET\n" +
+                        "  cus_review = :cusReview,\n" +
+                        "  cus_rating = :cusRating \n" +
+                        "WHERE id = :id ";
+
+            }
+
+            Query planCasQry = entityManager.createNativeQuery(sql);
+
+            if (plan.getCusUid() == null){
+
+                planCasQry.setParameter("conReview", plan.getConReview());
+                planCasQry.setParameter("conRating", plan.getConRating());
+
+            }else {
+
+                planCasQry.setParameter("cusReview", plan.getCusReview());
+                planCasQry.setParameter("cusRating", plan.getCusRating());
+
+            }
+
+            planCasQry.setParameter("id", plan.getId());
+            planCasQry.executeUpdate();
+
+            planRes.setCode(200);
+            planRes.setMsg("Review and rating given successfully!");
+
+        } catch (Exception e) {
+
+            System.out.println(PLAN_DAO_CLASS_NAME + "saveReviewAndRating: " + e.getMessage());
+            planRes.setCode(404);
+            planRes.setMsg(e.getMessage());
+
+        }
+
+        return planRes;
+    }
+
 }

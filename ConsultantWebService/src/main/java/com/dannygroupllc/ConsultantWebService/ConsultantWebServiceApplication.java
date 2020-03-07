@@ -8,6 +8,7 @@ public class ConsultantWebServiceApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(ConsultantWebServiceApplication.class, args);
+		// FireBaseInitializer.initialize();
 	}
 
 }

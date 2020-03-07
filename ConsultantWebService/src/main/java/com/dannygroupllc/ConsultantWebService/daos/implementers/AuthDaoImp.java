@@ -125,7 +125,7 @@ public class AuthDaoImp implements AuthDao {
                 String planFetchingSql = "SELECT \n" +
                         "  * \n" +
                         "FROM\n" +
-                        "  Plan \n" +
+                        "  plan \n" +
                         "WHERE DATE(start_time) >= CURDATE()\n" +
                         "  AND con_uid = :conUid ";
 

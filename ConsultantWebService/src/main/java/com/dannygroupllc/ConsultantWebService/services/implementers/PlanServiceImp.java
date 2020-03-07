@@ -38,4 +38,10 @@ public class PlanServiceImp implements PlanService {
     public List<Plan> getAllPlanByUser(HttpServletRequest httpServletRequest, Plan plan) {
         return planDao.getAllPlanByUser(httpServletRequest,plan);
     }
+
+    @Override
+    @Transactional
+    public Plan saveReviewAndRating(HttpServletRequest httpServletRequest, Plan plan) {
+        return planDao.saveReviewAndRating(httpServletRequest,plan);
+    }
 }

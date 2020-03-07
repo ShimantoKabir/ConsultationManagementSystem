@@ -31,6 +31,8 @@ public class AuthCtl {
 
         Response response = new Response();
 
+
+        System.out.println("Hello world");
         Auth auth = authService.reload(httpServletRequest,request.getAuth());
         response.setMsg(auth.getMsg());
         response.setCode(auth.getCode());
