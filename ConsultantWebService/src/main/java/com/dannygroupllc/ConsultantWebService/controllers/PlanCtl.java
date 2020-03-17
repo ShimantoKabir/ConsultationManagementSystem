@@ -90,5 +90,41 @@ public class PlanCtl {
 
     }
 
+    @PostMapping("/get-review-and-rating")
+    public Response getReviewAndRating(@RequestBody Request request, HttpServletRequest httpServletRequest){
+
+        Response response = new Response();
+
+        List<Plan> planList = planService.getReviewAndRating(httpServletRequest,request.getPlan());
+
+        if (planList.size()>0){
+
+            response.setMsg("Review and rating found!");
+            response.setCode(200);
+            response.setPlanList(planList);
+
+        }else {
+
+            response.setMsg("No review and rating found!");
+            response.setCode(404);
+
+        }
+
+        return response;
+
+    }
+
+    @PostMapping("/change-are-cus-con-have-chatted-status")
+    public Response changeAreCusConHaveChattedStatus(@RequestBody Request request, HttpServletRequest httpServletRequest){
+
+        Response response = new Response();
+
+        Plan plan = planService.changeAreCusConHaveChattedStatus(httpServletRequest,request.getPlan());
+        response.setMsg(plan.getMsg());
+        response.setCode(plan.getCode());
+
+        return response;
+
+    }
 
 }

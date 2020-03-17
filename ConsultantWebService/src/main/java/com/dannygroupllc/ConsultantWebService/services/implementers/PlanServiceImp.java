@@ -40,8 +40,20 @@ public class PlanServiceImp implements PlanService {
     }
 
     @Override
+    public List<Plan> getReviewAndRating(HttpServletRequest httpServletRequest, Plan plan) {
+        return planDao.getReviewAndRating(httpServletRequest,plan);
+    }
+
+    @Override
     @Transactional
     public Plan saveReviewAndRating(HttpServletRequest httpServletRequest, Plan plan) {
         return planDao.saveReviewAndRating(httpServletRequest,plan);
     }
+
+    @Override
+    @Transactional
+    public Plan changeAreCusConHaveChattedStatus(HttpServletRequest httpServletRequest, Plan plan) {
+        return planDao.changeAreCusConHaveChattedStatus(httpServletRequest,plan);
+    }
+
 }

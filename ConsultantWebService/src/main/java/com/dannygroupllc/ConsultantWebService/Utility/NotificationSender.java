@@ -1,18 +1,20 @@
 package com.dannygroupllc.ConsultantWebService.Utility;
 
-import com.dannygroupllc.ConsultantWebService.models.Plan;
 import com.dannygroupllc.ConsultantWebService.pojos.Notification;
 import com.dannygroupllc.ConsultantWebService.pojos.UserInfo;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
+import com.google.firebase.cloud.FirestoreClient;
 
 public class NotificationSender {
 
-    public static void send(Firestore db,Notification n){
+    public static void send(Notification n){
 
         try {
+
+            Firestore db = FirestoreClient.getFirestore();
 
             DocumentReference dr = db.collection("userInfoList").document(n.getUid());
             ApiFuture<DocumentSnapshot> future = dr.get();
@@ -28,16 +30,20 @@ public class NotificationSender {
                 notification.setSeenStatus(0);
                 notification.setTitle(n.getTitle());
                 notification.setBody(n.getBody());
+                notification.setStartTime(n.getStartTime());
+                notification.setStartTime(n.getStartTime());
 
                 db.collection("notificationList").add(notification);
 
             } else {
-                System.out.println("com.dannygroupllc.ConsultantWebService.Utility.NotificationSender.send: No userInfo found!");
+                System.out.println("com.dannygroupllc.ConsultantWebService.Utility.NotificationSender." +
+                        "send: No userInfo found!");
             }
 
         }catch (Exception e){
 
-            System.out.println("com.dannygroupllc.ConsultantWebService.Utility.NotificationSender.send : "+e.getMessage());
+            System.out.println("com.dannygroupllc.ConsultantWebService.Utility.NotificationSender.send : "+
+                    e.getMessage());
 
         }
 

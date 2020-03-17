@@ -5,37 +5,32 @@ import com.dannygroupllc.ConsultantWebService.daos.interfaces.CalendarDao;
 import com.dannygroupllc.ConsultantWebService.models.Calendar;
 import com.dannygroupllc.ConsultantWebService.models.Plan;
 import com.dannygroupllc.ConsultantWebService.pojos.Notification;
-import com.dannygroupllc.ConsultantWebService.pojos.UserInfo;
-import com.google.api.core.ApiFuture;
-import com.google.cloud.firestore.DocumentReference;
-import com.google.cloud.firestore.DocumentSnapshot;
-import com.google.cloud.firestore.Firestore;
-import com.google.cloud.firestore.QuerySnapshot;
-import com.google.firebase.cloud.FirestoreClient;
+import com.dannygroupllc.ConsultantWebService.pojos.Response;
 import com.google.gson.Gson;
+import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
+
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigInteger;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 
 @Repository
 public class CalendarDaoImp implements CalendarDao {
 
-    public static String CLASS_NAME = "com.dannygroupllc.ConsultantWebService.daos.implementers.CalendarDao";
     public EntityManager entityManager;
     public Gson gson;
-    public Firestore db;
+    public SimpleDateFormat sdf;
 
     @Autowired
     public CalendarDaoImp(EntityManager entityManager) {
         this.entityManager = entityManager;
         gson = new Gson();
-        db = FirestoreClient.getFirestore();
+        sdf = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss a");
     }
 
     @Override
@@ -46,8 +41,10 @@ public class CalendarDaoImp implements CalendarDao {
         try {
 
             Date curDateTime = new Date();
+            System.out.println(getClass().getName()+".createEvent curDateTime"+curDateTime);
 
-            if (curDateTime.before(c.getPlan().getStartTime())){
+            // if current date time before plan start time
+            if (curDateTime.before(c.getPlan().getStartTime())) {
 
                 String calendarSql = "SELECT \n" +
                         "  * \n" +
@@ -56,19 +53,19 @@ public class CalendarDaoImp implements CalendarDao {
                         "WHERE con_uid = :conUid \n" +
                         "  AND calendar_date = :calendarDate";
 
-                Query dateExistQuery = entityManager.createNativeQuery(calendarSql,Calendar.class);
-                dateExistQuery.setParameter("conUid",c.getConUid());
-                dateExistQuery.setParameter("calendarDate",c.getCalendarDate());
+                Query dateExistQuery = entityManager.createNativeQuery(calendarSql, Calendar.class);
+                dateExistQuery.setParameter("conUid", c.getConUid());
+                dateExistQuery.setParameter("calendarDate", c.getCalendarDate());
 
                 List<Calendar> calendarList = dateExistQuery.getResultList();
 
                 Integer calOid;
 
-                if (calendarList.size() > 0){
+                if (calendarList.size() > 0) {
 
                     calOid = calendarList.get(0).getoId();
 
-                }else {
+                } else {
 
                     String maxOidSql = "SELECT \n" +
                             "  IFNULL(MAX(o_id), 100) + 1 AS o_id \n" +
@@ -87,147 +84,174 @@ public class CalendarDaoImp implements CalendarDao {
                 // check is the event need to create for customer or consultant
                 Plan p = c.getPlan();
 
-                // event should be created for consultant
-                if (p.getCusUid() == null){
+                // consultant creating his plan
+                if (p.getCusUid() == null) {
 
-                    // check event over lap
-                    Plan planOverLapCheckingData = new Plan();
-                    planOverLapCheckingData.setCalendarDate(c.getCalendarDate());
-                    planOverLapCheckingData.setStartTime(p.getStartTime());
-                    planOverLapCheckingData.setEndTime(p.getEndTime());
-                    planOverLapCheckingData.setConUid(c.getConUid());
+                    if (calendarList.size() == 0) {
 
-                    boolean isAnyOverLapFound = checkEventOverLap(planOverLapCheckingData);
-
-                    if (isAnyOverLapFound){
-
-                        calendarRes.setCode(404);
-                        calendarRes.setMsg("Time over lapping, please change... !");
-
-                    }else {
-
-                        if (calendarList.size() == 0){
-
-                            Calendar calendar = new Calendar();
-                            calendar.setConUid(c.getConUid());
-                            calendar.setoId(calOid);
-                            calendar.setCalendarDate(c.getCalendarDate());
-                            calendar.setIp(httpServletRequest.getRemoteAddr());
-                            calendar.setModifiedBy(c.getConUid());
-                            entityManager.persist(calendar);
-
-                        }
-
-                        Plan plan = new Plan();
-                        plan.setCalenderOid(calOid);
-                        plan.setConUid(c.getConUid());
-                        plan.setEndTime(p.getEndTime());
-                        plan.setIp(httpServletRequest.getRemoteAddr());
-                        plan.setModifiedBy(c.getConUid());
-                        plan.setStartTime(p.getStartTime());
-                        plan.setTopic(p.getTopic());
-                        entityManager.persist(plan);
-
-                        calendarRes.setCode(200);
-                        calendarRes.setMsg("Event created successfully!");
+                        Calendar calendar = new Calendar();
+                        calendar.setConUid(c.getConUid());
+                        calendar.setoId(calOid);
+                        calendar.setCalendarDate(c.getCalendarDate());
+                        calendar.setIp(httpServletRequest.getRemoteAddr());
+                        calendar.setModifiedBy(c.getConUid());
+                        entityManager.persist(calendar);
 
                     }
 
-                    // event should be created for customer
+                    Plan plan = new Plan();
+                    plan.setCalenderOid(calOid);
+                    plan.setConUid(c.getConUid());
+                    plan.setEndTime(p.getEndTime());
+                    plan.setIp(httpServletRequest.getRemoteAddr());
+                    plan.setModifiedBy(c.getConUid());
+                    plan.setStartTime(p.getStartTime());
+                    plan.setTopic(p.getTopic());
+                    plan.setTimeZone(p.getTimeZone());
+                    entityManager.persist(plan);
+
+                    calendarRes.setCode(200);
+                    calendarRes.setMsg("Event created successfully!");
+
+                    // customer creating his plan
                     // also send notification to consultant
-                }else {
+                } else {
 
-                    // check if this customer have an event with this consultant before
-                    String havingPlanBeforeSql = "SELECT \n" +
-                            "  * \n" +
-                            "FROM\n" +
-                            "  plan \n" +
-                            "WHERE con_uid = :conUid \n" +
-                            "  AND cus_uid = :cusUid ";
+                    curDateTime = DateUtils.addHours(curDateTime,1);
 
-                    Query havingPlanBeforeQry = entityManager.createNativeQuery(havingPlanBeforeSql,Plan.class);
-                    havingPlanBeforeQry.setParameter("conUid",p.getConUid());
-                    havingPlanBeforeQry.setParameter("cusUid",p.getCusUid());
+                    if (curDateTime.before(c.getPlan().getStartTime())) {
 
-                    List<Plan> planList = havingPlanBeforeQry.getResultList();
+                        // check if this customer have an plan with this consultant before
+                        String havingPlanBeforeSql = "SELECT \n" +
+                                "   id \n" +
+                                "FROM\n" +
+                                "  plan \n" +
+                                "WHERE con_uid = :conUid \n" +
+                                "  AND cus_uid = :cusUid \n"+
+                                "  AND are_cus_con_have_chatted IS FALSE";
 
-                    Integer freeMinutesForNewCustomer = null;
+                        Query havingPlanBeforeQry = entityManager.createNativeQuery(havingPlanBeforeSql);
+                        havingPlanBeforeQry.setParameter("conUid", p.getConUid());
+                        havingPlanBeforeQry.setParameter("cusUid", p.getCusUid());
+                        List<Object[]> results = havingPlanBeforeQry.getResultList();
 
-                    if (planList.size() == 0){
+                        Integer freeMinutesForNewCustomer = p.getFreeMinutesForNewCustomer();
 
-                        System.out.println(CLASS_NAME+".createEvent: Free minutes available, Free minute = "+p.getFreeMinutesForNewCustomer());
-                        // free second available so find free minute
-                        freeMinutesForNewCustomer = p.getFreeMinutesForNewCustomer();
+                        System.out.println(getClass().getName()+".feePlan: "+results.size());
 
-                    }
+                        if (results.size() == 0) {
 
-                    // check event over lap
-                    Plan planOverLapCheckingData = new Plan();
-                    planOverLapCheckingData.setCalendarDate(c.getCalendarDate());
-                    planOverLapCheckingData.setStartTime(p.getStartTime());
-                    planOverLapCheckingData.setEndTime(p.getEndTime());
-                    planOverLapCheckingData.setConUid(c.getConUid());
-
-                    boolean isAnyOverLapFound = checkEventOverLap(planOverLapCheckingData);
-
-                    if (isAnyOverLapFound){
-
-                        calendarRes.setCode(404);
-                        calendarRes.setMsg("Time over lapping, please change... !");
-
-                    }else {
-
-                        if (calendarList.size() == 0){
-
-                            Calendar calendar = new Calendar();
-                            calendar.setConUid(c.getConUid());
-                            calendar.setoId(calOid);
-                            calendar.setCalendarDate(c.getCalendarDate());
-                            calendar.setIp(httpServletRequest.getRemoteAddr());
-                            calendar.setModifiedBy(p.getCusUid());
-                            entityManager.persist(calendar);
+                            // free second available so find free minute
+                            freeMinutesForNewCustomer = p.getFreeMinutesForNewCustomer();
 
                         }
 
-                        Plan plan = new Plan();
-                        plan.setCalenderOid(calOid);
-                        plan.setConUid(c.getConUid());
-                        plan.setCusUid(p.getCusUid());
-                        plan.setEndTime(p.getEndTime());
-                        plan.setIp(httpServletRequest.getRemoteAddr());
-                        plan.setModifiedBy(p.getCusUid());
-                        plan.setStartTime(p.getStartTime());
-                        plan.setFreeMinutesForNewCustomer(freeMinutesForNewCustomer);
-                        plan.setAcceptByCon(false);
-                        plan.setHourlyRate(p.getHourlyRate());
-                        plan.setTopic(p.getTopic());
-                        entityManager.persist(plan);
+                        // check event over lap
+                        Plan planOverLapCheckingData = new Plan();
+                        planOverLapCheckingData.setStartTime(p.getStartTime());
+                        planOverLapCheckingData.setEndTime(p.getEndTime());
+                        planOverLapCheckingData.setConUid(c.getConUid());
+                        planOverLapCheckingData.setCusUid(p.getCusUid());
 
-                        Notification notification = new Notification();
-                        notification.setUid(c.getConUid());
-                        notification.setTitle("Booking Request");
-                        notification.setBody("Topic: "+p.getTopic()+", Start Time: "+p.getStartTime().toString()
-                                + ", End Time: "+p.getEndTime());
+                        Response cusOverLapRes = checkCusPlanOverLap(planOverLapCheckingData);
 
-                        NotificationSender.send(db,notification);
+                        System.out.println(getClass().getName() + ".createEvent cusOverLapRes "
+                                + gson.toJson(cusOverLapRes));
 
-                        calendarRes.setCode(200);
-                        calendarRes.setMsg("Event created successfully!");
+                        if (cusOverLapRes.getCode() == 404) {
+
+                            calendarRes.setCode(404);
+
+                            String msg = "Warning!";
+                            Plan sop = cusOverLapRes.getStartTimeOverLapPlan();
+                            Plan eop = cusOverLapRes.getEndTimeOverLapPlan();
+                            String sopMsg = "";
+                            String eopMsg = "";
+
+                            if (sop != null){
+
+                                sopMsg = " Your start time ["+sdf.format(planOverLapCheckingData.getStartTime())+
+                                        "] is conflicting with another schedule with another customer on ["+
+                                        sdf.format(sop.getStartTime())+" to "+sdf.format(sop.getEndTime())+"].";
+
+                            }
+
+                            if (eop != null){
+
+                                eopMsg = " Your end time ["+sdf.format(planOverLapCheckingData.getEndTime())+
+                                        "] is conflicting with another schedule with another customer on ["+
+                                        sdf.format(eop.getStartTime())+" to "+sdf.format(eop.getEndTime())+"].";
+
+                            }
+
+                            calendarRes.setMsg(msg+" "+sopMsg+" "+eopMsg);
+
+                        }else {
+
+                            if (calendarList.size() == 0) {
+
+                                Calendar calendar = new Calendar();
+                                calendar.setConUid(c.getConUid());
+                                calendar.setoId(calOid);
+                                calendar.setCalendarDate(c.getCalendarDate());
+                                calendar.setIp(httpServletRequest.getRemoteAddr());
+                                calendar.setModifiedBy(p.getCusUid());
+                                entityManager.persist(calendar);
+
+                            }
+
+                            Plan plan = new Plan();
+                            plan.setCalenderOid(calOid);
+                            plan.setConUid(c.getConUid());
+                            plan.setCusUid(p.getCusUid());
+                            plan.setEndTime(p.getEndTime());
+                            plan.setIp(httpServletRequest.getRemoteAddr());
+                            plan.setModifiedBy(p.getCusUid());
+                            plan.setStartTime(p.getStartTime());
+                            plan.setFreeMinutesForNewCustomer(freeMinutesForNewCustomer);
+                            plan.setAcceptByCon(false);
+                            plan.setHourlyRate(p.getHourlyRate());
+                            plan.setTopic(p.getTopic());
+                            plan.setAreCusConHaveChatted(false);
+                            plan.setTimeZone(p.getTimeZone());
+                            entityManager.persist(plan);
+
+                            Notification notification = new Notification();
+                            notification.setUid(c.getConUid());
+                            notification.setTitle("Booking Request");
+
+                            notification.setBody("Topic: " + p.getTopic()+", Start Time: "+
+                                    sdf.format(p.getStartTime())+", End Time: "+
+                                    sdf.format(p.getEndTime()));
+
+                            notification.setStartTime(sdf.format(p.getStartTime()));
+                            notification.setEndTime(sdf.format(p.getEndTime()));
+                            NotificationSender.send(notification);
+
+                            calendarRes.setCode(200);
+                            calendarRes.setMsg("Event created successfully!");
+
+                        }
+
+                    }else {
+
+                        calendarRes.setCode(404);
+                        calendarRes.setMsg("You can create an event after "+sdf.format(curDateTime));
 
                     }
 
                 }
 
-            }else {
+            } else {
 
                 calendarRes.setCode(404);
-                calendarRes.setMsg("You can't create an event in past date time!");
+                calendarRes.setMsg("You can't create an event on past time!");
 
             }
 
-        }catch (Exception e){
+        } catch (Exception e) {
 
-            System.out.println("com.dannygroupllc.ConsultantWebService.daos.implementers.createEvent: "+e.getMessage());
+            System.out.println(getClass().getName() + ".createEvent: Exception " + e.getMessage());
             calendarRes.setCode(404);
             calendarRes.setMsg(e.getMessage());
 
@@ -237,66 +261,204 @@ public class CalendarDaoImp implements CalendarDao {
 
     }
 
-    private boolean checkEventOverLap(Plan p) {
+    private List<Plan> getAllowedPlan(int type,Date dateTime,String conUid) {
 
-        String checkOverLapSql1 = "SELECT \n" +
+        String startAllowedSql = "SELECT \n" +
+                "  * \n" +
+                "FROM\n" +
+                "  plan \n" +
+                "WHERE con_uid = :conUid \n" +
+                "  AND start_time < :startTime \n" +
+                "  AND start_time >= CURDATE() \n" +
+                "ORDER BY start_time \n" +
+                "LIMIT 1 ";
+
+        String endAllowedSql = "SELECT \n" +
+                "  * \n" +
+                "FROM\n" +
+                "  plan \n" +
+                "WHERE con_uid = :conUid \n" +
+                "  AND end_time > :endTime \n" +
+                "  AND end_time >= CURDATE() \n" +
+                "ORDER BY end_time \n" +
+                "LIMIT 1 ";
+
+        Query qry;
+
+        if (type == -1){
+
+            qry = entityManager.createNativeQuery(startAllowedSql,Plan.class);
+            qry.setParameter("conUid",conUid);
+            qry.setParameter("startTime",dateTime);
+
+        }else {
+
+            qry = entityManager.createNativeQuery(endAllowedSql,Plan.class);
+            qry.setParameter("conUid",conUid);
+            qry.setParameter("endTime",dateTime);
+
+        }
+
+        return qry.getResultList();
+
+    }
+
+    private Response checkCusPlanOverLap(Plan p) {
+
+        Response res = new Response();
+        res.setCode(200);
+
+        Plan planStartOverLap = new Plan();
+        Plan planEndOverLap = new Plan();
+
+        String checkStartOverLapSq = "SELECT \n" +
                 "  * \n" +
                 "FROM\n" +
                 "  (SELECT \n" +
-                "    p.start_time AS start_time,\n" +
-                "    p.end_time AS end_time,\n" +
+                "    id AS id,\n" +
+                "    topic AS topic,\n" +
+                "    SUBTIME(start_time, '00:05:00') AS allowed_start_time,\n" +
+                "    ADDTIME(end_time, '00:05:00') AS allowed_end_time,\n" +
+                "    start_time AS st,\n" +
+                "    end_time AS et, \n" +
                 "    :newStartTime AS new_start_time \n" +
                 "  FROM\n" +
-                "    calendar AS c \n" +
-                "    INNER JOIN plan AS p \n" +
-                "      ON p.calender_oid = c.o_id \n" +
-                "      AND c.con_uid = :conUid \n" +
-                "      AND c.calendar_date = :calendarDate) AS t \n" +
-                "WHERE t.new_start_time BETWEEN t.start_time \n" +
-                "  AND t.end_time";
+                "    plan \n" +
+                "  WHERE cus_uid = :cusUid \n" +
+                "    AND con_uid != :conUid \n" +
+                "    AND start_time >= CURDATE()) AS p \n" +
+                "WHERE p.new_start_time BETWEEN p.st \n" +
+                "  AND p.et";
 
-        Query overLapQry1 = entityManager.createNativeQuery(checkOverLapSql1);
-        overLapQry1.setParameter("conUid",p.getConUid());
-        overLapQry1.setParameter("newStartTime",p.getStartTime());
-        overLapQry1.setParameter("calendarDate",p.getCalendarDate());
+        Query startOverLapQry = entityManager.createNativeQuery(checkStartOverLapSq);
+        startOverLapQry.setParameter("cusUid", p.getCusUid());
+        startOverLapQry.setParameter("conUid", p.getConUid());
+        startOverLapQry.setParameter("newStartTime", p.getStartTime());
+        List<Object[]> startOverLapPlanList = startOverLapQry.getResultList();
 
-        String checkOverLapSql2 = "SELECT \n" +
+        getStartOverLapRes(res, planStartOverLap, startOverLapPlanList);
+
+        String checkEndOverLapSql = "SELECT \n" +
                 "  * \n" +
                 "FROM\n" +
                 "  (SELECT \n" +
-                "    p.start_time AS start_time,\n" +
-                "    p.end_time AS end_time,\n" +
-                "    :newEndTime AS new_start_time \n" +
+                "    id AS id,\n" +
+                "    topic AS topic,\n" +
+                "    SUBTIME(start_time, '00:05:00') AS allowed_start_time,\n" +
+                "    ADDTIME(end_time, '00:05:00') AS allowed_end_time,\n" +
+                "    start_time AS st,\n" +
+                "    end_time AS et,\n" +
+                "    :newEndTime AS new_end_time \n" +
                 "  FROM\n" +
-                "    calendar AS c \n" +
-                "    INNER JOIN plan AS p \n" +
-                "      ON p.calender_oid = c.o_id \n" +
-                "      AND c.con_uid = :conUid \n" +
-                "      AND c.calendar_date = :calendarDate) AS t \n" +
-                "WHERE t.new_start_time BETWEEN t.start_time \n" +
-                "  AND t.end_time ";
+                "    plan \n" +
+                "  WHERE cus_uid = :cusUid \n" +
+                "    AND con_uid != :conUid \n" +
+                "    AND start_time >= CURDATE()) AS p \n" +
+                "WHERE p.new_end_time BETWEEN p.st \n" +
+                "  AND p.et";
 
-        Query overLapQry2 = entityManager.createNativeQuery(checkOverLapSql2);
-        overLapQry2.setParameter("conUid",p.getConUid());
-        overLapQry2.setParameter("newEndTime",p.getEndTime());
-        overLapQry2.setParameter("calendarDate",p.getCalendarDate());
+        Query endOverLapQry = entityManager.createNativeQuery(checkEndOverLapSql);
+        endOverLapQry.setParameter("cusUid", p.getCusUid());
+        endOverLapQry.setParameter("conUid", p.getConUid());
+        endOverLapQry.setParameter("newEndTime", p.getEndTime());
+        List<Object[]> endOverLapPlanList = endOverLapQry.getResultList();
 
-        boolean isAnyOverLapFound = false;
+        getEndOverLapRes(res, planEndOverLap, endOverLapPlanList);
 
-        if (overLapQry1.getResultList().size() >0){
+        return res;
 
-            isAnyOverLapFound = true;
+    }
+
+    private Response checkConPlanOverLap(Plan p) {
+
+        Response res = new Response();
+        res.setCode(200);
+
+        Plan planStartOverLap = new Plan();
+        Plan planEndOverLap = new Plan();
+
+        String checkStartOverLapSq = "SELECT \n" +
+                "  * \n" +
+                "FROM\n" +
+                "  (SELECT \n" +
+                "    id AS id,\n" +
+                "    topic AS topic,\n" +
+                "    SUBTIME(start_time, '00:05:00') AS start_time,\n" +
+                "    ADDTIME(end_time, '00:05:00') AS end_time,\n" +
+                "    SUBTIME(start_time, '00:04:00') AS st,\n" +
+                "    ADDTIME(end_time, '00:04:00') AS et,\n" +
+                "    :newStartTime AS new_start_time\n" +
+                "  FROM\n" +
+                "    plan \n" +
+                "  WHERE con_uid = :conUid \n" +
+                "    AND start_time >= CURDATE()) AS p \n" +
+                "WHERE p.new_start_time BETWEEN p.st \n" +
+                "  AND p.et";
+
+        Query startOverLapQry = entityManager.createNativeQuery(checkStartOverLapSq);
+        startOverLapQry.setParameter("conUid", p.getConUid());
+        startOverLapQry.setParameter("newStartTime", p.getStartTime());
+        List<Object[]> startOverLapPlanList = startOverLapQry.getResultList();
+
+        getStartOverLapRes(res, planStartOverLap, startOverLapPlanList);
+
+        String checkEndOverLapSql = "SELECT \n" +
+                "  * \n" +
+                "FROM\n" +
+                "  (SELECT \n" +
+                "    id AS id,\n" +
+                "    topic AS topic,\n" +
+                "    SUBTIME(start_time, '00:05:00') AS start_time,\n" +
+                "    ADDTIME(end_time, '00:05:00') AS end_time,\n" +
+                "    SUBTIME(start_time, '00:04:00') AS st,\n" +
+                "    ADDTIME(end_time, '00:04:00') AS et,\n" +
+                "    :newEndTime AS new_end_time\n" +
+                "  FROM\n" +
+                "    plan \n" +
+                "  WHERE con_uid = :conUid \n" +
+                "    AND start_time >= CURDATE()) AS p \n" +
+                "WHERE p.new_end_time BETWEEN p.st \n" +
+                "  AND p.et";
+
+        Query endOverLapQry = entityManager.createNativeQuery(checkEndOverLapSql);
+        endOverLapQry.setParameter("conUid", p.getConUid());
+        endOverLapQry.setParameter("newEndTime", p.getEndTime());
+        List<Object[]> endOverLapPlanList = endOverLapQry.getResultList();
+
+        getEndOverLapRes(res, planEndOverLap, endOverLapPlanList);
+
+        return res;
+
+    }
+
+    private void getEndOverLapRes(Response res, Plan planEndOverLap, List<Object[]> endOverLapPlanList) {
+        if (endOverLapPlanList.size() > 0) {
+
+            planEndOverLap.setId((Integer) endOverLapPlanList.get(0)[0]);
+            planEndOverLap.setTopic((String) endOverLapPlanList.get(0)[1]);
+            planEndOverLap.setAllowedStartTime((Date) endOverLapPlanList.get(0)[2]);
+            planEndOverLap.setAllowedEndTime((Date) endOverLapPlanList.get(0)[3]);
+            planEndOverLap.setStartTime((Date) endOverLapPlanList.get(0)[4]);
+            planEndOverLap.setEndTime((Date) endOverLapPlanList.get(0)[5]);
+            res.setEndTimeOverLapPlan(planEndOverLap);
+            res.setCode(404);
 
         }
+    }
 
-        if (overLapQry2.getResultList().size() >0){
+    private void getStartOverLapRes(Response res, Plan planStartOverLap, List<Object[]> startOverLapPlanList) {
+        if (startOverLapPlanList.size() > 0) {
 
-            isAnyOverLapFound = true;
+            planStartOverLap.setId((Integer) startOverLapPlanList.get(0)[0]);
+            planStartOverLap.setTopic((String) startOverLapPlanList.get(0)[1]);
+            planStartOverLap.setAllowedStartTime((Date) startOverLapPlanList.get(0)[2]);
+            planStartOverLap.setAllowedEndTime((Date) startOverLapPlanList.get(0)[3]);
+            planStartOverLap.setStartTime((Date) startOverLapPlanList.get(0)[4]);
+            planStartOverLap.setEndTime((Date) startOverLapPlanList.get(0)[5]);
+            res.setStartTimeOverLapPlan(planStartOverLap);
+            res.setCode(404);
 
         }
-
-        return isAnyOverLapFound;
-
     }
 
 }

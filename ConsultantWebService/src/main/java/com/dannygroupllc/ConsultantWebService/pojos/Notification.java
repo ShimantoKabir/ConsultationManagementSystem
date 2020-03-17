@@ -1,22 +1,33 @@
 package com.dannygroupllc.ConsultantWebService.pojos;
 
+import java.util.Date;
+
 public class Notification {
 
-    public String id;
     public String uid;
     public String fcmRegistrationToken;
     public String title;
     public String body;
     public Integer seenStatus;
+    public String startTime;
+    public String endTime;
 
     public Notification() {}
 
-    public String getId() {
-        return id;
+    public String getStartTime() {
+        return startTime;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setStartTime(String startTime) {
+        this.startTime = startTime;
+    }
+
+    public String getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(String endTime) {
+        this.endTime = endTime;
     }
 
     public String getUid() {

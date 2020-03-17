@@ -10,6 +10,8 @@ public interface PlanDao {
     public Plan delete(HttpServletRequest httpServletRequest, Plan plan);
     public Plan changeAcceptStatus(HttpServletRequest httpServletRequest, Plan plan);
     public List<Plan> getAllPlanByUser(HttpServletRequest httpServletRequest, Plan plan);
+    public List<Plan> getReviewAndRating(HttpServletRequest httpServletRequest, Plan plan);
     public Plan saveReviewAndRating(HttpServletRequest httpServletRequest, Plan plan);
+    public Plan changeAreCusConHaveChattedStatus(HttpServletRequest httpServletRequest, Plan plan);
 
 }

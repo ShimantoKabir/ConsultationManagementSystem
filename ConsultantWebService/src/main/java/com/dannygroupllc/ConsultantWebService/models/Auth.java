@@ -32,9 +32,20 @@ public class Auth {
     public String conUid;
 
     @Transient
+    public String timeZone;
+
+    @Transient
     public List<Plan> planList;
 
     public Auth() {}
+
+    public String getTimeZone() {
+        return timeZone;
+    }
+
+    public void setTimeZone(String timeZone) {
+        this.timeZone = timeZone;
+    }
 
     public Integer getPlanId() {
         return planId;

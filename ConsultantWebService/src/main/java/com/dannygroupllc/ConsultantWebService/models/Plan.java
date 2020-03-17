@@ -25,6 +25,9 @@ public class Plan {
     public String cusReview;
     public Integer conRating;
     public Integer cusRating;
+    @Column(columnDefinition="bit default b'0'")
+    public Boolean areCusConHaveChatted;
+    public String timeZone;
     public String ip;
     public String modifiedBy;
     @CreationTimestamp
@@ -47,6 +50,99 @@ public class Plan {
     @Transient
     public String fEndTime;
 
+    @Transient
+    public Integer rating;
+    @Transient
+    public String review;
+
+    @Transient
+    public String isBookingAcceptanceTimePassed;
+
+    @Transient
+    public Integer hourDiff;
+
+    @Transient
+    public Integer minuteDiff;
+
+    @Transient
+    public Date allowedStartTime;
+
+    @Transient
+    public Date allowedEndTime;
+
+    public Plan() {}
+
+    public Boolean getAreCusConHaveChatted() {
+        return areCusConHaveChatted;
+    }
+
+    public void setAreCusConHaveChatted(Boolean areCusConHaveChatted) {
+        this.areCusConHaveChatted = areCusConHaveChatted;
+    }
+
+    public Date getAllowedStartTime() {
+        return allowedStartTime;
+    }
+
+    public void setAllowedStartTime(Date allowedStartTime) {
+        this.allowedStartTime = allowedStartTime;
+    }
+
+    public Date getAllowedEndTime() {
+        return allowedEndTime;
+    }
+
+    public void setAllowedEndTime(Date allowedEndTime) {
+        this.allowedEndTime = allowedEndTime;
+    }
+
+    public String getIsBookingAcceptanceTimePassed() {
+        return isBookingAcceptanceTimePassed;
+    }
+
+    public void setIsBookingAcceptanceTimePassed(String isBookingAcceptanceTimePassed) {
+        this.isBookingAcceptanceTimePassed = isBookingAcceptanceTimePassed;
+    }
+
+    public Integer getHourDiff() {
+        return hourDiff;
+    }
+
+    public void setHourDiff(Integer hourDiff) {
+        this.hourDiff = hourDiff;
+    }
+
+    public Integer getMinuteDiff() {
+        return minuteDiff;
+    }
+
+    public void setMinuteDiff(Integer minuteDiff) {
+        this.minuteDiff = minuteDiff;
+    }
+
+    public String getTimeZone() {
+        return timeZone;
+    }
+
+    public void setTimeZone(String timeZone) {
+        this.timeZone = timeZone;
+    }
+
+    public Integer getRating() {
+        return rating;
+    }
+
+    public void setRating(Integer rating) {
+        this.rating = rating;
+    }
+
+    public String getReview() {
+        return review;
+    }
+
+    public void setReview(String review) {
+        this.review = review;
+    }
 
     public Integer getConRating() {
         return conRating;
@@ -119,8 +215,6 @@ public class Plan {
     public Integer getCode() {
         return code;
     }
-
-    public Plan() {}
 
     public Date getCalendarDate() {
         return calendarDate;

@@ -16,24 +16,25 @@ let payload;
 let tokenList = [];
 
 exports.notificationTrigger = functions.firestore.document('notificationList/{id}')
-    .onCreate((snapshot,context)=>{
+    .onCreate((snapshot, context) => {
 
         data = snapshot.data();
         tokenList.push(data.fcmRegistrationToken);
 
         payload = {
-            "notification":{
+            "notification": {
                 "title": data.title,
                 "body": data.body,
+                "click_action": 'FLUTTER_NOTIFICATION_CLICK'
             }
         };
 
-        return admin.messaging().sendToDevice(tokenList,payload).then((res)=>{
+        return admin.messaging().sendToDevice(tokenList, payload).then((res) => {
 
             console.log(res);
             console.log("Notification send successfully!");
 
-        }).catch((err)=>{
+        }).catch((err) => {
 
             console.log(err);
 
