@@ -1,0 +1,263 @@
+@import url('https://fonts.googleapis.com/css?family=Armata');
+/*
+/ common css
+*/
+*{
+    margin: 0px;
+    padding: 0px;
+    box-sizing: border-box;
+}
+body{
+    background-color: #F5F6F7;
+    font-family: 'Armata';
+}
+.vue-template{}
+.my-div{
+    margin-top: 10px;
+    margin-bottom: 10px;
+    color: gray;
+    flex-direction: column;
+    display: flex;
+    background-color: #fff;
+    border-radius: 3px;
+    box-shadow: 0 1px 1px 0 rgba(0,0,0,.2),0 3px 4px 0 rgba(0,0,0,.14),0 3px 3px -2px rgba(0,0,0,.12);
+}
+/*head*/
+.my-div-head{
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 10px;
+    border-bottom: 1px solid rgba(60, 137, 66, 0.37);
+}
+.my-div-head-left{
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+}
+.my-div-head-right{
+    display: flex;
+    align-items: baseline;
+    justify-content: baseline;
+}
+/*body*/
+.my-div-body{
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    padding: 10px;
+}
+.my-div-body-30{
+    flex: 30%;
+}
+.my-div-body-70{
+    flex: 70%;
+}
+.my-div-body-60{
+    flex: 60%;
+}
+.my-div-body-50{
+    flex: 50%;
+}
+.my-div-body-40{
+    flex: 40%;
+}
+.my-div-body-20{
+    flex: 20%;
+}
+.my-div-body-100{
+    flex: 100%;
+}
+.my-div-body-fifty{
+    flex: 50%;
+}
+.my-div-body-thirty{
+    flex: 33%;
+}
+/*footer*/
+.my-div-foot{
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 10px;
+    border-top: 1px solid rgba(60, 137, 66, 0.37);
+}
+.my-div-foot-left{
+    display: flex;
+    align-items: baseline;
+    justify-content: baseline;
+}
+.my-div-foot-right{
+    display: flex;
+    align-items: baseline;
+    justify-content: baseline;
+}
+/*form style*/
+input[type=email],input[type=password],input[type=text],input[type=number],input[type=date],input[type=time],select,textarea {
+    width: 100%;
+    padding: 5px 10px;
+    margin: 3px 0;
+    display: inline-block;
+    border: 1px solid #ccc;
+    border-radius: 2px;
+    box-sizing: border-box;
+}
+/*button style*/
+.my-btn {
+    background-color: #4CAF50;
+    color: white;
+    padding: 5px 10px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-family: Armata;
+    font-size: 15px;
+    cursor: pointer;
+    border-radius: 3px;
+    border: 1px solid #4CAF50;
+    box-shadow: 0 1px 1px 0 rgba(0,0,0,.2),0 3px 4px 0 rgba(0,0,0,.14),0 3px 3px -2px rgba(0,0,0,.12);
+    -webkit-transition-duration: 0.4s;
+    transition-duration: 0.4s;
+}
+.my-btn:hover{
+    font-family: Armata;
+    border: 1px solid #4CAF50;
+    background-color: transparent;
+    color: #4CAF50;
+}
+.my-pg-btn{
+    font-size: 10px;
+    background-color: #4CAF50;
+    color: white;
+    padding: 2px 5px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-family: Armata;
+    cursor: pointer;
+    border-radius: 3px;
+    border: 1px solid #4CAF50;
+    box-shadow: 0 1px 1px 0 rgba(0,0,0,.2),0 3px 4px 0 rgba(0,0,0,.14),0 3px 3px -2px rgba(0,0,0,.12);
+    -webkit-transition-duration: 0.4s;
+    transition-duration: 0.4s;
+}
+/*animation*/
+.slide-fade-enter-active {
+    -webkit-transition: all .3s ease;
+    transition: all .3s ease;
+}
+
+.slide-fade-leave-active {
+    -webkit-transition: all .3s ease;
+    transition: all .3s ease;
+}
+
+.slide-fade-enter,
+.slide-fade-leave-to {
+    -webkit-transform: translateY(10px);
+    transform: translateY(10px);
+    opacity: 0;
+}
+/*tab*/
+.my-tab{
+    margin-top: 10px;
+    margin-bottom: 10px;
+    color: gray;
+    flex-direction: column;
+    display: flex;
+    background-color: #fff;
+    border-radius: 3px;
+    box-shadow: 0 1px 1px 0 rgba(0,0,0,.2),0 3px 4px 0 rgba(0,0,0,.14),0 3px 3px -2px rgba(0,0,0,.12);
+}
+.my-tab-head{
+    display: flex;
+    align-items: baseline;
+}
+.my-tab-head > button {
+    width: 100%;
+    background-color: transparent;
+    border: 1px solid transparent;
+    padding: 10px;
+    color: #4CAF50;
+    font-size: 15px;
+    font-family: Armata;
+}
+.my-tab-head > button:hover {
+    background-color: rgba(231, 231, 231, 0.72);
+    cursor: pointer;
+}
+.my-tab-head > button:nth-child(1) {
+    border-right: 1px solid rgba(60, 137, 66, 0.37);
+}
+.my-tab-body{
+    display: flex;
+    justify-content: center;
+    flex-direction: row;
+    border-top: 1px solid rgba(60, 137, 66, 0.37);
+    padding: 10px;
+}
+.my-tab-foot{
+    border-top: 1px solid rgba(60, 137, 66, 0.37);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 10px;
+}
+.my-tab-100{
+    flex: 100%;
+    overflow-x: auto;
+}
+.my-tab-60{
+    flex: 60%;
+}
+.my-tab-50{
+    flex: 50%;
+}
+.my-tab-40{
+    flex: 40%;
+}
+.my-tab-33{
+    flex: 33%;
+}
+/*table*/
+table {
+    border-collapse: collapse;
+}
+th, td {
+    padding: 5px;
+    border: none;
+}
+.my-tbl {
+    border-collapse: collapse;
+    width: 100%;
+}
+.my-tbl > thead > tr > th {
+    border: 1px solid #ddd;
+    text-align: left;
+    padding: 5px 10px;
+    border-bottom: 2px solid #4CAF50;
+}
+.my-tbl > tbody >  tr > td {
+    border: 1px solid #ddd;
+    text-align: left;
+    padding: 5px 10px;
+}
+/*model*/
+.my-model{
+    position: fixed;
+    z-index: 2;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+}
+.my-badge{
+    padding: 3px 7px;
+    background-color: #4CAF50;
+    border-radius: 3px;
+    color: white;
+    font-size: 13px;
+}
+

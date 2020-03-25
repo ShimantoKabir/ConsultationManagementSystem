@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Consultant Calendar</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="css/full-calendar.css"/>
+    <link rel="stylesheet" href="css/grid.css"/>
+    <link rel="stylesheet" href="css/main.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <!--    <link rel="stylesheet" href="css/fontawesome.css"/>-->
+
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Armata"/>
+
+    <script src="js/jquery.js"></script>
+    <script src="js/jquery-ui.js"></script>
+    <script src="js/moment.js"></script>
+    <script src="js/full-calendar.js"></script>
+
+    <script>
+
+        $(document).ready(function () {
+
+            let serverBaseUrl = "http://192.168.31.2:8080";
+            let webClientBaseUrl = "http://192.168.31.2/consultant-web-client";
+
+            // let serverBaseUrl = "http://3.20.119.226:8080";
+            // let webClientBaseUrl = "http://3.20.119.226/cms/index.html";
+
+
+            let timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+            // alert configuration start
+            $('#alertCloseBtn').click(function () {
+                $('#myAlert').hide();
+            });
+
+            $('#alertCloseBtn').click(function () {
+                $('#myAlert').hide();
+            });
+
+            function showAlert(data) {
+
+                $('#myAlert').show();
+                data.ntsTaBtn ? $('#alertTryAgainBtn').show() : $('#alertTryAgainBtn').hide();
+                $('#alertIcon').removeClass();
+                $('#alertIcon').addClass(data.bodyIcon);
+                $('#alertHeading').text(data.alertHeading);
+                $('#alertMsg').text(data.msg);
+
+            }
+
+            showAlert({
+                msg: 'Checking url, please wait....!',
+                bodyIcon: 'fa fa-refresh fa-spin',
+                ntsTaBtn: true,
+                alertHeading: 'Loading',
+            });
+
+            let aId = null;
+            let conId = null;
+            let cusId = null;
+            let isUrlOk = true;
+            let events = [];
+            let freeMinutesForNewCustomer = null;
+            let hourlyRate = null;
+
+            let urlParameters = new URLSearchParams(window.location.search);
+
+            if (urlParameters.has('aid')) {
+
+                aId = urlParameters.get('aid');
+
+            } else {
+
+                isUrlOk = false;
+
+            }
+
+            if (urlParameters.has('conid')) {
+
+                conId = urlParameters.get('conid');
+
+            } else {
+
+                isUrlOk = false;
+
+            }
+
+            if (urlParameters.has("cusid")) {
+
+                cusId = urlParameters.get('cusid');
+
+                if (urlParameters.has("free-minutes")) {
+                    freeMinutesForNewCustomer = urlParameters.get("free-minutes");
+                } else {
+                    isUrlOk = false;
+                }
+
+                if (urlParameters.has("hourly-rate")) {
+                    hourlyRate = urlParameters.get("hourly-rate");
+                } else {
+                    isUrlOk = false;
+                }
+
+                $('#eventBookBtn').text("Book");
+
+            } else {
+                $('#eventBookBtn').text("Save");
+            }
+
+            let authData = {
+                auth: {
+                    aId: aId,
+                    uId: cusId === null ? conId : cusId,
+                    conUid: conId,
+                    timeZone : timeZone
+                }
+            };
+
+            if (isUrlOk) {
+
+                $.ajax({
+                    url: serverBaseUrl+"/auth/check",
+                    type: "POST",
+                    contentType: 'application/json',
+                    data: JSON.stringify(authData),
+                    success: function (s) {
+
+                        if (s.code === 404) {
+
+                            window.location.replace(webClientBaseUrl)
+
+                        } else {
+
+                            for (let i = 0; i < s.planList.length; i++) {
+
+                                let color = 'gray';
+
+                                if(s.planList[i].id !== 0){
+                                    color = s.planList[i].cusUid == null ? "red" : "green";
+                                }
+
+                                events.push({
+                                    id: s.planList[i].id,
+                                    title: s.planList[i].topic,
+                                    start: new Date(s.planList[i].startTime),
+                                    end: new Date(s.planList[i].endTime),
+                                    color: color,
+                                    isAcceptByCon: s.planList[i].isAcceptByCon,
+                                    paymentTransId: s.planList[i].paymentTransId == null ? null : s.planList[i]
+                                        .paymentTransId,
+                                    freeMinutesForNewCustomer: s.planList[i].freeMinutesForNewCustomer == null ? 0 :
+                                        s.planList[i].freeMinutesForNewCustomer,
+                                    hourlyRate: s.planList[i].hourlyRate,
+                                    cusUid: s.planList[i].cusUid == null ? null : s.planList[i].cusUid,
+                                    conUid: s.planList[i].conUid == null ? null : s.planList[i].conUid,
+                                    hourDiff: s.planList[i].hourDiff,
+                                    minuteDiff: s.planList[i].minuteDiff,
+                                    pos : i
+                                })
+
+                            }
+
+                            showAlert({
+                                msg: s.msg,
+                                bodyIcon: 'fa fa-check-circle',
+                                ntsTaBtn: false,
+                                alertHeading: 'Success',
+                            });
+
+                            showCalender();
+
+                        }
+
+                    },
+                    error: function (e) {
+
+                        window.location.replace(webClientBaseUrl)
+
+                    }
+                })
+
+            } else {
+
+                window.location.replace(webClientBaseUrl)
+
+            }
+
+            function showCalender() {
+
+                let calendar = $('#calendar').fullCalendar({
+                    editable: false,
+                    header: {
+                        left: 'prev,next today',
+                        center: 'title',
+                        right: 'month,agendaWeek,agendaDay'
+                    },
+                    defaultView: 'agendaWeek',
+                    events: events,
+                    slotDuration: '00:05:00',
+                    selectOverlap: function(event) {
+                        return false;
+                    },
+                    selectable: true,
+                    selectHelper: true,
+                    select: function (start, end, allDay) {
+
+                        $('#acceptRequestId').hide();
+                        $('#eventDeleteBtn').hide();
+                        $('#acceptRequestAction').hide();
+                        $('#timeLeftToAcceptRequest').hide();
+                        $('#requestAcceptStatus').hide();
+                        $('#freeMinutesForNewCustomer').hide();
+
+                        $('#topic').val(null);
+                        $('#eventPopUp').show();
+                        $('#eventBookBtn').show();
+
+                        let fromDate = $.fullCalendar.formatDate(start, "Y-MM-DD");
+                        let fromTime = start._i[3].toString().padStart(2, '0')+":"
+                            +start._i[4].toString().padStart(2, '0')+":"
+                            +start._i[5].toString().padStart(2, '0');
+                        let toDate = $.fullCalendar.formatDate(end, "Y-MM-DD");
+                        let toTime = end._i[3].toString().padStart(2, '0')+":"
+                            +end._i[4].toString().padStart(2, '0')+":"
+                            +end._i[5].toString().padStart(2, '0');
+
+                        $('#fromDate').val(fromDate);
+                        $('#fromTime').val(fromTime);
+                        $('#toDate').val(toDate);
+                        $('#toTime').val(toTime);
+
+                        $("#eventBookBtn").unbind("click").bind("click", function (e) {
+
+                            let fd = $('#fromDate').val();
+                            let ft = $('#fromTime').val();
+                            let td = $('#toDate').val();
+                            let tt = $('#toTime').val();
+                            let tp = $('#topic').val();
+
+                            if(!ft){
+
+                                showAlert({
+                                    msg: "Start time required!",
+                                    bodyIcon: 'fa fa-times-circle',
+                                    ntsTaBtn: false,
+                                    alertHeading: 'Warning',
+                                })
+
+                            }else if(!tt){
+
+                                showAlert({
+                                    msg: "End time required!",
+                                    bodyIcon: 'fa fa-times-circle',
+                                    ntsTaBtn: false,
+                                    alertHeading: 'Warning',
+                                })
+
+                            }else if(!tp){
+
+                                showAlert({
+                                    msg: "Topic required!",
+                                    bodyIcon: 'fa fa-times-circle',
+                                    ntsTaBtn: false,
+                                    alertHeading: 'Warning',
+                                })
+
+                            } else {
+
+                                showAlert({
+                                    msg: "Please wait....!",
+                                    bodyIcon: 'fa fa-refresh fa-spin',
+                                    ntsTaBtn: false,
+                                    alertHeading: 'Loading',
+                                });
+
+                                let planData = {
+                                    calendar: {
+                                        calendarDate: new Date(fromDate),
+                                        conUid: conId,
+                                        plan: {
+                                            startTime: new Date(fd + " " + ft),
+                                            endTime: new Date(td + " " + tt),
+                                            topic: $('#topic').val(),
+                                            cusUid: cusId,
+                                            conUid: conId,
+                                            freeMinutesForNewCustomer: freeMinutesForNewCustomer,
+                                            hourlyRate: hourlyRate,
+                                            timeZone : timeZone
+                                        }
+                                    }
+                                };
+
+                                $.ajax({
+                                    url: serverBaseUrl+"/calendar/create-event",
+                                    type: "POST",
+                                    contentType: 'application/json',
+                                    data: JSON.stringify(planData),
+                                    success: function (s) {
+
+                                        if (s.code === 404) {
+
+                                            $('#eventPopUp').hide();
+                                            showAlert({
+                                                msg: s.msg,
+                                                bodyIcon: 'fa fa-times-circle',
+                                                ntsTaBtn: false,
+                                                alertHeading: 'Error',
+                                            })
+
+                                        } else {
+
+                                            location.reload();
+
+                                        }
+
+                                    },
+                                    error: function (e) {
+
+                                        $('#eventPopUp').hide();
+                                        showAlert({
+                                            msg: "Some thing went wrong !",
+                                            bodyIcon: 'fa fa-times-circle',
+                                            ntsTaBtn: false,
+                                            alertHeading: 'Error',
+                                        })
+
+                                    }
+                                })
+
+                            }
+
+                        });
+
+                    },
+                    eventClick: function (event) {
+
+                        $('#eventBookBtn').hide();
+                        $('#freeMinutesForNewCustomer').hide();
+
+                        let fromDate = $.fullCalendar.formatDate(event.start, "Y-MM-DD");
+                        let fromTime = $.fullCalendar.formatDate(event.start, "HH:mm:ss");
+                        let toDate = $.fullCalendar.formatDate(event.end, "Y-MM-DD");
+                        let toTime = $.fullCalendar.formatDate(event.end, "HH:mm:ss");
+
+                        $('#fromDate').val(fromDate);
+                        $('#fromTime').val(fromTime);
+                        $('#toDate').val(toDate);
+                        $('#toTime').val(toTime);
+                        $('#topic').val(event.title);
+                        $('#timeLeftToAcceptRequest > td').text(event.hourDiff+" Hour & "+
+                            event.minuteDiff+" minute Left to accept the request!");
+
+                        if (event.freeMinutesForNewCustomer !== 0) {
+
+                            $('#freeMinutesForNewCustomer').show();
+                            $('#freeMinutesForNewCustomer p').text("[Free " + event.freeMinutesForNewCustomer + " minutes available]");
+
+                        }
+
+                        if (cusId === null) {
+
+                            $('#eventPopUp').show();
+                            $('#requestAcceptStatus').hide();
+
+                            // hide request accept acton if
+                            // it's accepted by you
+                            if (event.isAcceptByCon) {
+
+                                $('#acceptRequestAction').hide();
+                                $('#timeLeftToAcceptRequest').hide();
+
+                                // if not then show
+                            } else {
+
+                                $('#acceptRequestAction').show();
+                                $('#timeLeftToAcceptRequest').show();
+
+                            }
+
+                            // hide request accepted action
+                            // if the event not a request
+                            // ---
+                            // show delete button if the
+                            // request is not event
+                            if (event.cusUid === null) {
+                                $('#acceptRequestAction').hide();
+                                $('#timeLeftToAcceptRequest').hide();
+                                $('#eventDeleteBtn').show();
+
+                                // hide delete button if the
+                                // request is event
+                            } else {
+                                $('#eventDeleteBtn').hide();
+                            }
+
+                        } else {
+
+                            // open event pop if the event created by this customer
+                            if (cusId === event.cusUid) {
+
+                                $('#eventPopUp').show();
+                                $('#acceptRequestAction').hide();
+                                $('#timeLeftToAcceptRequest').hide();
+
+                                // if the request is accepted
+                                // can't delete the event by
+                                // customer so hide it
+                                if (event.isAcceptByCon) {
+
+                                    $('#eventDeleteBtn').hide();
+
+                                    // hide request accept status
+                                    // request accepted by consultant
+                                    $('#requestAcceptStatus').hide();
+
+                                    // if the request still not accepted
+                                    // then customer can delete it
+                                } else {
+
+                                    $('#eventDeleteBtn').show();
+
+                                }
+
+                            }
+
+                        }
+
+                        function eventDelete(event) {
+
+                            showAlert({
+                                msg: "Please wait....!",
+                                bodyIcon: 'fa fa-refresh fa-spin',
+                                ntsTaBtn: false,
+                                alertHeading: 'Loading',
+                            });
+
+                            let planData = {
+                                plan: {
+                                    id: event.id
+                                }
+                            };
+
+                            $.ajax({
+                                url: serverBaseUrl+"/plan/delete",
+                                type: "POST",
+                                contentType: 'application/json',
+                                data: JSON.stringify(planData),
+                                success: function (s) {
+
+                                    if (s.code === 404) {
+
+                                        $('#eventPopUp').hide();
+                                        showAlert({
+                                            msg: s.msg,
+                                            bodyIcon: 'fa fa-times-circle',
+                                            ntsTaBtn: false,
+                                            alertHeading: 'Error',
+                                        })
+
+                                    } else {
+
+                                        location.reload();
+
+                                    }
+
+                                },
+                                error: function (e) {
+
+                                    $('#eventPopUp').hide();
+                                    showAlert({
+                                        msg: "Some thing went wrong !",
+                                        bodyIcon: 'fa fa-times-circle',
+                                        ntsTaBtn: false,
+                                        alertHeading: 'Error',
+                                    })
+
+                                }
+                            })
+                        }
+
+                        $("#eventDeleteBtn").unbind("click").bind("click", function (e) {
+                            eventDelete(event);
+                        });
+
+                        $("#requestCancel").unbind("click").bind("click", function (e) {
+                            eventDelete(event);
+                        });
+
+                        $("#requestAccept").unbind("click").bind("click", function (e) {
+
+                            showAlert({
+                                msg: "Please wait....!",
+                                bodyIcon: 'fa fa-refresh fa-spin',
+                                ntsTaBtn: false,
+                                alertHeading: 'Loading',
+                            });
+
+                            let planData = {
+                                plan: {
+                                    id: event.id
+                                }
+                            };
+
+                            $.ajax({
+                                url: serverBaseUrl+"/plan/change-accept-status",
+                                type: "POST",
+                                contentType: 'application/json',
+                                data: JSON.stringify(planData),
+                                success: function (s) {
+
+                                    if (s.code === 404) {
+
+                                        $('#eventPopUp').hide();
+                                        showAlert({
+                                            msg: s.msg,
+                                            bodyIcon: 'fa fa-times-circle',
+                                            ntsTaBtn: false,
+                                            alertHeading: 'Error',
+                                        })
+
+                                    } else {
+
+                                        location.reload();
+
+                                    }
+
+                                },
+                                error: function (e) {
+
+                                    $('#eventPopUp').hide();
+                                    showAlert({
+                                        msg: "Some thing went wrong !",
+                                        bodyIcon: 'fa fa-times-circle',
+                                        ntsTaBtn: false,
+                                        alertHeading: 'Error',
+                                    })
+
+                                }
+                            })
+
+                        });
+
+                        // for the break we don't
+                        // to show the delete button
+                        if(event.id === 0){
+                            $("#eventDeleteBtn").hide();
+                        }
+
+                    },
+
+                });
+
+            }
+
+            // url checking finish
+            // -------------------
+            // event handling start
+            $('#eventClosePupUpIcon').click(function () {
+                $('#eventPopUp').hide();
+            });
+
+        });
+
+    </script>
+
+</head>
+<body>
+<div class="my-model" id="myAlert" style="z-index: 3" hidden>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-sm-6">
+                <div class="my-div">
+                    <div class="my-div-head">
+                        <div class="my-div-head-left">
+                            <h3 id="alertHeading">Loading</h3>
+                        </div>
+                        <div>
+                            <i id="alertCloseBtn" class="fa fa-times-circle"></i>
+                        </div>
+                    </div>
+                    <div class="my-div-body">
+                        <table>
+                            <tbody>
+                            <tr>
+                                <td style="font-size: 50px">
+                                    <i id="alertIcon"></i>
+                                </td>
+                                <td>
+                                    <p id="alertMsg">No message available..... !</p>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="my-div-foot">
+                        <div class="my-div-foot-left">
+                            <button id="alertTryAgainBtn" class="my-btn">Try Again</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="my-model" id="eventPopUp" hidden>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-sm-12">
+                <div class="my-div">
+                    <div class="my-div-head">
+                        <div class="my-div-head-left">
+                            <h3>Event</h3>
+                        </div>
+                        <div>
+                            <i id="eventClosePupUpIcon" class="fa fa-times-circle"></i>
+                        </div>
+                    </div>
+                    <div class="my-div-body">
+                        <table>
+                            <tbody>
+                            <tr>
+                                <td colspan="5" id="freeMinutesForNewCustomer">
+                                    <p style="text-align: center;color: green;font-weight: bold">
+                                        [Request didn't accept yet]
+                                    </p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <b>Topic :</b>
+                                </td>
+                                <td colspan="4">
+                                    <textarea placeholder="Please write down summary of discussion topics"
+                                              id="topic"></textarea>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>From :</b></td>
+                                <td>
+                                    Date
+                                </td>
+                                <td>
+                                    <input readonly type="date" id="fromDate">
+                                </td>
+                                <td>Time</td>
+                                <td>
+                                    <input readonly type="time" id="fromTime">
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>To :</b></td>
+                                <td>Date</td>
+                                <td>
+                                    <input readonly type="date" id="toDate">
+                                </td>
+                                <td>
+                                    Time
+                                </td>
+                                <td>
+                                    <input readonly type="time" id="toTime">
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="5" id="requestAcceptStatus">
+                                    <p style="text-align: center;color: red;font-weight: bold">
+                                        [Request didn't accept yet]
+                                    </p>
+                                </td>
+                            </tr>
+                            <tr id="timeLeftToAcceptRequest" >
+                                <td style="text-align: center;color: red;font-weight: bold" colspan="5" ></td>
+                            </tr>
+                            <tr id="acceptRequestAction">
+                                <td>
+                                    <b>Request :</b>
+                                </td>
+                                <td colspan="2">
+                                    <button class="my-btn" style="width: 100%" id="requestAccept">Accept</button>
+                                </td>
+                                <td colspan="2">
+                                    <button class="my-btn" style="width: 100%" id="requestCancel">Cancel</button>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="my-div-foot">
+                        <div class="my-div-foot-left">
+                            <button class="my-btn" id="eventBookBtn"></button>
+                        </div>
+                        <div class="my-div-foot-right">
+                            <button class="my-btn" id="eventDeleteBtn">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="calendar" style="margin: 10px"></div>
+</body>
+</html>
