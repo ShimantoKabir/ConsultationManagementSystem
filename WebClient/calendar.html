@@ -22,12 +22,11 @@
 
         $(document).ready(function () {
 
-            let serverBaseUrl = "http://192.168.31.2:8080";
-            let webClientBaseUrl = "http://192.168.31.2/consultant-web-client";
+            let serverBaseUrl = "http://192.168.43.179:8080";
+            let webClientBaseUrl = "http://192.168.43.132/consultationmanagementsystem/webclient";
 
             // let serverBaseUrl = "http://3.20.119.226:8080";
             // let webClientBaseUrl = "http://3.20.119.226/cms/index.html";
-
 
             let timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -191,13 +190,14 @@
             function showCalender() {
 
                 let calendar = $('#calendar').fullCalendar({
+                    contentHeight: $(document).height() - 100,
                     editable: false,
                     header: {
                         left: 'prev,next today',
                         center: 'title',
                         right: 'month,agendaWeek,agendaDay'
                     },
-                    defaultView: 'agendaWeek',
+                    defaultView: 'agendaDay',
                     events: events,
                     slotDuration: '00:05:00',
                     selectOverlap: function(event) {
@@ -569,7 +569,7 @@
 </head>
 <body>
 <div class="my-model" id="myAlert" style="z-index: 3" hidden>
-    <div class="container">
+    <div class="container" style="margin-top: 50px" >
         <div class="row justify-content-center">
             <div class="col-sm-6">
                 <div class="my-div">
@@ -606,7 +606,7 @@
     </div>
 </div>
 <div class="my-model" id="eventPopUp" hidden>
-    <div class="container">
+    <div class="container" style="margin-top: 50px" >
         <div class="row justify-content-center">
             <div class="col-sm-12">
                 <div class="my-div">
@@ -614,7 +614,7 @@
                         <div class="my-div-head-left">
                             <h3>Event</h3>
                         </div>
-                        <div>
+                        <div class="my-div-head-right" >
                             <i id="eventClosePupUpIcon" class="fa fa-times-circle"></i>
                         </div>
                     </div>
@@ -622,7 +622,7 @@
                         <table>
                             <tbody>
                             <tr>
-                                <td colspan="5" id="freeMinutesForNewCustomer">
+                                <td colspan="2" id="freeMinutesForNewCustomer">
                                     <p style="text-align: center;color: green;font-weight: bold">
                                         [Request didn't accept yet]
                                     </p>
@@ -630,57 +630,55 @@
                             </tr>
                             <tr>
                                 <td>
-                                    <b>Topic :</b>
+                                    <b>Topic</b>
                                 </td>
-                                <td colspan="4">
+                                <td>
                                     <textarea placeholder="Please write down summary of discussion topics"
-                                              id="topic"></textarea>
+                                              id="topic">    
+                                    </textarea>
                                 </td>
                             </tr>
                             <tr>
-                                <td><b>From :</b></td>
                                 <td>
-                                    Date
+                                    <b>Start Date</b>
                                 </td>
                                 <td>
                                     <input readonly type="date" id="fromDate">
                                 </td>
-                                <td>Time</td>
+                            </tr>
+                            <tr>
+                                <td><b>Start Time</b></td>
                                 <td>
                                     <input readonly type="time" id="fromTime">
                                 </td>
                             </tr>
                             <tr>
-                                <td><b>To :</b></td>
-                                <td>Date</td>
+                                <td><b>End Date</b></td>
+                                <td><input readonly type="date" id="toDate"></td>
+                            </tr>
+                            <tr>
                                 <td>
-                                    <input readonly type="date" id="toDate">
-                                </td>
-                                <td>
-                                    Time
+                                    <b>End Time</b>
                                 </td>
                                 <td>
                                     <input readonly type="time" id="toTime">
                                 </td>
                             </tr>
                             <tr>
-                                <td colspan="5" id="requestAcceptStatus">
+                                <td colspan="2" id="requestAcceptStatus">
                                     <p style="text-align: center;color: red;font-weight: bold">
                                         [Request didn't accept yet]
                                     </p>
                                 </td>
                             </tr>
                             <tr id="timeLeftToAcceptRequest" >
-                                <td style="text-align: center;color: red;font-weight: bold" colspan="5" ></td>
+                                <td style="text-align: center;color: red;font-weight: bold" colspan="2" ></td>
                             </tr>
                             <tr id="acceptRequestAction">
                                 <td>
-                                    <b>Request :</b>
-                                </td>
-                                <td colspan="2">
                                     <button class="my-btn" style="width: 100%" id="requestAccept">Accept</button>
                                 </td>
-                                <td colspan="2">
+                                <td>
                                     <button class="my-btn" style="width: 100%" id="requestCancel">Cancel</button>
                                 </td>
                             </tr>

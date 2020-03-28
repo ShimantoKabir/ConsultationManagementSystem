@@ -4,9 +4,7 @@ import 'package:flutter/material.dart';
 
 class NotificationViewer extends StatefulWidget {
   final String uid;
-
   NotificationViewer({Key key, @required this.uid}) : super(key: key);
-
   @override
   NotificationViewerState createState() =>
       new NotificationViewerState(uid: uid);

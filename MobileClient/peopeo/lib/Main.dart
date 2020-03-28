@@ -320,6 +320,7 @@ class MyHomePageState extends State<MyHomePage> {
                           .then((ut) {
                         MySharedPreferences.getStringValue("uid")
                             .then((uid) async {
+                          print("User id : $uid");
                           Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (context) {

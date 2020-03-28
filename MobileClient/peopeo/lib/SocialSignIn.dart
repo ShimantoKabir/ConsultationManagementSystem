@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:peopeo/Const.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-//import 'package:flutter_facebook_login/flutter_facebook_login.dart';
+import 'package:flutter_facebook_login/flutter_facebook_login.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -24,21 +24,21 @@ Future<AuthResult> signInWithGoogle() async {
   return await auth.signInWithCredential(credential);
 }
 
-//Future<AuthResult> signInWithFacebook() async {
-//  var facebookLogin = new FacebookLogin();
-//  var res = await facebookLogin.logIn(['email']);
-//  if (res.status == FacebookLoginStatus.loggedIn) {
-//    final AuthCredential credential = FacebookAuthProvider.getCredential(
-//      accessToken: res.accessToken.token,
-//    );
-//    return await auth.signInWithCredential(credential);
-//  } else {
-//    return null;
-//  }
-//}
+Future<AuthResult> signInWithFacebook() async {
+  var facebookLogin = new FacebookLogin();
+  var res = await facebookLogin.logIn(['email']);
+  if (res.status == FacebookLoginStatus.loggedIn) {
+    final AuthCredential credential = FacebookAuthProvider.getCredential(
+      accessToken: res.accessToken.token,
+    );
+    return await auth.signInWithCredential(credential);
+  } else {
+    return null;
+  }
+}
 
-Future<Response> setUserCredential(AuthResult authResult, int ut,String token) async {
-
+Future<Response> setUserCredential(
+    AuthResult authResult, int ut, String token) async {
   prefs = await SharedPreferences.getInstance();
   FirebaseUser user = authResult.user;
   await prefs.setString('uid', user.uid);
@@ -58,26 +58,21 @@ Future<Response> setUserCredential(AuthResult authResult, int ut,String token) a
   await prefs.setStringList('userInfo', userInfo);
 
   if (authResult.additionalUserInfo.isNewUser) {
-    return createUser(user,ut,token);
-  }{
-
+    return createUser(user, ut, token);
+  }
+  {
     databaseReference
         .collection("userInfoList")
         .document(user.uid)
-        .updateData({"fcmRegistrationToken" : token})
-        .then((res){
-
-          print('Fcm Registration token update successfully!');
-
+        .updateData({"fcmRegistrationToken": token}).then((res) {
+      print('Fcm Registration token update successfully!');
     });
 
     return null;
   }
-
 }
 
-Future<Response> createUser(FirebaseUser user,int ut,String token) async {
-
+Future<Response> createUser(FirebaseUser user, int ut, String token) async {
   await databaseReference
       .collection("userInfoList")
       .document(user.uid)
@@ -93,14 +88,14 @@ Future<Response> createUser(FirebaseUser user,int ut,String token) async {
     'shortDescription': null,
     'longDescription': null,
     'freeMinutesForNewCustomer': null,
-    'fcmRegistrationToken' : token,
-    'rating' : null,
+    'fcmRegistrationToken': token,
+    'rating': null,
   });
   return createCustomerInBrainTree(user);
 }
 
 Future<Response> createCustomerInBrainTree(FirebaseUser user) async {
-  String url = serverBaseUrl+'/pg/create-customer';
+  String url = serverBaseUrl + '/pg/create-customer';
   Map<String, String> headers = {"Content-type": "application/json"};
   var request = {
     'userInfo': {

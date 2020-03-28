@@ -48,6 +48,7 @@ class Chat extends StatefulWidget {
 }
 
 class ChatState extends State<Chat> with TickerProviderStateMixin {
+
   ChatState(
       {Key key,
       @required this.peerId,
@@ -97,7 +98,6 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    focusNode.addListener(onFocusChange);
 
     groupChatId = '';
 
@@ -124,10 +124,14 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
     }
 
     Timer.periodic(Duration(seconds: 5), (timer) {
-      print("Hi thee");
 
+      print("Timer ticking.. !");
       // logic for start time ticker
-      if (!isTimeTickerRunning && currentDateTime.isAfter(aStartDateTime)) {
+
+      print("is time ticking running $isTimeTickerRunning");
+      print(currentDateTime.isAfter(aStartDateTime));
+
+      if (!isTimeTickerRunning && DateTime.now().isAfter(aStartDateTime)) {
         if (plan.freeMinutesForNewCustomer == null) {
           int m = calculateDuration(aEndDateTime, currentDateTime);
           startTimeTicker(controller, m);
@@ -173,7 +177,9 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
       }
     });
 
+    focusNode.addListener(onFocusChange);
     readLocal();
+
   }
 
   void onFocusChange() {
@@ -193,17 +199,18 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
       groupChatId = '$peerId-$id';
     }
 
+    print("GroupChatId = $groupChatId");
+
+    FocusScope.of(context).requestFocus(focusNode);
+
     Firestore.instance
         .collection('userInfoList')
         .document(id)
         .updateData({'chattingWith': peerId});
-
-    setState(() {});
   }
 
   Future getImage() async {
     imageFile = await ImagePicker.pickImage(source: ImageSource.gallery);
-
     if (imageFile != null) {
       setState(() {
         isLoading = true;
@@ -512,7 +519,6 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
           .updateData({'chattingWith': null});
       Navigator.pop(context);
     }
-
     return Future.value(false);
   }
 
@@ -785,10 +791,8 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                   .snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
-                  return Center(
-                      child: CircularProgressIndicator(
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(themeColor)));
+                  return CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(themeColor));
                 } else {
                   listMessage = snapshot.data.documents;
                   return ListView.builder(
@@ -885,7 +889,6 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                         'conRating': rating
                       }
                     };
-
                     // consultant
                   } else {
                     request = {
@@ -960,7 +963,6 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                       fontFamily: 'Armata',
                       fontWeight: FontWeight.bold)),
               onPressed: () {
-
                 Navigator.of(context).popUntil((route) => route.isFirst);
                 Navigator.pushReplacement(
                     context,
@@ -970,14 +972,51 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
               },
             ),
             FlatButton(
-              child: Text('Yes',
+              child: Text("Yes",
                   style: TextStyle(
                       color: Colors.green,
                       fontFamily: 'Armata',
                       fontWeight: FontWeight.bold)),
               onPressed: () {
-                Navigator.pop(context);
                 getClientToken(amount, p.id);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void paymentCheckingPopUp(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Alert',
+              style: TextStyle(
+                  color: Colors.pink,
+                  fontFamily: 'Armata',
+                  fontWeight: FontWeight.bold)),
+          content: Wrap(children: <Widget>[
+
+            Text(
+              "When you click [Continute Chat] app will check is your payment complete or not!",
+              style: TextStyle(
+                  color: Colors.redAccent,
+                  fontFamily: 'Armata',
+                  fontWeight: FontWeight.normal),
+            )
+          ]),
+          actions: <Widget>[
+            FlatButton(
+              child: Text("Continute Chat",
+                  style: TextStyle(
+                      color: Colors.green,
+                      fontFamily: 'Armata',
+                      fontWeight: FontWeight.bold)),
+              onPressed: () {
+                checkPaymentStatus(plan.id);
               },
             ),
           ],
@@ -1055,6 +1094,8 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
   void goBrowserForPayment(String aid) async {
     String url = webClientBaseUrl + '/payment.html?aid=' + aid + "&uid=" + uid;
     if (await canLaunch(url)) {
+      Navigator.of(context).pop();
+      paymentCheckingPopUp(context);
       await launch(url);
     } else {
       throw 'Could not launch $url';
@@ -1103,31 +1144,27 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
     });
   }
 
-  void checkPaymentCompleteStatus(int id) async {
-    String url = serverBaseUrl + '/plan/check-payment-complete-status';
+  void checkPaymentStatus(int id) async {
+    String url = serverBaseUrl + '/plan/check-payment-status';
     Map<String, String> headers = {"Content-type": "application/json"};
     var request = {
       'plan': {
         'id': id,
       }
     };
-
     Response response =
-    await post(url, headers: headers, body: json.encode(request));
-
+        await post(url, headers: headers, body: json.encode(request));
     if (response.statusCode == 200) {
+
       int code = HttpResponse.fromJson(json.decode(response.body)).code;
 
-      if(code == 200){
+      print("Transaction completion status $code");
 
+      if (code == 200) {
         Navigator.pop(context);
-
-      }else{
-
-        Fluttertoast.showToast(msg: "You did not complete your payment yet!");
-
+      } else {
+        Fluttertoast.showToast(msg: "You didn't complete your payment yet!");
       }
-
     } else {
       throw Exception('Failed to load post');
     }

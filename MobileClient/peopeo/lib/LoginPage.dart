@@ -75,7 +75,7 @@ class LoginPageState extends State<LoginPage> {
                         },
                       ),
                       Text(
-                        'Consultant',
+                        'Expert',
                         style: new TextStyle(
                           fontSize: 13.0,
                         ),
@@ -110,7 +110,6 @@ class LoginPageState extends State<LoginPage> {
           } else {
 
             showAlertDialog(context, "Please wait, login processing!");
-
             Firestore.instance
                 .collection("userInfoList")
                 .document(val.user.uid)
@@ -176,49 +175,45 @@ class LoginPageState extends State<LoginPage> {
     return OutlineButton(
       splashColor: Colors.grey,
       onPressed: () {
-
-//        signInWithFacebook().then((val) {
-//          if (val.additionalUserInfo.isNewUser) {
-//            setState(() {
-//              needToShowUserTypeCheckBox = true;
-//              authResult = val;
-//            });
-//          } else {
-//            showAlertDialog(context, "Please wait, login processing!");
-//
-//            Firestore.instance
-//                .collection("userInfoList")
-//                .document(val.user.uid)
-//                .get()
-//                .then((d) {
-//              fm.getToken().then((token) {
-//                setUserCredential(val, d.data['userType'], token).then((val) {
-//                  Navigator.of(context).popUntil((route) => route.isFirst);
-//                  Navigator.pushReplacement(
-//                    context,
-//                    MaterialPageRoute(
-//                      builder: (context) {
-//                        return MyHomePage();
-//                      },
-//                    ),
-//                  );
-//                });
-//              }).catchError((err) {
-//                Navigator.pop(context);
-//                Fluttertoast.showToast(
-//                    msg: "Sorthing went wrong,Please try again!");
-//              });
-//            }).catchError((err) {
-//              Navigator.pop(context);
-//              Fluttertoast.showToast(
-//                  msg: "Sorthing went wrong,Please try again!");
-//            });
-//          }
-//        }).catchError((err) {
-//          Fluttertoast.showToast(msg: "Sorthing went wrong,Please try again!");
-//        });
-
-
+        signInWithFacebook().then((val) {
+          if (val.additionalUserInfo.isNewUser) {
+            setState(() {
+              needToShowUserTypeCheckBox = true;
+              authResult = val;
+            });
+          } else {
+            showAlertDialog(context, "Please wait, login processing!");
+            Firestore.instance
+                .collection("userInfoList")
+                .document(val.user.uid)
+                .get()
+                .then((d) {
+              fm.getToken().then((token) {
+                setUserCredential(val, d.data['userType'], token).then((val) {
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) {
+                        return MyHomePage();
+                      },
+                    ),
+                  );
+                });
+              }).catchError((err) {
+                Navigator.pop(context);
+                Fluttertoast.showToast(
+                    msg: "Sorthing went wrong,Please try again!");
+              });
+            }).catchError((err) {
+              Navigator.pop(context);
+              Fluttertoast.showToast(
+                  msg: "Sorthing went wrong,Please try again!");
+            });
+          }
+        }).catchError((err) {
+          Fluttertoast.showToast(msg: "Sorthing went wrong,Please try again!");
+        });
       },
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       highlightElevation: 0,
@@ -315,7 +310,6 @@ class LoginPageState extends State<LoginPage> {
 
   void processUserRegistration() {
     showAlertDialog(context, "Please wait user registration processing.");
-
     fm.getToken().then((token) {
       setUserCredential(authResult, userType, token).then((val) {
         Navigator.of(context).popUntil((route) => route.isFirst);

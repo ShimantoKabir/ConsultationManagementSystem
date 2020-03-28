@@ -10,8 +10,8 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart';
 import 'package:side_header_list_view/side_header_list_view.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'Chat.dart';
-import 'Plan.dart';
+import 'package:peopeo/Chat.dart';
+import 'package:peopeo/Plan.dart';
 
 class PlanInfo extends StatefulWidget {
   final String uid;
