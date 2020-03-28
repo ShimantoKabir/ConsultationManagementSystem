@@ -31,7 +31,7 @@ public class NotificationSender {
                 notification.setTitle(n.getTitle());
                 notification.setBody(n.getBody());
                 notification.setStartTime(n.getStartTime());
-                notification.setStartTime(n.getStartTime());
+                notification.setEndTime(n.getEndTime());
 
                 db.collection("notificationList").add(notification);
 

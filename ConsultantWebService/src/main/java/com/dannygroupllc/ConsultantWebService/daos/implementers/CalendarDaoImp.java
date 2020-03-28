@@ -17,7 +17,9 @@ import javax.servlet.http.HttpServletRequest;
 import java.math.BigInteger;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.TimeZone;
 
 @Repository
 public class CalendarDaoImp implements CalendarDao {
@@ -25,12 +27,14 @@ public class CalendarDaoImp implements CalendarDao {
     public EntityManager entityManager;
     public Gson gson;
     public SimpleDateFormat sdf;
+    public GregorianCalendar gc;
 
     @Autowired
     public CalendarDaoImp(EntityManager entityManager) {
         this.entityManager = entityManager;
         gson = new Gson();
         sdf = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss a");
+        gc = new GregorianCalendar();
     }
 
     @Override
@@ -83,6 +87,7 @@ public class CalendarDaoImp implements CalendarDao {
 
                 // check is the event need to create for customer or consultant
                 Plan p = c.getPlan();
+                p.setTimeZone(gc.getTimeZone().getID());
 
                 // consultant creating his plan
                 if (p.getCusUid() == null) {
@@ -117,7 +122,7 @@ public class CalendarDaoImp implements CalendarDao {
                     // also send notification to consultant
                 } else {
 
-                    curDateTime = DateUtils.addHours(curDateTime,1);
+                    // curDateTime = DateUtils.addHours(curDateTime,1);
 
                     if (curDateTime.before(c.getPlan().getStartTime())) {
 
@@ -171,16 +176,16 @@ public class CalendarDaoImp implements CalendarDao {
                             if (sop != null){
 
                                 sopMsg = " Your start time ["+sdf.format(planOverLapCheckingData.getStartTime())+
-                                        "] is conflicting with another schedule with another customer on ["+
-                                        sdf.format(sop.getStartTime())+" to "+sdf.format(sop.getEndTime())+"].";
+                                         "] is conflicting with another schedule with another customer on ["+
+                                         sdf.format(sop.getStartTime())+" to "+sdf.format(sop.getEndTime())+"].";
 
                             }
 
                             if (eop != null){
 
                                 eopMsg = " Your end time ["+sdf.format(planOverLapCheckingData.getEndTime())+
-                                        "] is conflicting with another schedule with another customer on ["+
-                                        sdf.format(eop.getStartTime())+" to "+sdf.format(eop.getEndTime())+"].";
+                                         "] is conflicting with another schedule with another customer on ["+
+                                         sdf.format(eop.getStartTime())+" to "+sdf.format(eop.getEndTime())+"].";
 
                             }
 

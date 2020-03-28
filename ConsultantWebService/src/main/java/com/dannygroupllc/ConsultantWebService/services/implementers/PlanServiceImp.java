@@ -1,6 +1,5 @@
 package com.dannygroupllc.ConsultantWebService.services.implementers;
 
-import com.dannygroupllc.ConsultantWebService.daos.interfaces.CalendarDao;
 import com.dannygroupllc.ConsultantWebService.daos.interfaces.PlanDao;
 import com.dannygroupllc.ConsultantWebService.models.Plan;
 import com.dannygroupllc.ConsultantWebService.services.interfaces.PlanService;
@@ -8,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
@@ -54,6 +52,11 @@ public class PlanServiceImp implements PlanService {
     @Transactional
     public Plan changeAreCusConHaveChattedStatus(HttpServletRequest httpServletRequest, Plan plan) {
         return planDao.changeAreCusConHaveChattedStatus(httpServletRequest,plan);
+    }
+
+    @Override
+    public Plan checkPaymentStatus(Plan plan) {
+        return planDao.checkPaymentStatus(plan);
     }
 
 }

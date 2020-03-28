@@ -8,7 +8,6 @@ import com.google.firebase.cloud.FirestoreClient;
 import com.google.gson.Gson;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
-
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import javax.servlet.http.HttpServletRequest;
@@ -150,6 +149,8 @@ public class PlanDaoImp implements PlanDao {
                         + ", Start Time: " + sdf.format(np.getStartTime())
                         + ", End Time: " + sdf.format(np.getEndTime()));
 
+                notification.setStartTime(sdf.format(np.getStartTime()));
+                notification.setEndTime(sdf.format(np.getEndTime()));
                 NotificationSender.send(notification);
 
             }else {
@@ -164,7 +165,7 @@ public class PlanDaoImp implements PlanDao {
 
         } catch (Exception e) {
 
-            System.out.println(getClass().getName()+".getAllPlanByUser: " + e.getMessage());
+            System.out.println(getClass().getName()+".changeAcceptStatus: " + e.getMessage());
             planRes.setCode(404);
             planRes.setMsg(e.getMessage());
 
@@ -182,7 +183,8 @@ public class PlanDaoImp implements PlanDao {
             Date curDateTime = new Date();
 
             String planListSql;
-            System.out.println(getClass().getName() + ".getAllPlanByUser : TimeZone = " + p.getTimeZone());
+
+            System.out.println(getClass().getName() + ".getAllPlanByUser: TimeZone = " + p.getTimeZone());
 
             // plan consultant
             if (p.getUserType() == 2) {
@@ -201,7 +203,8 @@ public class PlanDaoImp implements PlanDao {
                         "  p.topic AS topic, \n" +
                         "  p.created_date AS created_date, \n" +
                         "  DATE_FORMAT(CONVERT_TZ(p.start_time,'UTC', '" + p.getTimeZone() + "'),'%Y-%m-%d %T') AS f_start_time, \n" +
-                        "  DATE_FORMAT(CONVERT_TZ(p.end_time,'UTC', '" + p.getTimeZone() + "'),'%Y-%m-%d %T') AS f_end_time \n" +
+                        "  DATE_FORMAT(CONVERT_TZ(p.end_time,'UTC', '" + p.getTimeZone() + "'),'%Y-%m-%d %T') AS f_end_time, \n" +
+                        "  SUBDATE(p.start_time,INTERVAL 30 MINUTE) AS before_start_time \n" +
                         "FROM\n" +
                         "  plan AS p\n" +
                         "WHERE con_uid = :conUid AND cus_uid IS NOT NULL\n" +
@@ -279,11 +282,14 @@ public class PlanDaoImp implements PlanDao {
 
             }
 
+            System.out.println(getClass().getName()+ ".getAllPlanByUser: planList ====== !");
+
             return planList;
 
         } catch (Exception e) {
 
             System.out.println(getClass().getName()+ ".getAllPlanByUser: " + e.getMessage());
+            e.printStackTrace();
             return new ArrayList<>();
 
         }
@@ -468,7 +474,6 @@ public class PlanDaoImp implements PlanDao {
         int totalRating = 0;
         int gotRating = 0;
 
-
         for (int i = 0; i < planList.size(); i++) {
 
             // 1 = customer, 2 = consultant
@@ -536,6 +541,47 @@ public class PlanDaoImp implements PlanDao {
         } catch (Exception e) {
 
             System.out.println(getClass().getName()+".changeAreCusConHaveChattedStatus : Exception = "+e.getMessage());
+            planRes.setCode(404);
+            planRes.setMsg("Exception occurred!");
+
+        }
+
+        return planRes;
+
+    }
+
+    @Override
+    public Plan checkPaymentStatus(Plan p) {
+
+        Plan planRes = new Plan();
+        System.out.println(getClass().getName()+".checkPaymentStatus: plan = "+gson.toJson(p));
+
+        try {
+
+            String planSelectSql = "SELECT * FROM plan WHERE payment_trans_id IS NULL AND id = :id";
+
+            Query planSelectQry = entityManager.createNativeQuery(planSelectSql, Plan.class);
+            planSelectQry.setParameter("id", p.getId());
+            List<Plan> planList = planSelectQry.getResultList();
+
+            if (planList.size() > 0){
+
+                planRes.setCode(404);
+                planRes.setMsg("Transaction not complete yet!");
+                System.out.println(getClass().getName()+".checkPaymentStatus : [Transaction not complete yet]");
+
+            }else{
+
+                planRes.setCode(200);
+                planRes.setMsg("Transaction successful!");
+                System.out.println(getClass().getName()+".checkPaymentStatus : [Transaction complete]");
+
+            }
+
+        } catch (Exception e) {
+
+            System.out.println(getClass().getName()+".checkPaymentStatus : Exception = "+e.getMessage());
+            e.printStackTrace();
             planRes.setCode(404);
             planRes.setMsg("Exception occurred!");
 
