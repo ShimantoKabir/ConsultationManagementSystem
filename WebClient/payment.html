@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Consultant Payment</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="css/full-calendar.css"/>
+    <link rel="stylesheet" href="css/grid.css"/>
+    <link rel="stylesheet" href="css/main.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Armata"/>
+
+    <script src="js/jquery.js"></script>
+    <script src="js/jquery-ui.js"></script>
+    <script src="js/moment.js"></script>
+    <script src="js/full-calendar.js"></script>
+    <script src="https://js.braintreegateway.com/js/braintree-2.32.1.min.js"></script>
+    <script src="https://js.braintreegateway.com/web/dropin/1.21.0/js/dropin.min.js"></script>
+</head>
+<body>
+<div class="my-model" id="myAlert" hidden>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-sm-6">
+                <div class="my-div">
+                    <div class="my-div-head">
+                        <div class="my-div-head-left">
+                            <h3 id="alertHeading">Loading</h3>
+                        </div>
+                        <div>
+                            <i id="alertCloseBtn" class="fa fa-times-circle"></i>
+                        </div>
+                    </div>
+                    <div class="my-div-body">
+                        <table>
+                            <tbody>
+                            <tr>
+                                <td style="font-size: 50px">
+                                    <i id="alertIcon"></i>
+                                </td>
+                                <td>
+                                    <p id="alertMsg">No message available..... !</p>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="my-div-foot">
+                        <div class="my-div-foot-left">
+                            <button id="alertTryAgainBtn" class="my-btn">Try Again</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-sm-12">
+            <div class="my-div">
+                <div class="my-div-head justify-content-center">
+                    <h3 style="text-align: center">Payment Portal</h3>
+                </div>
+                <div class="my-div-body" style="margin-top: 25px">
+                    <div id="paypal-container"></div>
+                </div>
+                <div style="padding: 5px">
+                    <div id="dropin-container"></div>
+                </div>
+                <div class="my-div-foot justify-content-center">
+                    <button id="submit-button" class="my-btn">Request Payment Method</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript">
+
+    $(document).ready(function () {
+
+        let serverBaseUrl = "http://192.168.31.2:8080";
+        let webClientBaseUrl = "http://192.168.31.2/consultant-web-client";
+
+        // let serverBaseUrl = "http://3.20.119.226:8080";
+        // let webClientBaseUrl = "http://3.20.119.226/cms/index.html";
+
+        // alert configuration start
+        $('#alertCloseBtn').click(function () {
+            $('#myAlert').hide();
+        });
+
+        $('#alertCloseBtn').click(function () {
+            $('#myAlert').hide();
+        });
+
+        function showAlert(data) {
+
+            $('#myAlert').show();
+            data.ntsTaBtn ? $('#alertTryAgainBtn').show() : $('#alertTryAgainBtn').hide();
+            $('#alertIcon').removeClass();
+            $('#alertIcon').addClass(data.bodyIcon);
+            $('#alertHeading').text(data.alertHeading);
+            $('#alertMsg').text(data.msg);
+
+        }
+
+        function hideAlert() {
+            $('#myAlert').hide();
+        }
+
+        let aId = null;
+        let uId = null;
+        let isUrlOk = true;
+
+        let urlParameters = new URLSearchParams(window.location.search);
+
+        if (urlParameters.has('aid') &&
+            urlParameters.has('uid')) {
+
+            aId = urlParameters.get('aid');
+            uId = urlParameters.get('uid');
+
+        } else {
+
+            isUrlOk = false;
+
+        }
+
+        let authData = {
+            auth: {
+                aId: aId,
+                uId: uId
+            }
+        };
+
+        if (isUrlOk) {
+
+            $.ajax({
+                url: serverBaseUrl + "/auth/check",
+                type: "POST",
+                contentType: 'application/json',
+                data: JSON.stringify(authData),
+                success: function (s) {
+
+                    if (s.code === 404) {
+
+                        window.location.replace(webClientBaseUrl)
+
+                    } else {
+
+                        console.log(JSON.stringify(s));
+
+                        // show PayPal payment button
+                        braintree.setup(s.auth.clientToken, "custom", {
+                            paypal: {
+                                container: "paypal-container",
+                            },
+                            onPaymentMethodReceived: function (obj) {
+
+                                console.log("nonce: " + obj.nonce);
+
+                                let json = {
+                                    auth: {
+                                        aId: aId,
+                                        uId: uId
+                                    },
+                                    transaction: {
+                                        nonceFromTheClient: obj.nonce
+                                    }
+                                };
+
+                                checkout(json);
+                            }
+                        });
+
+                        // show credit card ui
+                        braintree.dropin.create({
+                            authorization: s.auth.clientToken,
+                            container: '#dropin-container'
+                        }, function (createErr, instance) {
+                            button.addEventListener('click', function () {
+                                instance.requestPaymentMethod(function (err, obj) {
+
+                                    console.log("nonce: " + obj.nonce);
+
+                                    let json = {
+                                        auth: {
+                                            aId: aId,
+                                            uId: uId
+                                        },
+                                        transaction: {
+                                            nonceFromTheClient: obj.nonce
+                                        }
+                                    };
+
+                                    checkout(json);
+
+                                });
+                            });
+                        });
+
+                        showAlert({
+                            msg: s.msg,
+                            bodyIcon: 'fa fa-check-circle',
+                            ntsTaBtn: false,
+                            alertHeading: 'Success',
+                        });
+
+                        function checkout(json) {
+
+                            $.ajax({
+                                url: serverBaseUrl + "/pg/checkout",
+                                type: "POST",
+                                contentType: 'application/json',
+                                data: JSON.stringify(json),
+                                success: function (s) {
+
+                                    console.log(JSON.stringify(s));
+
+                                    if (s.code === 200) {
+
+                                        $('#submit-button').hide();
+
+                                        showAlert({
+                                            msg: s.msg,
+                                            bodyIcon: 'fa fa-check-circle',
+                                            ntsTaBtn: false,
+                                            alertHeading: 'Success',
+                                        });
+
+                                    } else {
+
+                                        showAlert({
+                                            msg: s.msg,
+                                            bodyIcon: 'fa fa-exclamation-circle',
+                                            ntsTaBtn: false,
+                                            alertHeading: 'Error',
+                                        });
+
+                                    }
+
+                                },
+                                error: function (e) {
+
+                                    console.log(JSON.stringify(e));
+                                    window.location.replace(webClientBaseUrl)
+
+                                }
+                            });
+
+                        }
+
+                    }
+
+                },
+                error: function (e) {
+
+                    console.log(JSON.stringify(e));
+                    window.location.replace(webClientBaseUrl)
+
+                }
+            })
+
+        } else {
+            window.location.replace(webClientBaseUrl)
+        }
+
+    });
+
+    let button = document.querySelector('#submit-button');
+
+</script>
+</body>
+</html>
