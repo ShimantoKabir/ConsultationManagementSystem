@@ -125,6 +125,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
 
     Timer.periodic(Duration(seconds: 5), (timer) {
 
+      // CHECK ING GIT MIRROR
       print("Timer ticking.. !");
       // logic for start time ticker
 
