@@ -19,7 +19,7 @@ public class ChatSessionReminder {
     @Autowired
     private EntityManager entityManager;
 
-    @Scheduled(fixedRate = 5000)
+    @Scheduled(fixedRate = 500000)
     public void remind() {
 
         SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss a");
@@ -34,7 +34,7 @@ public class ChatSessionReminder {
                     "  con_uid \n" +
                     "FROM\n" +
                     "  plan \n" +
-                    "WHERE start_time BETWEEN NOW() \n" +
+                    "WHERE is_accept_by_con IS TRUE AND start_time BETWEEN NOW() \n" +
                     "  AND DATE_ADD(NOW(), INTERVAL 5 MINUTE)";
 
             Query authQuery = entityManager.createNativeQuery(planSql);
@@ -75,6 +75,7 @@ public class ChatSessionReminder {
             System.out.println(getClass().getName()+".remind: planList"+gson.toJson(resultList));
 
         }catch (Exception e){
+            e.printStackTrace();
             System.out.println(getClass().getName()+"remind: Exception = "+e.getMessage());
         }
 

@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -122,6 +122,20 @@ public class PlanCtl {
         Plan plan = planService.changeAreCusConHaveChattedStatus(httpServletRequest,request.getPlan());
         response.setMsg(plan.getMsg());
         response.setCode(plan.getCode());
+
+        return response;
+
+    }
+
+    @PostMapping("/check-payment-status")
+    public Response checkPaymentStatus(@RequestBody Request request, HttpServletRequest httpServletRequest){
+
+        Response response = new Response();
+
+        Plan plan = planService.checkPaymentStatus(request.getPlan());
+        response.setMsg(plan.getMsg());
+        response.setCode(plan.getCode());
+        response.setPlanList(new ArrayList<>());
 
         return response;
 
