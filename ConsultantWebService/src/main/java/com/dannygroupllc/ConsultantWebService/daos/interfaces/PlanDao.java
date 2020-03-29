@@ -14,5 +14,6 @@ public interface PlanDao {
     public Plan saveReviewAndRating(HttpServletRequest httpServletRequest, Plan plan);
     public Plan changeAreCusConHaveChattedStatus(HttpServletRequest httpServletRequest, Plan plan);
     public Plan checkPaymentStatus(Plan plan);
+    public Plan remindToUser();
 
 }

@@ -1,82 +1,47 @@
 package com.dannygroupllc.ConsultantWebService.Utility;
 
-import com.dannygroupllc.ConsultantWebService.models.Plan;
-import com.dannygroupllc.ConsultantWebService.pojos.Notification;
+import com.dannygroupllc.ConsultantWebService.daos.interfaces.PlanDao;
 import com.google.gson.Gson;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
 
-import javax.persistence.EntityManager;
-import javax.persistence.Query;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
+import java.net.URI;
 
+@EnableAsync
 @Component
 public class ChatSessionReminder {
 
-    @Autowired
-    private EntityManager entityManager;
-
-    @Scheduled(fixedRate = 500000)
+    @Async
+    @Scheduled(fixedRate = 300000)
     public void remind() {
-
-        SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss a");
-        Gson gson = new Gson();
 
         try {
 
-            String planSql = "SELECT \n" +
-                    "  CONVERT_TZ(start_time, 'UTC', time_zone) AS start_time,\n" +
-                    "  CONVERT_TZ(end_time, 'UTC', time_zone) AS end_time, \n" +
-                    "  cus_uid, \n" +
-                    "  con_uid \n" +
-                    "FROM\n" +
-                    "  plan \n" +
-                    "WHERE is_accept_by_con IS TRUE AND start_time BETWEEN NOW() \n" +
-                    "  AND DATE_ADD(NOW(), INTERVAL 5 MINUTE)";
+            Gson gson = new Gson();
+            RestTemplate restTemplate = new RestTemplate();
 
-            Query authQuery = entityManager.createNativeQuery(planSql);
-            List<Object[]> resultList = authQuery.getResultList();
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Content-Type", "application/json");
 
-            for (int i = 0; i < resultList.size(); i++) {
+            HttpEntity requestEntity = new HttpEntity<>(null, headers);
 
-                Plan p = new Plan();
-                p.setStartTime((Date) resultList.get(i)[0]);
-                p.setEndTime((Date) resultList.get(i)[1]);
-                p.setCusUid((String) resultList.get(i)[2]);
-                p.setConUid((String) resultList.get(i)[3]);
+            final String baseUrl = "http://localhost:8080/plan/remind-to-user";
+            URI uri = new URI(baseUrl);
+            ResponseEntity<String> result = restTemplate.exchange(uri, HttpMethod.GET, requestEntity, String.class);
 
-                System.out.println(getClass().getName()+".remind: Plan"+gson.toJson(p));
-
-                Notification nForCus = new Notification();
-                nForCus.setUid(p.getCusUid());
-                nForCus.setTitle("Reminder");
-                nForCus.setBody("You have a chat session which will start Time: " + sdf.format(p.getStartTime())
-                        + " and end time: " + sdf.format(p.getEndTime()));
-                nForCus.setStartTime(sdf.format(p.getStartTime()));
-                nForCus.setEndTime(sdf.format(p.getEndTime()));
-
-                NotificationSender.send(nForCus);
-
-                Notification nForCon = new Notification();
-                nForCon.setUid(p.getConUid());
-                nForCon.setTitle("Reminder");
-                nForCon.setBody("You have a chat session which will start Time: " + sdf.format(p.getStartTime())
-                        + ", End Time: " + sdf.format(p.getEndTime()));
-                nForCon.setStartTime(sdf.format(p.getStartTime()));
-                nForCon.setEndTime(sdf.format(p.getEndTime()));
-
-                NotificationSender.send(nForCon);
-
-            }
-
-            System.out.println(getClass().getName()+".remind: planList"+gson.toJson(resultList));
+            System.out.println(getClass().getName()+".remind: "+gson.toJson(result.getBody()));
 
         }catch (Exception e){
             e.printStackTrace();
-            System.out.println(getClass().getName()+"remind: Exception = "+e.getMessage());
+            System.out.println(getClass().getName()+".remind: "+e.getLocalizedMessage());
         }
 
     }

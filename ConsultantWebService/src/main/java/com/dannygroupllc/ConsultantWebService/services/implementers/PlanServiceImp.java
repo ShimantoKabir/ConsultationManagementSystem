@@ -59,4 +59,9 @@ public class PlanServiceImp implements PlanService {
         return planDao.checkPaymentStatus(plan);
     }
 
+    @Override
+    public Plan remindToUser() {
+        return planDao.remindToUser();
+    }
+
 }

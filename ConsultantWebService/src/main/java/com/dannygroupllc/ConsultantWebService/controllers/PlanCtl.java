@@ -6,10 +6,8 @@ import com.dannygroupllc.ConsultantWebService.pojos.Response;
 import com.dannygroupllc.ConsultantWebService.services.interfaces.PlanService;
 import com.google.gson.Gson;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
@@ -137,6 +135,17 @@ public class PlanCtl {
         response.setCode(plan.getCode());
         response.setPlanList(new ArrayList<>());
 
+        return response;
+
+    }
+
+    @GetMapping("/remind-to-user")
+    public Response remindToUser(){
+
+        Response response = new Response();
+        Plan plan = planService.remindToUser();
+        response.setMsg(plan.getMsg());
+        response.setCode(plan.getCode());
         return response;
 
     }

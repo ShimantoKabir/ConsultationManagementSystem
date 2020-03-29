@@ -591,4 +591,71 @@ public class PlanDaoImp implements PlanDao {
 
     }
 
+    @Override
+    public Plan remindToUser() {
+
+        Plan plan = new Plan();
+
+        try {
+
+            String planSql = "SELECT \n" +
+                    "  CONVERT_TZ(start_time, 'UTC', time_zone) AS start_time,\n" +
+                    "  CONVERT_TZ(end_time, 'UTC', time_zone) AS end_time, \n" +
+                    "  cus_uid, \n" +
+                    "  con_uid \n" +
+                    "FROM\n" +
+                    "  plan \n" +
+                    "WHERE is_accept_by_con IS TRUE AND start_time BETWEEN NOW() \n" +
+                    "  AND DATE_ADD(NOW(), INTERVAL 5 MINUTE)";
+
+            Query authQuery = entityManager.createNativeQuery(planSql);
+            List<Object[]> resultList = authQuery.getResultList();
+
+            for (int i = 0; i < resultList.size(); i++) {
+
+                Plan p = new Plan();
+                p.setStartTime((Date) resultList.get(i)[0]);
+                p.setEndTime((Date) resultList.get(i)[1]);
+                p.setCusUid((String) resultList.get(i)[2]);
+                p.setConUid((String) resultList.get(i)[3]);
+
+                System.out.println(getClass().getName()+".remindPlanToUser: Plan"+gson.toJson(p));
+
+                Notification nForCus = new Notification();
+                nForCus.setUid(p.getCusUid());
+                nForCus.setTitle("Reminder");
+                nForCus.setBody("You have a chat session which will start Time: " + sdf.format(p.getStartTime())
+                        + " and end time: " + sdf.format(p.getEndTime()));
+                nForCus.setStartTime(sdf.format(p.getStartTime()));
+                nForCus.setEndTime(sdf.format(p.getEndTime()));
+
+                NotificationSender.send(nForCus);
+
+                Notification nForCon = new Notification();
+                nForCon.setUid(p.getConUid());
+                nForCon.setTitle("Reminder");
+                nForCon.setBody("You have a chat session which will start Time: " + sdf.format(p.getStartTime())
+                        + ", End Time: " + sdf.format(p.getEndTime()));
+                nForCon.setStartTime(sdf.format(p.getStartTime()));
+                nForCon.setEndTime(sdf.format(p.getEndTime()));
+
+                NotificationSender.send(nForCon);
+
+            }
+
+            System.out.println(getClass().getName()+".remindPlanToUser: planList"+gson.toJson(resultList));
+            plan.setCode(200);
+            plan.setMsg("Reminder send successfully!");
+
+        }catch (Exception e){
+            e.printStackTrace();
+            System.out.println(getClass().getName()+"remindPlanToUser: Exception = "+e.getMessage());
+            plan.setCode(404);
+            plan.setMsg("Reminder send fail!");
+        }
+
+        return plan;
+
+    }
+
 }
