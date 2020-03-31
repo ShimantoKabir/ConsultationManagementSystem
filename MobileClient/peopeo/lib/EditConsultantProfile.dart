@@ -1,1201 +1,601 @@
-import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:peopeo/PlanInfo.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:http/http.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:peopeo/Plan.dart';
-import 'package:peopeo/Const.dart';
-import 'package:peopeo/HttpResponse.dart';
-import 'package:peopeo/fullPhoto.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
 
-class Chat extends StatefulWidget {
-  final String peerId;
-  final String peerAvatar;
-  final String displayName;
-  final Plan plan;
-  final int userType;
+class EditConsultantProfile extends StatefulWidget {
   final String uid;
 
-  Chat(
-      {Key key,
-        @required this.peerId,
-        @required this.peerAvatar,
-        @required this.displayName,
-        @required this.plan,
-        @required this.userType,
-        @required this.uid})
-      : super(key: key);
+  EditConsultantProfile({Key key, @required this.uid}) : super(key: key);
 
   @override
-  ChatState createState() => new ChatState(
-      peerId: peerId,
-      peerAvatar: peerAvatar,
-      displayName: displayName,
-      plan: plan,
-      userType: userType,
-      uid: uid);
+  EditConsultantProfileState createState() =>
+      new EditConsultantProfileState(uid: uid);
 }
 
-class ChatState extends State<Chat> with TickerProviderStateMixin {
-  ChatState(
-      {Key key,
-        @required this.peerId,
-        @required this.peerAvatar,
-        @required this.displayName,
-        @required this.plan,
-        @required this.userType,
-        @required this.uid});
+class EditConsultantProfileState extends State<EditConsultantProfile> {
+  EditConsultantProfileState({Key key, @required this.uid});
 
-  String peerId;
-  String peerAvatar;
-  String id;
-  String displayName;
-  Plan plan;
-  int userType;
+  TextEditingController hourlyRateTECtl = TextEditingController();
+  TextEditingController freeMinuteTECtl = TextEditingController();
+  TextEditingController displayNameTECtl = TextEditingController();
+  TextEditingController shortDesTECtl = TextEditingController();
+  TextEditingController longDesTECtl = TextEditingController();
+  TextEditingController phoneNumberTECtl = TextEditingController();
+
   String uid;
-  int rating;
-  bool isFirstMsgSend = false;
-  bool isPaymentUiShowedUp = false;
-  bool isTimeTickerRunning = false;
-  bool isReviewAndRatingShowedUp = false;
-  bool needToShowPaymentUi = true;
-  bool isPaymentComplete = false;
-  var listMessage;
-  String groupChatId;
-  SharedPreferences prefs;
-  DateTime mEndDateTime;
-  File imageFile;
-  bool isLoading;
-  bool isShowSticker;
-  String imageUrl;
-  int totalChatDuration = 0;
+  String fileType;
+  File file;
+  String fileName;
+  String operationText;
+  bool isUploaded = true;
+  String result;
 
-  final TextEditingController textEditingController =
-  new TextEditingController();
-
-  final ScrollController listScrollController = new ScrollController();
-  final FocusNode focusNode = new FocusNode();
-
-  // time ticker controller
-  AnimationController controller;
-
-  TextEditingController reviewTECtl = TextEditingController();
-
-  String get timerString {
-    Duration duration = controller.duration * controller.value;
-    return '${duration.inMinutes}:${(duration.inSeconds % 60).toString().padLeft(2, '0')}';
-  }
+  // variable for convert
+  // video url to image
+  ImageFormat format = ImageFormat.JPEG;
+  int quality = 10;
+  int maxHeight = 250;
+  int maxWidth = 250;
+  String tempDir;
+  String filePath;
 
   @override
   void initState() {
     super.initState();
-
-    // m = modified
-
-    groupChatId = '';
-    imageUrl = '';
-    isLoading = false;
-    isShowSticker = false;
-
-    controller =
-        AnimationController(vsync: this, duration: Duration(minutes: 0));
-
-    final DateTime startDateTime = DateTime.parse(plan.fStartTime);
-    final DateTime endDateTime = DateTime.parse(plan.fEndTime);
-    totalChatDuration = calculateDuration(endDateTime, startDateTime);
-
-    int fm = plan.freeMinutesForNewCustomer;
-    String pi = plan.paymentTransId;
-    int id = plan.id;
-    print("Free minute = $fm");
-    print("Payment id = $pi");
-    print("Plan id = $id");
-    print("Total chat duration = $totalChatDuration");
-
-    // if free minute's[10] equal to
-    // total chat duration[10] or
-    // grater then total chat duration[5]
-    if (plan.freeMinutesForNewCustomer != null && fm >= totalChatDuration) {
-      needToShowPaymentUi = false;
-    }
-
-    Timer.periodic(Duration(seconds: 5), (timer) {
-      final dateTimeNow = DateTime.now();
-      print("Timer ticking.. !");
-      print("Is time ticking running = $isTimeTickerRunning");
-      print("Is review and rating showed up = $isReviewAndRatingShowedUp");
-      print("Date time now = $dateTimeNow");
-
-      // check free minutes
-      // available or not
-      // if not available
-      if (plan.freeMinutesForNewCustomer == null) {
-        print('==no free minutes available==');
-
-        // logic for start time ticker
-        if (!isTimeTickerRunning && dateTimeNow.isAfter(startDateTime)) {
-          int m = calculateDuration(endDateTime, dateTimeNow);
-          startTimeTicker(controller, m);
-          print('Time ticker started!');
-          isTimeTickerRunning = true;
-        }
-
-        // logic for review and rating
-        if (!isReviewAndRatingShowedUp && dateTimeNow.isAfter(endDateTime)) {
-          reviewAndRatingPopUp();
-          print('Review and rating showed up!');
-          isReviewAndRatingShowedUp = true;
-        }
-
-        // if available
-      } else {
-        print('==free minutes available==');
-
-        // logic for start time ticker
-        if (!isTimeTickerRunning && dateTimeNow.isAfter(startDateTime)) {
-          // if => need to show payment ui
-          // then first chat duration is
-          // free minute's
-          // else => only chat duration
-          // is total chat duration
-
-          // another thing that need to check up
-          // if the user came chat room late
-          // then we need to minus the late minutes
-
-          int passedAwayMinutes = calculateDuration(dateTimeNow, startDateTime);
-          int detectedChatDuration =
-          (needToShowPaymentUi) ? fm : totalChatDuration;
-          int chatDuration = detectedChatDuration - passedAwayMinutes;
-
-          startTimeTicker(controller, chatDuration);
-          isTimeTickerRunning = true;
-        }
-
-        // logic for show up payment ui
-        if (needToShowPaymentUi &&
-            userType == 1 &&
-            controller.status == AnimationStatus.completed &&
-            !isPaymentUiShowedUp) {
-          int m = calculateDuration(endDateTime, startDateTime);
-          m = m - fm;
-          int chargeAmount = (plan.hourlyRate * (m / 60)) as int;
-          confirmPopUp(context, chargeAmount.toString(), plan);
-
-          startTimeTicker(controller, 5);
-          isPaymentUiShowedUp = true;
-        }
-
-        // logic for popup review and rating
-        if (!isReviewAndRatingShowedUp) {
-          if (dateTimeNow.isAfter(mEndDateTime)) {
-            reviewAndRatingPopUp();
-            print('Show popup for review and rating!');
-            isReviewAndRatingShowedUp = true;
-          }
-        }
-      }
-    });
-
-    focusNode.addListener(onFocusChange);
-    readLocal();
-  }
-
-  void onFocusChange() {
-    if (focusNode.hasFocus) {
-      setState(() {
-        isShowSticker = false;
-      });
-    }
-  }
-
-  readLocal() async {
-    prefs = await SharedPreferences.getInstance();
-    id = prefs.getString('uid') ?? '';
-    if (id.hashCode <= peerId.hashCode) {
-      groupChatId = '$id-$peerId';
-    } else {
-      groupChatId = '$peerId-$id';
-    }
-
-    print("GroupChatId = $groupChatId");
-
-    FocusScope.of(context).requestFocus(focusNode);
-
-    Firestore.instance
-        .collection('userInfoList')
-        .document(id)
-        .updateData({'chattingWith': peerId});
-  }
-
-  Future getImage() async {
-    imageFile = await ImagePicker.pickImage(source: ImageSource.gallery);
-    if (imageFile != null) {
-      setState(() {
-        isLoading = true;
-      });
-      uploadFile();
-    }
-  }
-
-  void getSticker() {
-    // Hide keyboard when sticker appear
-    focusNode.unfocus();
-    setState(() {
-      isShowSticker = !isShowSticker;
-    });
-  }
-
-  Future uploadFile() async {
-    String fileName = DateTime.now().millisecondsSinceEpoch.toString();
-    StorageReference reference = FirebaseStorage.instance.ref().child(fileName);
-    StorageUploadTask uploadTask = reference.putFile(imageFile);
-    StorageTaskSnapshot storageTaskSnapshot = await uploadTask.onComplete;
-    storageTaskSnapshot.ref.getDownloadURL().then((downloadUrl) {
-      imageUrl = downloadUrl;
-      setState(() {
-        isLoading = false;
-        onSendMessage(imageUrl, 1);
-      });
-    }, onError: (err) {
-      setState(() {
-        isLoading = false;
-      });
-      Fluttertoast.showToast(msg: 'This file is not an image');
-    });
-  }
-
-  void onSendMessage(String content, int type) {
-    // type: 0 = text, 1 = image, 2 = sticker , 3 = customer leave after free minute end
-    if (content.trim() != '') {
-      sendMsgContent(content, type);
-
-      // update plan cus con chatted
-      // status only first time
-      if (!isFirstMsgSend) {
-        print("isFirstMsgSend");
-        changeChattedStatus(plan.id, uid, peerId);
-        isFirstMsgSend = true;
-      }
-    } else {
-      Fluttertoast.showToast(msg: 'Nothing to send');
-    }
-  }
-
-  Widget buildItem(int index, DocumentSnapshot document) {
-    if (document['idFrom'] == id) {
-      // Right (my message)
-      return Row(
-        children: <Widget>[
-          document['type'] == 0
-          // Text
-              ? Container(
-            child: Text(
-              document['content'],
-              style: TextStyle(color: primaryColor),
-            ),
-            padding: EdgeInsets.fromLTRB(15.0, 10.0, 15.0, 10.0),
-            width: 200.0,
-            decoration: BoxDecoration(
-                color: greyColor2,
-                borderRadius: BorderRadius.circular(8.0)),
-            margin: EdgeInsets.only(
-                bottom: isLastMessageRight(index) ? 20.0 : 10.0,
-                right: 10.0),
-          )
-              : document['type'] == 1
-          // Image
-              ? Container(
-            child: FlatButton(
-              child: Material(
-                child: CachedNetworkImage(
-                  placeholder: (context, url) => Container(
-                    child: CircularProgressIndicator(
-                      valueColor:
-                      AlwaysStoppedAnimation<Color>(themeColor),
-                    ),
-                    width: 200.0,
-                    height: 200.0,
-                    padding: EdgeInsets.all(70.0),
-                    decoration: BoxDecoration(
-                      color: greyColor2,
-                      borderRadius: BorderRadius.all(
-                        Radius.circular(8.0),
-                      ),
-                    ),
-                  ),
-                  errorWidget: (context, url, error) => Material(
-                    child: Image.asset(
-                      'images/img_not_available.jpeg',
-                      width: 200.0,
-                      height: 200.0,
-                      fit: BoxFit.cover,
-                    ),
-                    borderRadius: BorderRadius.all(
-                      Radius.circular(8.0),
-                    ),
-                    clipBehavior: Clip.hardEdge,
-                  ),
-                  imageUrl: document['content'],
-                  width: 200.0,
-                  height: 200.0,
-                  fit: BoxFit.cover,
-                ),
-                borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                clipBehavior: Clip.hardEdge,
-              ),
-              onPressed: () {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) =>
-                            FullPhoto(url: document['content'])));
-              },
-              padding: EdgeInsets.all(0),
-            ),
-            margin: EdgeInsets.only(
-                bottom: isLastMessageRight(index) ? 20.0 : 10.0,
-                right: 10.0),
-          )
-          // Sticker
-              : Container(
-            child: new Image.asset(
-              'images/${document['content']}.gif',
-              width: 100.0,
-              height: 100.0,
-              fit: BoxFit.cover,
-            ),
-            margin: EdgeInsets.only(
-                bottom: isLastMessageRight(index) ? 20.0 : 10.0,
-                right: 10.0),
-          ),
-        ],
-        mainAxisAlignment: MainAxisAlignment.end,
-      );
-    } else {
-      // Left (peer message)
-      return Container(
-        child: Column(
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                isLastMessageLeft(index)
-                    ? Material(
-                  child: CachedNetworkImage(
-                    placeholder: (context, url) => Container(
-                      child: CircularProgressIndicator(
-                        strokeWidth: 1.0,
-                        valueColor:
-                        AlwaysStoppedAnimation<Color>(themeColor),
-                      ),
-                      width: 35.0,
-                      height: 35.0,
-                      padding: EdgeInsets.all(10.0),
-                    ),
-                    imageUrl: peerAvatar,
-                    width: 35.0,
-                    height: 35.0,
-                    fit: BoxFit.cover,
-                  ),
-                  borderRadius: BorderRadius.all(
-                    Radius.circular(18.0),
-                  ),
-                  clipBehavior: Clip.hardEdge,
-                )
-                    : Container(width: 35.0),
-                document['type'] == 0
-                    ? Container(
-                  child: Text(
-                    document['content'],
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  padding: EdgeInsets.fromLTRB(15.0, 10.0, 15.0, 10.0),
-                  width: 200.0,
-                  decoration: BoxDecoration(
-                      color: primaryColor,
-                      borderRadius: BorderRadius.circular(8.0)),
-                  margin: EdgeInsets.only(left: 10.0),
-                )
-                    : document['type'] == 1
-                    ? Container(
-                  child: FlatButton(
-                    child: Material(
-                      child: CachedNetworkImage(
-                        placeholder: (context, url) => Container(
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                                themeColor),
-                          ),
-                          width: 200.0,
-                          height: 200.0,
-                          padding: EdgeInsets.all(70.0),
-                          decoration: BoxDecoration(
-                            color: greyColor2,
-                            borderRadius: BorderRadius.all(
-                              Radius.circular(8.0),
-                            ),
-                          ),
-                        ),
-                        errorWidget: (context, url, error) =>
-                            Material(
-                              child: Image.asset(
-                                'assets/images/img_not_available.jpeg',
-                                width: 200.0,
-                                height: 200.0,
-                                fit: BoxFit.cover,
-                              ),
-                              borderRadius: BorderRadius.all(
-                                Radius.circular(8.0),
-                              ),
-                              clipBehavior: Clip.hardEdge,
-                            ),
-                        imageUrl: document['content'],
-                        width: 200.0,
-                        height: 200.0,
-                        fit: BoxFit.cover,
-                      ),
-                      borderRadius:
-                      BorderRadius.all(Radius.circular(8.0)),
-                      clipBehavior: Clip.hardEdge,
-                    ),
-                    onPressed: () {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => FullPhoto(
-                                  url: document['content'])));
-                    },
-                    padding: EdgeInsets.all(0),
-                  ),
-                  margin: EdgeInsets.only(left: 10.0),
-                )
-                    : Container(
-                  child: new Image.asset(
-                    'assets/images/${document['content']}.gif',
-                    width: 100.0,
-                    height: 100.0,
-                    fit: BoxFit.cover,
-                  ),
-                  margin: EdgeInsets.only(
-                      bottom: isLastMessageRight(index) ? 20.0 : 10.0,
-                      right: 10.0),
-                ),
-              ],
-            ),
-
-            // Time
-            isLastMessageLeft(index)
-                ? Container(
-              child: Text(
-                "lol",
-                style: TextStyle(
-                    color: greyColor,
-                    fontSize: 12.0,
-                    fontStyle: FontStyle.italic),
-              ),
-              margin: EdgeInsets.only(left: 50.0, top: 5.0, bottom: 5.0),
-            )
-                : Container()
-          ],
-          crossAxisAlignment: CrossAxisAlignment.start,
-        ),
-        margin: EdgeInsets.only(bottom: 10.0),
-      );
-    }
-  }
-
-  bool isLastMessageLeft(int index) {
-    if ((index > 0 &&
-        listMessage != null &&
-        listMessage[index - 1]['idFrom'] == id) ||
-        index == 0) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  bool isLastMessageRight(int index) {
-    if ((index > 0 &&
-        listMessage != null &&
-        listMessage[index - 1]['idFrom'] != id) ||
-        index == 0) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  Future<bool> onBackPress() {
-    if (isShowSticker) {
-      setState(() {
-        isShowSticker = false;
-      });
-    } else {
-      Firestore.instance
-          .collection('userInfoList')
-          .document(id)
-          .updateData({'chattingWith': null});
-      Navigator.pop(context);
-    }
-    return Future.value(false);
+    getTemporaryDirectory().then((d) => tempDir = d.path);
   }
 
   @override
   Widget build(BuildContext context) {
-    return new Scaffold(
-      appBar: new AppBar(
+    return Scaffold(
+      appBar: AppBar(
           iconTheme: IconThemeData(color: Colors.black),
           backgroundColor: Colors.white,
-          title: new Text(displayName,
+          title: Text("Edit Profile",
               style: TextStyle(
                   color: Colors.black,
                   fontFamily: 'Armata',
                   fontWeight: FontWeight.bold)),
-          centerTitle: true,
-          actions: <Widget>[
-            Padding(
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(5.0, 2.0, 5.0, 2.0),
-                margin: const EdgeInsets.all(10.0),
-                decoration: BoxDecoration(
-                    border: Border.all(color: Colors.blueAccent),
-                    borderRadius: BorderRadius.all(Radius.circular(5.0) //
-                    )),
-                child: Center(
-                  child: AnimatedBuilder(
-                      animation: controller,
-                      builder: (BuildContext context, Widget child) {
-                        return Text(timerString,
-                            style: TextStyle(
-                                color: Colors.black,
-                                fontFamily: 'Armata',
-                                fontWeight: FontWeight.bold));
-                      }),
-                ),
-              ),
-              padding: EdgeInsets.all(5.0),
-            )
-          ]),
-      body: WillPopScope(
-        child: Stack(
-          children: <Widget>[
-            Column(
-              children: <Widget>[
-                // List of messages
-                buildListMessage(),
+          centerTitle: true),
+      body: SingleChildScrollView(
+        child: StreamBuilder(
+            stream: Firestore.instance
+                .collection('userInfoList')
+                .where('uid', isEqualTo: uid)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.hasData) {
+                return Column(
+                  children: <Widget>[
+                    Center(
+                      child: Padding(
+                          padding: EdgeInsets.all(10.0),
+                          child: Container(
+                            height: 150.0,
+                            width: 150.0,
+                            decoration: new BoxDecoration(
+                              shape: BoxShape.circle,
+                              image: new DecorationImage(
+                                  fit: BoxFit.fill,
+                                  image: NetworkImage(
+                                      snapshot.data.documents[0]['photoUrl'])),
+                            ),
+                          )),
+                    ),
+                    Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(10.0),
+                        child: TextField(
+                          decoration: InputDecoration(
+                              contentPadding:
+                                  EdgeInsets.fromLTRB(15.0, 5.0, 5.0, 5.0),
+                              border: OutlineInputBorder(),
+                              labelText:
+                                  getDisplayName(snapshot.data.documents[0])),
+                          controller: displayNameTECtl,
+                        ),
+                      ),
+                    ),
+                    Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(10.0),
+                        child: TextField(
+                          decoration: InputDecoration(
+                              contentPadding:
+                                  EdgeInsets.fromLTRB(15.0, 5.0, 5.0, 5.0),
+                              border: OutlineInputBorder(),
+                              labelText:
+                                  getHourlyRate(snapshot.data.documents[0])),
+                          controller: hourlyRateTECtl,
+                        ),
+                      ),
+                    ),
+                    Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(10.0),
+                        child: TextField(
+                          decoration: InputDecoration(
+                              contentPadding:
+                                  EdgeInsets.fromLTRB(15.0, 5.0, 5.0, 5.0),
+                              border: OutlineInputBorder(),
+                              labelText: getFreeMinutesForNewCustomer(
+                                  snapshot.data.documents[0])),
+                          controller: freeMinuteTECtl,
+                        ),
+                      ),
+                    ),
+                    Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(10.0),
+                        child: TextField(
+                          decoration: InputDecoration(
+                              contentPadding:
+                                  EdgeInsets.fromLTRB(15.0, 5.0, 5.0, 5.0),
+                              border: OutlineInputBorder(),
+                              labelText:
+                                  getPhoneNumber(snapshot.data.documents[0])),
+                          controller: phoneNumberTECtl,
+                        ),
+                      ),
+                    ),
+                    Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(10.0),
+                        child: TextField(
+                          decoration: InputDecoration(
+                              contentPadding:
+                                  EdgeInsets.fromLTRB(15.0, 5.0, 5.0, 5.0),
+                              border: OutlineInputBorder(),
+                              labelText: getShortDescription(
+                                  snapshot.data.documents[0])),
+                          controller: shortDesTECtl,
+                        ),
+                      ),
+                    ),
+                    Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(10.0),
+                        child: TextField(
+                          decoration: InputDecoration(
+                              contentPadding:
+                                  EdgeInsets.fromLTRB(15.0, 5.0, 5.0, 5.0),
+                              border: OutlineInputBorder(),
+                              labelText: getLongDescription(
+                                  snapshot.data.documents[0])),
+                          controller: longDesTECtl,
+                        ),
+                      ),
+                    ),
+                    Center(
+                      child: OutlineButton(
+                        child: Text('SAVE'),
+                        onPressed: () {
+                          if (hourlyRateTECtl.text.isEmpty) {
+                            Fluttertoast.showToast(
+                                msg: "Hourly rate required!");
+                          } else if (freeMinuteTECtl.text.isEmpty) {
+                            Fluttertoast.showToast(
+                                msg: "Hourly rate required!");
+                          } else {
+                            Firestore.instance
+                                .collection('userInfoList')
+                                .document(uid)
+                                .updateData({
+                              'displayName': displayNameTECtl.text.toString(),
+                              'hourlyRate': int.tryParse(hourlyRateTECtl.text),
+                              'freeMinutesForNewCustomer':
+                                  int.tryParse(freeMinuteTECtl.text),
+                              'phoneNumber': phoneNumberTECtl.text,
+                              'shortDescription': shortDesTECtl.text.toString(),
+                              'longDescription': longDesTECtl.text.toString(),
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                    Container(
+                      height: 200,
+                      child: StreamBuilder(
+                        stream: Firestore.instance
+                            .collection('userInfoList')
+                            .document(uid)
+                            .collection("imageUrlList")
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) {
+                            return Center(
+                              child: CircularProgressIndicator(
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.red),
+                              ),
+                            );
+                          } else {
+                            return ListView.builder(
+                              scrollDirection: Axis.vertical,
+                              itemBuilder: (context, index) => buildItem(
+                                  context,
+                                  snapshot.data.documents[index],
+                                  'im'),
+                              itemCount: snapshot.data.documents.length,
+                            );
+                          }
+                        },
+                      ),
+                    ),
+                    Center(
+                      child: OutlineButton(
+                        child: Text('Pick Image To Upload'),
+                        onPressed: () {
+                          setState(() {
+                            fileType = 'image';
+                          });
+                          CollectionReference cr = Firestore.instance
+                              .collection('userInfoList')
+                              .document(uid)
+                              .collection("imageUrlList");
 
-                // Sticker
-                (isShowSticker ? buildSticker() : Container()),
+                          cr.getDocuments().then((im) {
+                            if (im.documents.length > 8) {
+                              Fluttertoast.showToast(
+                                  msg:
+                                      "Image uploading limit has been finished!");
+                            } else {
+                              showAlertDialog(
+                                  context, "Image uploading please wait...!");
 
-                // Input content
-                buildInput(),
-              ],
-            ),
+                              String uuid = new Uuid().v1();
 
-            // Loading
-            buildLoading()
-          ],
+                              pickFile(context, uuid).then((imUrl) {
+                                cr.document(uuid).setData({
+                                  'uuid': uuid,
+                                  'path': "images/" + fileName,
+                                  'imageUrl': imUrl,
+                                });
+
+                                Navigator.pop(context);
+                              });
+                            }
+                          });
+                        },
+                      ),
+                    ),
+                    Container(
+                      height: 200,
+                      child: StreamBuilder(
+                        stream: Firestore.instance
+                            .collection('userInfoList')
+                            .document(uid)
+                            .collection("videoThumbnailUrlList")
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) {
+                            return Center(
+                              child: CircularProgressIndicator(
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.red),
+                              ),
+                            );
+                          } else {
+                            return ListView.builder(
+                              scrollDirection: Axis.vertical,
+                              itemBuilder: (context, index) => buildItem(
+                                  context,
+                                  snapshot.data.documents[index],
+                                  'vd'),
+                              itemCount: snapshot.data.documents.length,
+                            );
+                          }
+                        },
+                      ),
+                    ),
+                    Center(
+                      child: OutlineButton(
+                        child: Text('Pick Video To Upload'),
+                        onPressed: () {
+                          showAlertDialog(
+                              context, "Video uploading please wait...!");
+
+                          CollectionReference cr = Firestore.instance
+                              .collection('userInfoList')
+                              .document(uid)
+                              .collection("videoThumbnailUrlList");
+
+                          cr.getDocuments().then((im) {
+                            if (im.documents.length > 4) {
+                              Fluttertoast.showToast(
+                                  msg:
+                                      "Video uploading limit has been finished!");
+                            } else {
+                              String uuid = new Uuid().v1();
+
+                              // get video from device
+                              FilePicker.getFile(type: FileType.video)
+                                  .then((pickedFile) {
+                                // upload the video
+                                setState(() {
+                                  fileType = 'video';
+                                });
+                                String vdName =
+                                    uuid + p.extension(pickedFile.path);
+                                uploadFile(pickedFile, vdName).then((vdUrl) {
+                                  // get thumbnail img
+                                  // form video url
+                                  VideoThumbnail.thumbnailFile(
+                                          video: vdUrl,
+                                          thumbnailPath: tempDir,
+                                          imageFormat: format,
+                                          maxHeight: maxHeight,
+                                          maxWidth: maxWidth,
+                                          quality: quality)
+                                      .then((thmImg) {
+                                    setState(() {
+                                      fileType = 'image';
+                                    });
+
+                                    File thmFile = new File(thmImg);
+                                    String thmName =
+                                        uuid + p.extension(thmFile.path);
+                                    // upload thumbnail img
+                                    uploadFile(File(thmImg), thmName)
+                                        .then((thmUrl) {
+                                      cr.document(uuid).setData({
+                                        'uuid': uuid,
+                                        'videoPath': "videos/" + vdName,
+                                        'videoUrl': vdUrl,
+                                        'thmUrl': thmUrl,
+                                        'thmPath': "images/" + thmName,
+                                      });
+
+                                      Navigator.pop(context);
+                                    });
+                                  });
+                                });
+                              });
+                            }
+                          });
+                        },
+                      ),
+                    )
+                  ],
+                );
+              } else {
+                return Text('No user info found');
+              }
+            }),
+      ),
+    );
+  }
+
+  showAlertDialog(BuildContext context, String msg) {
+    AlertDialog alert = AlertDialog(
+      content: ListTile(
+        leading: CircularProgressIndicator(),
+        title: Text("Loading"),
+        subtitle: Text(msg),
+      ),
+    );
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (BuildContext context) {
+        return alert;
+      },
+    );
+  }
+
+  getHourlyRate(document) {
+    if (document['hourlyRate'] == null) {
+      return "Hourly Rate Not Set Yet";
+    } else {
+      hourlyRateTECtl.text = document['hourlyRate'].toString();
+      return "Hourly Rate";
+    }
+  }
+
+  getFreeMinutesForNewCustomer(document) {
+    if (document['freeMinutesForNewCustomer'] == null) {
+      return "Free Minute For New Customer Not Set Yet";
+    } else {
+      freeMinuteTECtl.text = document['freeMinutesForNewCustomer'].toString();
+      return "Free Minute For New Customer";
+    }
+  }
+
+  getDisplayName(document) {
+    if (document['displayName'] == null) {
+      return "Display Name Not Set Yet";
+    } else {
+      displayNameTECtl.text = document['displayName'].toString();
+      return "Display Name";
+    }
+  }
+
+  getShortDescription(document) {
+    if (document['shortDescription'] == null) {
+      return "Short Description";
+    } else {
+      shortDesTECtl.text = document['shortDescription'].toString();
+      return "Short Description";
+    }
+  }
+
+  getLongDescription(document) {
+    if (document['longDescription'] == null) {
+      return "Long Discription";
+    } else {
+      longDesTECtl.text = document['longDescription'].toString();
+      return "Long Discription";
+    }
+  }
+
+  getPhoneNumber(document) {
+    if (document['phoneNumber'] == null) {
+      return "Phone Number Not Set Yet";
+    } else {
+      phoneNumberTECtl.text = document['phoneNumber'].toString();
+      return "Phone Number";
+    }
+  }
+
+  Future<String> pickFile(BuildContext context, String uuid) async {
+    Future<String> futureFileUrl;
+
+    try {
+      if (fileType == 'image') {
+        file = await FilePicker.getFile(type: FileType.image);
+        fileName = uuid + p.extension(file.path);
+        setState(() {
+          fileName = uuid + p.extension(file.path);
+        });
+        futureFileUrl = uploadFile(file, fileName);
+      }
+      if (fileType == 'audio') {
+        file = await FilePicker.getFile(type: FileType.audio);
+        fileName = uuid + p.extension(file.path);
+        setState(() {
+          fileName = uuid + p.extension(file.path);
+        });
+        futureFileUrl = uploadFile(file, fileName);
+      }
+      if (fileType == 'video') {
+        file = await FilePicker.getFile(type: FileType.video);
+        fileName = uuid + p.extension(file.path);
+        setState(() {
+          fileName = uuid + p.extension(file.path);
+        });
+        futureFileUrl = uploadFile(file, fileName);
+      }
+      if (fileType == 'pdf') {
+        file = await FilePicker.getFile(
+            type: FileType.custom, fileExtension: 'pdf');
+        fileName = uuid + p.extension(file.path);
+        setState(() {
+          fileName = uuid + p.extension(file.path);
+        });
+        futureFileUrl = uploadFile(file, fileName);
+      }
+      if (fileType == 'others') {
+        file = await FilePicker.getFile(type: FileType.any);
+        fileName = uuid + p.extension(file.path);
+        setState(() {
+          fileName = uuid + p.extension(file.path);
+        });
+        futureFileUrl = uploadFile(file, fileName);
+      }
+    } on Exception catch (e) {
+      print(e.toString());
+      futureFileUrl = null;
+    }
+
+    return futureFileUrl;
+  }
+
+  Future<String> uploadFile(File file, String filename) async {
+    StorageReference storageReference;
+    if (fileType == 'image') {
+      storageReference =
+          FirebaseStorage.instance.ref().child("images/$filename");
+    }
+    if (fileType == 'audio') {
+      storageReference =
+          FirebaseStorage.instance.ref().child("audio/$filename");
+    }
+    if (fileType == 'video') {
+      storageReference =
+          FirebaseStorage.instance.ref().child("videos/$filename");
+    }
+    if (fileType == 'pdf') {
+      storageReference = FirebaseStorage.instance.ref().child("pdf/$filename");
+    }
+    if (fileType == 'others') {
+      storageReference =
+          FirebaseStorage.instance.ref().child("others/$filename");
+    }
+    final StorageUploadTask uploadTask = storageReference.putFile(file);
+    final StorageTaskSnapshot downloadUrl = (await uploadTask.onComplete);
+    final String url = (await downloadUrl.ref.getDownloadURL());
+    return url;
+  }
+
+  Widget buildItem(BuildContext context, document, String fileType) {
+    String imgUrl;
+    String collectionName;
+    String alertMsg;
+
+    if (fileType == "vd") {
+      imgUrl = document['thmUrl'];
+      collectionName = "videoThumbnailUrlList";
+      alertMsg = "Video deleting please wait...!";
+    } else {
+      imgUrl = document['imageUrl'];
+      collectionName = "imageUrlList";
+      alertMsg = "Image deleting please wait...!";
+    }
+
+    return ListTile(
+      leading: Container(
+        height: 150.0,
+        width: 100.0,
+        decoration: new BoxDecoration(
+          shape: BoxShape.rectangle,
+          image: new DecorationImage(
+              fit: BoxFit.fill, image: new NetworkImage(imgUrl)),
         ),
-        onWillPop: onBackPress,
       ),
-    );
-  }
-
-  Widget buildSticker() {
-    return Container(
-      child: Column(
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              FlatButton(
-                onPressed: () => onSendMessage('mimi1', 2),
-                child: new Image.asset(
-                  'assets/images/mimi1.gif',
-                  width: 50.0,
-                  height: 50.0,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              FlatButton(
-                onPressed: () => onSendMessage('mimi2', 2),
-                child: new Image.asset(
-                  'assets/images/mimi2.gif',
-                  width: 50.0,
-                  height: 50.0,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              FlatButton(
-                onPressed: () => onSendMessage('mimi3', 2),
-                child: new Image.asset(
-                  'assets/images/mimi3.gif',
-                  width: 50.0,
-                  height: 50.0,
-                  fit: BoxFit.cover,
-                ),
-              )
-            ],
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          ),
-          Row(
-            children: <Widget>[
-              FlatButton(
-                onPressed: () => onSendMessage('mimi4', 2),
-                child: new Image.asset(
-                  'assets/images/mimi4.gif',
-                  width: 50.0,
-                  height: 50.0,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              FlatButton(
-                onPressed: () => onSendMessage('mimi5', 2),
-                child: new Image.asset(
-                  'assets/images/mimi5.gif',
-                  width: 50.0,
-                  height: 50.0,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              FlatButton(
-                onPressed: () => onSendMessage('mimi6', 2),
-                child: new Image.asset(
-                  'assets/images/mimi6.gif',
-                  width: 50.0,
-                  height: 50.0,
-                  fit: BoxFit.cover,
-                ),
-              )
-            ],
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          ),
-          Row(
-            children: <Widget>[
-              FlatButton(
-                onPressed: () => onSendMessage('mimi7', 2),
-                child: new Image.asset(
-                  'assets/images/mimi7.gif',
-                  width: 50.0,
-                  height: 50.0,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              FlatButton(
-                onPressed: () => onSendMessage('mimi8', 2),
-                child: new Image.asset(
-                  'assets/images/mimi8.gif',
-                  width: 50.0,
-                  height: 50.0,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              FlatButton(
-                onPressed: () => onSendMessage('mimi9', 2),
-                child: new Image.asset(
-                  'assets/images/mimi9.gif',
-                  width: 50.0,
-                  height: 50.0,
-                  fit: BoxFit.cover,
-                ),
-              )
-            ],
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          )
-        ],
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      ),
-      decoration: new BoxDecoration(
-          border:
-          new Border(top: new BorderSide(color: greyColor2, width: 0.5)),
-          color: Colors.white),
-      padding: EdgeInsets.all(5.0),
-      height: 180.0,
-    );
-  }
-
-  Widget buildLoading() {
-    return Positioned(
-      child: isLoading
-          ? Container(
-        child: Center(
-          child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(themeColor)),
-        ),
-        color: Colors.white.withOpacity(0.8),
-      )
-          : Container(),
-    );
-  }
-
-  Widget buildInput() {
-    return Container(
-      child: Row(
-        children: <Widget>[
-          // Button send image
-          Material(
-            child: new Container(
-              margin: new EdgeInsets.symmetric(horizontal: 1.0),
-              child: new IconButton(
-                icon: new Icon(Icons.image),
-                onPressed: getImage,
-                color: primaryColor,
-              ),
-            ),
-            color: Colors.white,
-          ),
-          Material(
-            child: new Container(
-              margin: new EdgeInsets.symmetric(horizontal: 1.0),
-              child: new IconButton(
-                icon: new Icon(Icons.face),
-                onPressed: getSticker,
-                color: primaryColor,
-              ),
-            ),
-            color: Colors.white,
-          ),
-
-          // Edit text
-          Flexible(
-            child: Container(
-              child: TextField(
-                style: TextStyle(color: primaryColor, fontSize: 15.0),
-                controller: textEditingController,
-                decoration: InputDecoration.collapsed(
-                  hintText: 'Type your message...',
-                  hintStyle: TextStyle(color: greyColor),
-                ),
-                focusNode: focusNode,
-              ),
-            ),
-          ),
-
-          // Button send message
-          Material(
-            child: new Container(
-              margin: new EdgeInsets.symmetric(horizontal: 8.0),
-              child: new IconButton(
-                icon: new Icon(Icons.send),
-                onPressed: () => onSendMessage(textEditingController.text, 0),
-                color: primaryColor,
-              ),
-            ),
-            color: Colors.white,
-          ),
-        ],
-      ),
-      width: double.infinity,
-      height: 50.0,
-      decoration: new BoxDecoration(
-          border:
-          new Border(top: new BorderSide(color: greyColor2, width: 0.5)),
-          color: Colors.white),
-    );
-  }
-
-  Widget buildListMessage() {
-    return Flexible(
-      child: groupChatId == ''
-          ? Center(
-          child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(themeColor)))
-          : StreamBuilder(
-        stream: Firestore.instance
-            .collection('messages')
-            .document(groupChatId)
-            .collection(groupChatId)
-            .orderBy('timestamp', descending: true)
-            .limit(20)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(themeColor));
+      trailing: IconButton(
+        icon: Icon(Icons.delete),
+        onPressed: () {
+          showAlertDialog(context, alertMsg);
+          if (fileType == "vd") {
+            FirebaseStorage.instance
+                .ref()
+                .child(document['videoPath'])
+                .delete()
+                .then((v) {
+              FirebaseStorage.instance
+                  .ref()
+                  .child(document['thmPath'])
+                  .delete()
+                  .then((t) {
+                Firestore.instance
+                    .collection('userInfoList')
+                    .document(uid)
+                    .collection(collectionName)
+                    .document(document['uuid'])
+                    .delete()
+                    .then((du) {
+                  Navigator.pop(context);
+                });
+              });
+            });
           } else {
-            listMessage = snapshot.data.documents;
-            return ListView.builder(
-              padding: EdgeInsets.all(10.0),
-              itemBuilder: (context, index) =>
-                  buildItem(index, snapshot.data.documents[index]),
-              itemCount: snapshot.data.documents.length,
-              reverse: true,
-              controller: listScrollController,
-            );
+            FirebaseStorage.instance
+                .ref()
+                .child(document['path'])
+                .delete()
+                .then((df) {
+              Firestore.instance
+                  .collection('userInfoList')
+                  .document(uid)
+                  .collection(collectionName)
+                  .document(document['uuid'])
+                  .delete()
+                  .then((du) {
+                Navigator.pop(context);
+              });
+            });
           }
         },
       ),
     );
-  }
-
-  int calculateDuration(DateTime endDateTime, DateTime startDateTime) {
-    int milliseconds = endDateTime.difference(startDateTime).inMilliseconds;
-    double minutes = (milliseconds / 1000) / 60;
-    return minutes.round();
-  }
-
-  void startTimeTicker(AnimationController controller, int minutes) {
-    controller.reset();
-    controller.duration = Duration(minutes: minutes);
-    controller.reverse(from: 1.0);
-  }
-
-  void reviewAndRatingPopUp() {
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false, // user must tap button!
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Review & Rating',
-              style: TextStyle(
-                  color: Colors.pink,
-                  fontFamily: 'Armata',
-                  fontWeight: FontWeight.bold)),
-          content: Wrap(children: <Widget>[
-            Center(
-              child: RatingBar(
-                initialRating: 0,
-                direction: Axis.horizontal,
-                itemCount: 5,
-                itemSize: 30,
-                itemPadding: EdgeInsets.symmetric(horizontal: 4.0),
-                itemBuilder: (context, index) => Icon(
-                  Icons.star,
-                  color: Colors.amber,
-                ),
-                onRatingUpdate: (r) {
-                  setState(() {
-                    rating = r.toInt();
-                  });
-                },
-              ),
-            ),
-            Center(
-              child: Padding(
-                padding: EdgeInsets.all(5.0),
-                child: TextField(
-                  decoration: InputDecoration(
-                      contentPadding: EdgeInsets.fromLTRB(15.0, 5.0, 5.0, 5.0),
-                      border: OutlineInputBorder(),
-                      labelText: "Write a review"),
-                  controller: reviewTECtl,
-                ),
-              ),
-            )
-          ]),
-          actions: <Widget>[
-            FlatButton(
-              child: Text('NEXT',
-                  style: TextStyle(
-                      color: Colors.green,
-                      fontFamily: 'Armata',
-                      fontWeight: FontWeight.bold)),
-              onPressed: () {
-                if (rating == null) {
-                  Fluttertoast.showToast(msg: "Please give a rating!");
-                } else if (reviewTECtl.text.toString().isEmpty) {
-                  Fluttertoast.showToast(msg: "Please give a review!");
-                } else {
-                  var request;
-                  // customer
-                  if (userType == 1) {
-                    request = {
-                      'plan': {
-                        'id': plan.id,
-                        'conUid': peerId,
-                        'cusUid': null,
-                        'conReview': reviewTECtl.text.toString(),
-                        'conRating': rating
-                      }
-                    };
-                    // consultant
-                  } else {
-                    request = {
-                      'plan': {
-                        'id': plan.id,
-                        'conUid': null,
-                        'cusUid': peerId,
-                        'cusReview': reviewTECtl.text.toString(),
-                        'cusRating': rating
-                      }
-                    };
-                  }
-                  saveReviewAndRating(request, uid, userType);
-                }
-              },
-            )
-          ],
-        );
-      },
-    );
-  }
-
-  void saveReviewAndRating(request, uid, userType) async {
-    String url = serverBaseUrl + '/plan/save-review-and-rating';
-    Map<String, String> headers = {"Content-type": "application/json"};
-    Response response =
-    await post(url, headers: headers, body: json.encode(request));
-    if (response.statusCode == 200) {
-      Navigator.of(context).popUntil((route) => route.isFirst);
-      Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-              builder: (context) => PlanInfo(userType: userType, uid: uid)));
-      print(response.body.toString());
-    } else {
-      throw Exception('Failed to load post');
-    }
-  }
-
-  void confirmPopUp(BuildContext context, String amount, Plan p) {
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false, // user must tap button!
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Alert',
-              style: TextStyle(
-                  color: Colors.pink,
-                  fontFamily: 'Armata',
-                  fontWeight: FontWeight.bold)),
-          content: Wrap(children: <Widget>[
-            Text(
-              "If you want to continue chat, you need to pay $amount \$",
-              style: TextStyle(
-                  color: Colors.blueAccent,
-                  fontFamily: 'Armata',
-                  fontWeight: FontWeight.normal),
-            ),
-            Text(
-              "[You have $paymentDuration minute's to coomplete your payemnt. Would to like to pay?]",
-              style: TextStyle(
-                  color: Colors.redAccent,
-                  fontFamily: 'Armata',
-                  fontWeight: FontWeight.normal),
-            )
-          ]),
-          actions: <Widget>[
-            FlatButton(
-              child: Text('No',
-                  style: TextStyle(
-                      color: Colors.black,
-                      fontFamily: 'Armata',
-                      fontWeight: FontWeight.bold)),
-              onPressed: () {
-                print(
-                    "Review and rating showed up when customer don't want to pay");
-                isReviewAndRatingShowedUp = true;
-                reviewAndRatingPopUp();
-                onSendMessage(cusLeaveMsg, 3);
-              },
-            ),
-            FlatButton(
-              child: Text("Yes",
-                  style: TextStyle(
-                      color: Colors.green,
-                      fontFamily: 'Armata',
-                      fontWeight: FontWeight.bold)),
-              onPressed: () {
-                getClientToken(amount, p.id);
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void paymentCheckingPopUp(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false, // user must tap button!
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Alert',
-              style: TextStyle(
-                  color: Colors.pink,
-                  fontFamily: 'Armata',
-                  fontWeight: FontWeight.bold)),
-          content: Wrap(children: <Widget>[
-            Text(
-              "When you click [Continute Chat] app will check is your payment complete or not!",
-              style: TextStyle(
-                  color: Colors.redAccent,
-                  fontFamily: 'Armata',
-                  fontWeight: FontWeight.normal),
-            )
-          ]),
-          actions: <Widget>[
-            FlatButton(
-              child: Text("Continute Chat",
-                  style: TextStyle(
-                      color: Colors.green,
-                      fontFamily: 'Armata',
-                      fontWeight: FontWeight.bold)),
-              onPressed: () {
-                checkPaymentStatus(plan.id);
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void getClientToken(String amount, int planId) async {
-    String url = serverBaseUrl + '/pg/get-client-token';
-    Map<String, String> headers = {"Content-type": "application/json"};
-    var request = {'customerId': uid};
-
-    Response response =
-    await post(url, headers: headers, body: json.encode(request));
-
-    if (response.statusCode == 200) {
-      // checking if server returns an OK response, then parse the JSON.
-      print(HttpResponse.fromJson(json.decode(response.body)).clientToken);
-
-      String clientToken =
-          HttpResponse.fromJson(json.decode(response.body)).clientToken;
-
-      reloadAuth(clientToken, amount, planId);
-    } else {
-      // If that response was not OK, throw an error.
-      throw Exception('Failed to load post');
-    }
-  }
-
-  void reloadAuth(String clientToken, String amount, int planId) async {
-    String url = serverBaseUrl + '/auth/reload';
-    Map<String, String> headers = {"Content-type": "application/json"};
-    var request = {
-      'auth': {
-        'uId': uid,
-        'amount': amount,
-        'clientToken': clientToken,
-        'planId': planId
-      }
-    };
-
-    Response response =
-    await post(url, headers: headers, body: json.encode(request));
-
-    if (response.statusCode == 200) {
-      String aid = HttpResponse.fromJson(json.decode(response.body)).aid;
-
-      goBrowserForPayment(aid);
-
-      print(response.body.toString());
-    } else {
-      throw Exception('Failed to load post');
-    }
-  }
-
-  void changeChattedStatus(int planId, String cusUid, String conUid) async {
-    String url = serverBaseUrl + '/plan/change-are-cus-con-have-chatted-status';
-    Map<String, String> headers = {"Content-type": "application/json"};
-    var request = {
-      'plan': {'id': planId, 'cusUid': cusUid, 'conUid': conUid}
-    };
-
-    Response response =
-    await post(url, headers: headers, body: json.encode(request));
-
-    if (response.statusCode == 200) {
-      // HttpResponse.fromJson(json.decode(response.body));
-      print(response.body.toString());
-    } else {
-      throw Exception('Failed to load post');
-    }
-  }
-
-  void goBrowserForPayment(String aid) async {
-    String url = webClientBaseUrl + '/payment.html?aid=' + aid + "&uid=" + uid;
-    if (await canLaunch(url)) {
-      Navigator.of(context).pop();
-      paymentCheckingPopUp(context);
-      await launch(url);
-    } else {
-      throw 'Could not launch $url';
-    }
-  }
-
-  @override
-  void dispose() {
-    if (controller.status == AnimationStatus.reverse) {
-      controller.dispose();
-    }
-    super.dispose();
-  }
-
-  void sendMsgContent(String content, int type) {
-    textEditingController.clear();
-
-    var documentReference = Firestore.instance
-        .collection('messages')
-        .document(groupChatId)
-        .collection(groupChatId)
-        .document(DateTime.now().millisecondsSinceEpoch.toString());
-
-    Firestore.instance.runTransaction((transaction) async {
-      await transaction.set(
-        documentReference,
-        {
-          'idFrom': id,
-          'idTo': peerId,
-          'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
-          'content': content,
-          'type': type
-        },
-      );
-    });
-
-    listScrollController.animateTo(0.0,
-        duration: Duration(milliseconds: 300), curve: Curves.easeOut);
-  }
-
-  void hookConForAllowCusToOnSpotPayment() {
-    Firestore.instance.collection('userInf').add({
-      'title': "Payment Request",
-      'body': "A customer is waiting for you and, would you like chat with him",
-      'isConAllowCusForPayment': false
-    });
-  }
-
-  void checkPaymentStatus(int id) async {
-    String url = serverBaseUrl + '/plan/check-payment-status';
-    Map<String, String> headers = {"Content-type": "application/json"};
-    var request = {
-      'plan': {
-        'id': id,
-      }
-    };
-    Response response =
-    await post(url, headers: headers, body: json.encode(request));
-    if (response.statusCode == 200) {
-      int code = HttpResponse.fromJson(json.decode(response.body)).code;
-      print("Transaction completion status = $code");
-
-      // payment complete
-      if (code == 200) {
-        Navigator.pop(context);
-        isPaymentComplete = true;
-        // payment not complete
-      } else {
-        Fluttertoast.showToast(msg: "You didn't complete your payment yet!");
-      }
-    } else {
-      throw Exception('Failed to load post');
-    }
   }
 }
