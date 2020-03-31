@@ -14,10 +14,10 @@ import 'package:http/http.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'Plan.dart';
-import 'const.dart';
+import 'package:peopeo/Plan.dart';
+import 'package:peopeo/Const.dart';
 import 'package:peopeo/HttpResponse.dart';
-import 'fullPhoto.dart';
+import 'package:peopeo/fullPhoto.dart';
 
 class Chat extends StatefulWidget {
   final String peerId;
@@ -48,7 +48,6 @@ class Chat extends StatefulWidget {
 }
 
 class ChatState extends State<Chat> with TickerProviderStateMixin {
-
   ChatState(
       {Key key,
       @required this.peerId,
@@ -70,6 +69,8 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
   bool isPaymentUiShowedUp = false;
   bool isTimeTickerRunning = false;
   bool isReviewAndRatingShowedUp = false;
+  bool needToShowPaymentUi = true;
+  bool isPaymentComplete = false;
   var listMessage;
   String groupChatId;
   SharedPreferences prefs;
@@ -78,6 +79,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
   bool isLoading;
   bool isShowSticker;
   String imageUrl;
+  int totalChatDuration = 0;
 
   final TextEditingController textEditingController =
       new TextEditingController();
@@ -99,88 +101,123 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
   void initState() {
     super.initState();
 
-    groupChatId = '';
+    // m = modified
 
+    groupChatId = '';
+    imageUrl = '';
     isLoading = false;
     isShowSticker = false;
-    imageUrl = '';
 
     controller =
         AnimationController(vsync: this, duration: Duration(minutes: 0));
 
-    final DateTime aStartDateTime = DateTime.parse(plan.fStartTime);
-    final DateTime aEndDateTime = DateTime.parse(plan.fEndTime);
-    final DateTime currentDateTime = DateTime.now();
+    final DateTime startDateTime = DateTime.parse(plan.fStartTime);
+    final DateTime endDateTime = DateTime.parse(plan.fEndTime);
+    final DateTime mEndDateTime = endDateTime.add(Duration(minutes: paymentDuration));
+    totalChatDuration = calculateDuration(endDateTime, startDateTime);
 
     int fm = plan.freeMinutesForNewCustomer;
     String pi = plan.paymentTransId;
     int id = plan.id;
     print("Free minute = $fm");
     print("Payment id = $pi");
-    print("Plan id $id");
+    print("Plan id = $id");
+    print("Total chat duration = $totalChatDuration");
 
-    if (plan.freeMinutesForNewCustomer != null) {
-      mEndDateTime = aEndDateTime.add(Duration(minutes: 2));
+    // if free minute's[10] equal to
+    // total chat duration[10] or
+    // total chat duration[5] less
+    // then free minute's[10]
+    // then no need to showed up payment ui
+    if (fm != null && fm >= totalChatDuration) {
+      needToShowPaymentUi = false;
     }
 
     Timer.periodic(Duration(seconds: 5), (timer) {
-
-      // CHECK ING GIT MIRROR
+      final dateTimeNow = DateTime.now();
       print("Timer ticking.. !");
-      // logic for start time ticker
+      print("Is time ticking running = $isTimeTickerRunning");
+      print("Is review and rating showed up = $isReviewAndRatingShowedUp");
+      print("Date time now = $dateTimeNow");
 
-      print("is time ticking running $isTimeTickerRunning");
-      print(currentDateTime.isAfter(aStartDateTime));
-
-      if (!isTimeTickerRunning && DateTime.now().isAfter(aStartDateTime)) {
-        if (plan.freeMinutesForNewCustomer == null) {
-          int m = calculateDuration(aEndDateTime, currentDateTime);
-          startTimeTicker(controller, m);
-        } else {
-          int m = calculateDuration(mEndDateTime, currentDateTime);
-          startTimeTicker(controller, m);
-        }
-        print('Time ticker started!');
-        isTimeTickerRunning = true;
-      }
-
-      // logic for popup review and rating
+      // check free minutes
+      // available or not
+      // if not available
       if (plan.freeMinutesForNewCustomer == null) {
-        if (!isReviewAndRatingShowedUp) {
-          if (DateTime.now().isAfter(aEndDateTime)) {
-            reviewAndRatingPopUp();
-            print('Show popup for review and rating');
-            isReviewAndRatingShowedUp = true;
-          }
+        print('==no free minutes available==');
+
+        // logic for start time ticker
+        if (!isTimeTickerRunning && dateTimeNow.isAfter(startDateTime)) {
+          int m = calculateDuration(endDateTime, dateTimeNow);
+          startTimeTicker(controller, m);
+          print('Time ticker started!');
+          isTimeTickerRunning = true;
         }
+
+        // logic for review and rating
+        if (!isReviewAndRatingShowedUp && dateTimeNow.isAfter(endDateTime)) {
+          reviewAndRatingPopUp();
+          print('Review and rating showed up!');
+          isReviewAndRatingShowedUp = true;
+        }
+
+        // if available
       } else {
-        if (!isReviewAndRatingShowedUp) {
-          if (DateTime.now().isAfter(mEndDateTime)) {
-            reviewAndRatingPopUp();
-            print('Show popup for review and rating');
-            isReviewAndRatingShowedUp = true;
-          }
+        print('==free minutes available==');
+
+        // logic for start time ticker
+        if (!isTimeTickerRunning && dateTimeNow.isAfter(startDateTime)) {
+          // if => need to show payment ui
+          // then first chat duration is
+          // free minute's
+          // else => only chat duration
+          // is total chat duration
+
+          // another thing that need to check up
+          // if the user came chat room late
+          // then we need to minus the late minutes
+
+          int passedAwayMinutes = calculateDuration(dateTimeNow, startDateTime);
+          int detectedChatDuration =
+              (needToShowPaymentUi) ? fm : totalChatDuration;
+          int chatDuration = detectedChatDuration - passedAwayMinutes;
+
+          startTimeTicker(controller, chatDuration);
+          isTimeTickerRunning = true;
         }
-      }
 
-      // logic for show up payment ui
-      if (plan.freeMinutesForNewCustomer != null && userType == 1) {
-        final DateTime pDateTime = aStartDateTime
-            .add(Duration(minutes: plan.freeMinutesForNewCustomer));
+        // logic for show up payment ui
+        // if payment ui showed up that means
+        // total chat duration must be greater
+        // than free minute's
+        if (needToShowPaymentUi &&
+            userType == 1 &&
+            controller.status == AnimationStatus.completed &&
+            !isPaymentUiShowedUp) {
+          int m = calculateDuration(endDateTime, startDateTime);
+          m = m - fm;
+          int chargeAmount = (plan.hourlyRate * (m / 60)) as int;
+          confirmPopUp(context, chargeAmount.toString(), plan);
 
-        if (DateTime.now().isAfter(pDateTime) && !isPaymentUiShowedUp) {
-          print("Show payment ui!");
-          int m = calculateDuration(aEndDateTime, DateTime.now());
-          int hourlyRate = plan.hourlyRate * m;
-          confirmPopUp(context, hourlyRate.toString(), plan);
-          isPaymentUiShowedUp = true;
+          startTimeTicker(controller, paymentDuration);
+          isPaymentUiShowedUp = true                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       ;
+                                                                                                                      }
+
+        // logic for popup review and rating
+        if (isPaymentUiShowedUp &&
+            !isReviewAndRatingShowedUp &&
+            dateTimeNow.isAfter(mEndDateTime)) {
+
+          reviewAndRatingPopUp();
+          print('Show popup for review and rating in time tiker block!');
+          isReviewAndRatingShowedUp = true;
+
         }
       }
     });
 
     focusNode.addListener(onFocusChange);
     readLocal();
-
   }
 
   void onFocusChange() {
@@ -248,7 +285,8 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
   }
 
   void onSendMessage(String content, int type) {
-    // type: 0 = text, 1 = image, 2 = sticker
+    // type: 0 = text, 1 = image, 2 = sticker,
+    // 3 = customer leave after free minute end
     if (content.trim() != '') {
       sendMsgContent(content, type);
 
@@ -356,6 +394,14 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
       );
     } else {
       // Left (peer message)
+
+      print("Left (peer message)");
+      if (document['type'] == 3 && userType == 2) {
+        reviewAndRatingPopUp();
+        print("Review and rating showed up in expert side");
+        isReviewAndRatingShowedUp = true;
+      }
+
       return Container(
         child: Column(
           children: <Widget>[
@@ -398,86 +444,92 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                             borderRadius: BorderRadius.circular(8.0)),
                         margin: EdgeInsets.only(left: 10.0),
                       )
-                    : document['type'] == 1
+                    : document['type'] == 3
+                        // Customer don't want to continue after free minute's
+                        // so need open up review and rating window
                         ? Container(
-                            child: FlatButton(
-                              child: Material(
-                                child: CachedNetworkImage(
-                                  placeholder: (context, url) => Container(
-                                    child: CircularProgressIndicator(
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                          themeColor),
-                                    ),
-                                    width: 200.0,
-                                    height: 200.0,
-                                    padding: EdgeInsets.all(70.0),
-                                    decoration: BoxDecoration(
-                                      color: greyColor2,
-                                      borderRadius: BorderRadius.all(
-                                        Radius.circular(8.0),
+                            child: Text(
+                              document['content'],
+                              style: TextStyle(color: primaryColor),
+                            ),
+                            padding:
+                                EdgeInsets.fromLTRB(15.0, 10.0, 15.0, 10.0),
+                            width: 200.0,
+                            decoration: BoxDecoration(
+                                color: greyColor2,
+                                borderRadius: BorderRadius.circular(8.0)),
+                            margin: EdgeInsets.only(
+                                bottom: isLastMessageRight(index) ? 20.0 : 10.0,
+                                right: 10.0),
+                          )
+                        : document['type'] == 1
+                            ? Container(
+                                child: FlatButton(
+                                  child: Material(
+                                    child: CachedNetworkImage(
+                                      placeholder: (context, url) => Container(
+                                        child: CircularProgressIndicator(
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                  themeColor),
+                                        ),
+                                        width: 200.0,
+                                        height: 200.0,
+                                        padding: EdgeInsets.all(70.0),
+                                        decoration: BoxDecoration(
+                                          color: greyColor2,
+                                          borderRadius: BorderRadius.all(
+                                            Radius.circular(8.0),
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                                  errorWidget: (context, url, error) =>
-                                      Material(
-                                    child: Image.asset(
-                                      'assets/images/img_not_available.jpeg',
+                                      errorWidget: (context, url, error) =>
+                                          Material(
+                                        child: Image.asset(
+                                          'assets/images/img_not_available.jpeg',
+                                          width: 200.0,
+                                          height: 200.0,
+                                          fit: BoxFit.cover,
+                                        ),
+                                        borderRadius: BorderRadius.all(
+                                          Radius.circular(8.0),
+                                        ),
+                                        clipBehavior: Clip.hardEdge,
+                                      ),
+                                      imageUrl: document['content'],
                                       width: 200.0,
                                       height: 200.0,
                                       fit: BoxFit.cover,
                                     ),
-                                    borderRadius: BorderRadius.all(
-                                      Radius.circular(8.0),
-                                    ),
+                                    borderRadius:
+                                        BorderRadius.all(Radius.circular(8.0)),
                                     clipBehavior: Clip.hardEdge,
                                   ),
-                                  imageUrl: document['content'],
-                                  width: 200.0,
-                                  height: 200.0,
+                                  onPressed: () {
+                                    Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) => FullPhoto(
+                                                url: document['content'])));
+                                  },
+                                  padding: EdgeInsets.all(0),
+                                ),
+                                margin: EdgeInsets.only(left: 10.0),
+                              )
+                            : Container(
+                                child: new Image.asset(
+                                  'assets/images/${document['content']}.gif',
+                                  width: 100.0,
+                                  height: 100.0,
                                   fit: BoxFit.cover,
                                 ),
-                                borderRadius:
-                                    BorderRadius.all(Radius.circular(8.0)),
-                                clipBehavior: Clip.hardEdge,
+                                margin: EdgeInsets.only(
+                                    bottom:
+                                        isLastMessageRight(index) ? 20.0 : 10.0,
+                                    right: 10.0),
                               ),
-                              onPressed: () {
-                                Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) => FullPhoto(
-                                            url: document['content'])));
-                              },
-                              padding: EdgeInsets.all(0),
-                            ),
-                            margin: EdgeInsets.only(left: 10.0),
-                          )
-                        : Container(
-                            child: new Image.asset(
-                              'assets/images/${document['content']}.gif',
-                              width: 100.0,
-                              height: 100.0,
-                              fit: BoxFit.cover,
-                            ),
-                            margin: EdgeInsets.only(
-                                bottom: isLastMessageRight(index) ? 20.0 : 10.0,
-                                right: 10.0),
-                          ),
               ],
-            ),
-
-            // Time
-            isLastMessageLeft(index)
-                ? Container(
-                    child: Text(
-                      "lol",
-                      style: TextStyle(
-                          color: greyColor,
-                          fontSize: 12.0,
-                          fontStyle: FontStyle.italic),
-                    ),
-                    margin: EdgeInsets.only(left: 50.0, top: 5.0, bottom: 5.0),
-                  )
-                : Container()
+            )
           ],
           crossAxisAlignment: CrossAxisAlignment.start,
         ),
@@ -867,7 +919,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
           ]),
           actions: <Widget>[
             FlatButton(
-              child: Text('NEXT',
+              child: Text('Send',
                   style: TextStyle(
                       color: Colors.green,
                       fontFamily: 'Armata',
@@ -949,7 +1001,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                   fontWeight: FontWeight.normal),
             ),
             Text(
-              "[We have given you extrea 2 minutes to coomplete your payemnt, consultant will not charing this 2 minutes]",
+              "[You have $paymentDuration minute's to coomplete your payemnt. Would to like to pay?]",
               style: TextStyle(
                   color: Colors.redAccent,
                   fontFamily: 'Armata',
@@ -964,12 +1016,11 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                       fontFamily: 'Armata',
                       fontWeight: FontWeight.bold)),
               onPressed: () {
-                Navigator.of(context).popUntil((route) => route.isFirst);
-                Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) =>
-                            PlanInfo(userType: userType, uid: uid)));
+                print(
+                    "Review and rating showed up when customer don't want to pay");
+                isReviewAndRatingShowedUp = true;
+                reviewAndRatingPopUp();
+                onSendMessage(cusLeaveMsg, 3);
               },
             ),
             FlatButton(
@@ -1000,7 +1051,6 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                   fontFamily: 'Armata',
                   fontWeight: FontWeight.bold)),
           content: Wrap(children: <Widget>[
-
             Text(
               "When you click [Continute Chat] app will check is your payment complete or not!",
               style: TextStyle(
@@ -1137,14 +1187,6 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
         duration: Duration(milliseconds: 300), curve: Curves.easeOut);
   }
 
-  void hookConForAllowCusToOnSpotPayment() {
-    Firestore.instance.collection('userInf').add({
-      'title': "Payment Request",
-      'body': "A customer is waiting for you and, would you like chat with him",
-      'isConAllowCusForPayment': false
-    });
-  }
-
   void checkPaymentStatus(int id) async {
     String url = serverBaseUrl + '/plan/check-payment-status';
     Map<String, String> headers = {"Content-type": "application/json"};
@@ -1156,13 +1198,14 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
     Response response =
         await post(url, headers: headers, body: json.encode(request));
     if (response.statusCode == 200) {
-
       int code = HttpResponse.fromJson(json.decode(response.body)).code;
+      print("Transaction completion status = $code");
 
-      print("Transaction completion status $code");
-
+      // payment complete
       if (code == 200) {
         Navigator.pop(context);
+        isPaymentComplete = true;
+        // payment not complete
       } else {
         Fluttertoast.showToast(msg: "You didn't complete your payment yet!");
       }
@@ -1170,5 +1213,4 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
       throw Exception('Failed to load post');
     }
   }
-
 }

@@ -34,7 +34,7 @@ class LoginPageState extends State<LoginPage> {
               Visibility(
                 visible: needToShowUserTypeCheckBox,
                 child: Text(
-                  '[Are you a customer or consultant, please select]',
+                  '[Are you a customer or expert, please select]',
                   style: new TextStyle(
                       fontSize: 15.0,
                       color: Colors.blueAccent,
@@ -69,7 +69,7 @@ class LoginPageState extends State<LoginPage> {
                           setState(() {
                             userType = value;
                             confirmMsg =
-                                "You select 'Consultant', Would you like to continue?";
+                                "You select 'Expert', Would you like to continue?";
                           });
                           confirmPopUp(context);
                         },
