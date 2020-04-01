@@ -8,6 +8,7 @@ import com.google.firebase.cloud.FirestoreClient;
 import com.google.gson.Gson;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
+
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import javax.servlet.http.HttpServletRequest;
@@ -69,7 +70,7 @@ public class PlanDaoImp implements PlanDao {
 
         } catch (Exception e) {
 
-            System.out.println(getClass().getName()+".delete: " + e.getMessage());
+            System.out.println(getClass().getName() + ".delete: " + e.getMessage());
             planRes.setCode(404);
             planRes.setMsg(e.getMessage());
 
@@ -125,7 +126,7 @@ public class PlanDaoImp implements PlanDao {
 
             }
 
-            System.out.println(getClass().getName()+".changeAcceptStatus "+gson.toJson(np));
+            System.out.println(getClass().getName() + ".changeAcceptStatus " + gson.toJson(np));
 
             if (np.getIsBookingAcceptanceTimePassed().equalsIgnoreCase("n")) {
 
@@ -153,19 +154,19 @@ public class PlanDaoImp implements PlanDao {
                 notification.setEndTime(sdf.format(np.getEndTime()));
                 NotificationSender.send(notification);
 
-            }else {
+            } else {
 
                 planRes.setCode(404);
-                planRes.setMsg(np.getHourDiff()+" Hour & "+np.getMinuteDiff()
-                        +" minute passed away, Sorry sir/mam you can't accept the request cause!");
+                planRes.setMsg(np.getHourDiff() + " Hour & " + np.getMinuteDiff()
+                        + " minute passed away, Sorry sir/mam you can't accept the request cause!");
 
-                System.out.println(getClass().getName()+".changeAcceptStatus "+planRes.getMsg());
+                System.out.println(getClass().getName() + ".changeAcceptStatus " + planRes.getMsg());
 
             }
 
         } catch (Exception e) {
 
-            System.out.println(getClass().getName()+".changeAcceptStatus: " + e.getMessage());
+            System.out.println(getClass().getName() + ".changeAcceptStatus: " + e.getMessage());
             planRes.setCode(404);
             planRes.setMsg(e.getMessage());
 
@@ -238,7 +239,7 @@ public class PlanDaoImp implements PlanDao {
 
             }
 
-            System.out.println(getClass().getName()+".getAllPlanByUser: SQL = " + planListSql);
+            System.out.println(getClass().getName() + ".getAllPlanByUser: SQL = " + planListSql);
 
             Query planListQry = entityManager.createNativeQuery(planListSql);
 
@@ -260,35 +261,35 @@ public class PlanDaoImp implements PlanDao {
                 // example : cur date time 7.00 | (start_date_time (7.50) - 30 min ) = 7.20
                 // if current date time after start time sub 30 min
 
-                System.out.println(getClass().getName()+".getAllPlanByUser stSubThirtyMin "+stSubThirtyMin);
+                System.out.println(getClass().getName() + ".getAllPlanByUser stSubThirtyMin " + stSubThirtyMin);
 
                 // if stSubThirtyMin cross
                 // then only add paid plan
                 if (curDateTime.after(stSubThirtyMin)) {
 
-                    if (paymentTransId != null){
+                    if (paymentTransId != null) {
 
-                        planList.add(setPlan(result,paymentTransId));
+                        planList.add(setPlan(result, paymentTransId));
 
                     }
 
                     // if not show paid unpaid all
-                }else {
+                } else {
 
-                    planList.add(setPlan(result,paymentTransId));
+                    planList.add(setPlan(result, paymentTransId));
 
                 }
 
 
             }
 
-            System.out.println(getClass().getName()+ ".getAllPlanByUser: planList ====== !");
+            System.out.println(getClass().getName() + ".getAllPlanByUser: planList ====== !");
 
             return planList;
 
         } catch (Exception e) {
 
-            System.out.println(getClass().getName()+ ".getAllPlanByUser: " + e.getMessage());
+            System.out.println(getClass().getName() + ".getAllPlanByUser: " + e.getMessage());
             e.printStackTrace();
             return new ArrayList<>();
 
@@ -354,7 +355,7 @@ public class PlanDaoImp implements PlanDao {
 
             }
 
-            System.out.println(getClass().getName()+".getReviewAndRating: SQL = " + planListSql);
+            System.out.println(getClass().getName() + ".getReviewAndRating: SQL = " + planListSql);
 
             Query planListQry = entityManager.createNativeQuery(planListSql);
 
@@ -381,7 +382,7 @@ public class PlanDaoImp implements PlanDao {
 
         } catch (Exception e) {
 
-            System.out.println(getClass().getName()+".getReviewAndRating: " + e.getMessage());
+            System.out.println(getClass().getName() + ".getReviewAndRating: " + e.getMessage());
             return new ArrayList<>();
 
         }
@@ -453,7 +454,7 @@ public class PlanDaoImp implements PlanDao {
 
         } catch (Exception e) {
 
-            System.out.println(getClass().getName()+"saveReviewAndRating: " + e.getMessage());
+            System.out.println(getClass().getName() + "saveReviewAndRating: " + e.getMessage());
             planRes.setCode(404);
             planRes.setMsg(e.getMessage());
 
@@ -464,36 +465,39 @@ public class PlanDaoImp implements PlanDao {
 
     private void updateRating(String uid, int userType) {
 
+        // (5 * 252 + 4 * 124 + 3 * 40 + 2 * 29 + 1 * 33) / 478 = 4.11
+        String planSelectSql = (userType == 1) ? ""
+                + "SELECT "
+                + "	SUM(cus_rating = 5) AS five_star, "
+                + "	SUM(cus_rating = 4) AS four_star , "
+                + "	SUM(cus_rating = 3) AS three_star, "
+                + "	SUM(cus_rating = 2) AS two_star, "
+                + "	SUM(cus_rating = 1) AS one_star "
+                + "FROM "
+                + "	plan "
+                + "WHERE cus_uid = :uid " : ""
+                + "SELECT "
+                + "	SUM(con_rating = 5) AS five_star, "
+                + "	SUM(con_rating = 4) AS four_star , "
+                + "	SUM(con_rating = 3) AS three_star, "
+                + "	SUM(con_rating = 2) AS two_star, "
+                + "	SUM(con_rating = 1) AS one_star "
+                + "FROM "
+                + "	plan "
+                + "WHERE con_uid = :uid";
 
-        String planSelectSql = "SELECT * FROM plan WHERE id = :id";
+        Query planSelectQry = entityManager.createNativeQuery(planSelectSql);
+        planSelectQry.setParameter("uid", uid);
+        List<Object[]> resultList = planSelectQry.getResultList();
 
-        Query planSelectQry = entityManager.createNativeQuery(planSelectSql, Plan.class);
-        planSelectQry.setParameter("id", uid);
-        List<Plan> planList = planSelectQry.getResultList();
+        int ttlFiveStar = (int) resultList.get(0)[0];
+        int ttlFourStar = (int) resultList.get(0)[1];
+        int ttlThreeStar = (int) resultList.get(0)[2];
+        int ttlTwoStar = (int) resultList.get(0)[3];
+        int ttlOneStar = (int) resultList.get(0)[4];
 
-        int totalRating = 0;
-        int gotRating = 0;
-
-        for (int i = 0; i < planList.size(); i++) {
-
-            // 1 = customer, 2 = consultant
-            if (userType == 1 && planList.get(i).getCusRating() != null) {
-
-                gotRating = gotRating + planList.get(i).getCusRating();
-
-            } else {
-
-                gotRating = gotRating + planList.get(i).getConRating();
-
-            }
-
-            totalRating = totalRating + 5;
-
-        }
-
-        totalRating = totalRating == 0 ? 1 : totalRating;
-
-        double res = (gotRating / totalRating) * 100;
+        double res = (5 * ttlFiveStar + 4 * ttlFourStar + 3 * ttlThreeStar + 2 * ttlTwoStar + 1 * ttlOneStar) /
+                (ttlFiveStar + ttlFourStar + ttlThreeStar + ttlTwoStar + ttlOneStar);
 
         FirestoreClient.getFirestore()
                 .collection("userInfoList")
@@ -506,7 +510,7 @@ public class PlanDaoImp implements PlanDao {
     public Plan changeAreCusConHaveChattedStatus(HttpServletRequest httpServletRequest, Plan plan) {
 
         Plan planRes = new Plan();
-        System.out.println(getClass().getName()+".changeAreCusConHaveChattedStatus: plan = "+gson.toJson(plan));
+        System.out.println(getClass().getName() + ".changeAreCusConHaveChattedStatus: plan = " + gson.toJson(plan));
 
         try {
 
@@ -533,14 +537,14 @@ public class PlanDaoImp implements PlanDao {
             changeFreeMinutesQry.setParameter("conUid", plan.getConUid());
             changeFreeMinutesQry.executeUpdate();
 
-            System.out.println(getClass().getName()+".changeAreCusConHaveChattedStatus : changed [chat st,free min]");
+            System.out.println(getClass().getName() + ".changeAreCusConHaveChattedStatus : changed [chat st,free min]");
             planRes.setCode(200);
             planRes.setMsg("Customer and consultant chatted status has been changed" +
                     " and free minute's also updated null");
 
         } catch (Exception e) {
 
-            System.out.println(getClass().getName()+".changeAreCusConHaveChattedStatus : Exception = "+e.getMessage());
+            System.out.println(getClass().getName() + ".changeAreCusConHaveChattedStatus : Exception = " + e.getMessage());
             planRes.setCode(404);
             planRes.setMsg("Exception occurred!");
 
@@ -554,7 +558,7 @@ public class PlanDaoImp implements PlanDao {
     public Plan checkPaymentStatus(Plan p) {
 
         Plan planRes = new Plan();
-        System.out.println(getClass().getName()+".checkPaymentStatus: plan = "+gson.toJson(p));
+        System.out.println(getClass().getName() + ".checkPaymentStatus: plan = " + gson.toJson(p));
 
         try {
 
@@ -564,23 +568,23 @@ public class PlanDaoImp implements PlanDao {
             planSelectQry.setParameter("id", p.getId());
             List<Plan> planList = planSelectQry.getResultList();
 
-            if (planList.size() > 0){
+            if (planList.size() > 0) {
 
                 planRes.setCode(404);
                 planRes.setMsg("Transaction not complete yet!");
-                System.out.println(getClass().getName()+".checkPaymentStatus : [Transaction not complete yet]");
+                System.out.println(getClass().getName() + ".checkPaymentStatus : [Transaction not complete yet]");
 
-            }else{
+            } else {
 
                 planRes.setCode(200);
                 planRes.setMsg("Transaction successful!");
-                System.out.println(getClass().getName()+".checkPaymentStatus : [Transaction complete]");
+                System.out.println(getClass().getName() + ".checkPaymentStatus : [Transaction complete]");
 
             }
 
         } catch (Exception e) {
 
-            System.out.println(getClass().getName()+".checkPaymentStatus : Exception = "+e.getMessage());
+            System.out.println(getClass().getName() + ".checkPaymentStatus : Exception = " + e.getMessage());
             e.printStackTrace();
             planRes.setCode(404);
             planRes.setMsg("Exception occurred!");
@@ -619,7 +623,7 @@ public class PlanDaoImp implements PlanDao {
                 p.setCusUid((String) resultList.get(i)[2]);
                 p.setConUid((String) resultList.get(i)[3]);
 
-                System.out.println(getClass().getName()+".remindPlanToUser: Plan"+gson.toJson(p));
+                System.out.println(getClass().getName() + ".remindPlanToUser: Plan" + gson.toJson(p));
 
                 Notification nForCus = new Notification();
                 nForCus.setUid(p.getCusUid());
@@ -643,13 +647,13 @@ public class PlanDaoImp implements PlanDao {
 
             }
 
-            System.out.println(getClass().getName()+".remindPlanToUser: planList"+gson.toJson(resultList));
+            System.out.println(getClass().getName() + ".remindPlanToUser: planList" + gson.toJson(resultList));
             plan.setCode(200);
             plan.setMsg("Reminder send successfully!");
 
-        }catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
-            System.out.println(getClass().getName()+"remindPlanToUser: Exception = "+e.getMessage());
+            System.out.println(getClass().getName() + "remindPlanToUser: Exception = " + e.getMessage());
             plan.setCode(404);
             plan.setMsg("Reminder send fail!");
         }

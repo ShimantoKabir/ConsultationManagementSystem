@@ -71,6 +71,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
   bool isReviewAndRatingShowedUp = false;
   bool needToShowPaymentUi = true;
   bool isPaymentComplete = false;
+  bool isChargedMinutesStarted = false;
   var listMessage;
   String groupChatId;
   SharedPreferences prefs;
@@ -80,6 +81,8 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
   bool isShowSticker;
   String imageUrl;
   int totalChatDuration = 0;
+  String idOfCusLeaveMsg;
+  int chargedMinutes = 0;
 
   final TextEditingController textEditingController =
       new TextEditingController();
@@ -101,44 +104,55 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
   void initState() {
     super.initState();
 
-    // m = modified
-
     groupChatId = '';
     imageUrl = '';
     isLoading = false;
     isShowSticker = false;
+    int fm = plan.freeMinutesForNewCustomer;
+    String pi = plan.paymentTransId;
+    int id = plan.id;
+    int hr = plan.hourlyRate;
 
     controller =
         AnimationController(vsync: this, duration: Duration(minutes: 0));
 
     final DateTime startDateTime = DateTime.parse(plan.fStartTime);
     final DateTime endDateTime = DateTime.parse(plan.fEndTime);
-    final DateTime mEndDateTime = endDateTime.add(Duration(minutes: paymentDuration));
+    final DateTime pdAddWithEndDateTime = (fm == null)
+        ? null
+        : endDateTime.add(Duration(minutes: paymentDuration));
+    final DateTime fmAddWithStartDateTime =
+        (fm == null) ? null : startDateTime.add(Duration(minutes: fm));
+    final DateTime fmAndPdAddWithStartDateTime = (fm == null)
+        ? null
+        : startDateTime.add(Duration(minutes: (fm + paymentDuration)));
     totalChatDuration = calculateDuration(endDateTime, startDateTime);
 
-    int fm = plan.freeMinutesForNewCustomer;
-    String pi = plan.paymentTransId;
-    int id = plan.id;
     print("Free minute = $fm");
     print("Payment id = $pi");
     print("Plan id = $id");
+    print("Plan hourly rate  = $hr");
     print("Total chat duration = $totalChatDuration");
+    print("Free min add with start date time = $fmAddWithStartDateTime");
+    print("Free min add with end date time = $pdAddWithEndDateTime");
 
     // if free minute's[10] equal to
     // total chat duration[10] or
     // total chat duration[5] less
     // then free minute's[10]
     // then no need to showed up payment ui
-    if (fm != null && fm >= totalChatDuration) {
-      needToShowPaymentUi = false;
-    }
+    needToShowPaymentUi =
+        (fm != null && fm >= totalChatDuration) ? false : true;
 
     Timer.periodic(Duration(seconds: 5), (timer) {
-      final dateTimeNow = DateTime.now();
+      DateTime dateTimeNow = DateTime.now();
+      AnimationStatus as = controller.status;
       print("Timer ticking.. !");
       print("Is time ticking running = $isTimeTickerRunning");
       print("Is review and rating showed up = $isReviewAndRatingShowedUp");
+      print("Is payment ui showed up = $isPaymentUiShowedUp");
       print("Date time now = $dateTimeNow");
+      print("Animation Status = $as");
 
       // check free minutes
       // available or not
@@ -191,27 +205,45 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
         // total chat duration must be greater
         // than free minute's
         if (needToShowPaymentUi &&
-            userType == 1 &&
-            controller.status == AnimationStatus.completed &&
+            dateTimeNow.isAfter(fmAddWithStartDateTime) &&
+            controller.isDismissed &&
             !isPaymentUiShowedUp) {
+          // open payment ui only for customer
           int m = calculateDuration(endDateTime, startDateTime);
-          m = m - fm;
-          int chargeAmount = (plan.hourlyRate * (m / 60)) as int;
-          confirmPopUp(context, chargeAmount.toString(), plan);
+          chargedMinutes = m - fm;
+          if (userType == 1) {
+            int chargeAmount = (hr * (chargedMinutes / 60)).round();
+            chargeAmount = (chargeAmount == 0) ? 1 : chargeAmount;
+            confirmPopUp(context, chargeAmount.toString(), plan);
+          }
 
+          // but start time ticker for all
           startTimeTicker(controller, paymentDuration);
-          isPaymentUiShowedUp = true                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       ;
-                                                                                                                      }
+          isPaymentUiShowedUp = true;
+        }
+
+        // logic for start time ticker after
+        // end of payment completion time
+        if (dateTimeNow.isAfter(fmAndPdAddWithStartDateTime) &&
+            controller.isDismissed &&
+            !isChargedMinutesStarted) {
+
+          // customer
+          if(userType == 1){
+            checkPaymentStatus(plan.id);
+          }
+
+          startTimeTicker(controller, chargedMinutes);
+          isChargedMinutesStarted = true;
+        }
 
         // logic for popup review and rating
         if (isPaymentUiShowedUp &&
             !isReviewAndRatingShowedUp &&
-            dateTimeNow.isAfter(mEndDateTime)) {
-
+            dateTimeNow.isAfter(pdAddWithEndDateTime)) {
           reviewAndRatingPopUp();
           print('Show popup for review and rating in time tiker block!');
           isReviewAndRatingShowedUp = true;
-
         }
       }
     });
@@ -238,9 +270,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
     }
 
     print("GroupChatId = $groupChatId");
-
     FocusScope.of(context).requestFocus(focusNode);
-
     Firestore.instance
         .collection('userInfoList')
         .document(id)
@@ -293,16 +323,24 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
       // update plan cus con chatted
       // status only first time
       if (!isFirstMsgSend) {
-        print("isFirstMsgSend");
+        print("isFirstMsgSend = $isFirstMsgSend");
+        print("isFirstMsgSend = $listMessage");
         changeChattedStatus(plan.id, uid, peerId);
         isFirstMsgSend = true;
       }
+
     } else {
       Fluttertoast.showToast(msg: 'Nothing to send');
     }
   }
 
   Widget buildItem(int index, DocumentSnapshot document) {
+    idOfCusLeaveMsg = (document['type'] == 3 &&
+            document['isReviewAndRatingShowedUp'] == 0 &&
+            !isReviewAndRatingShowedUp)
+        ? document.documentID
+        : idOfCusLeaveMsg;
+
     if (document['idFrom'] == id) {
       // Right (my message)
       return Row(
@@ -321,87 +359,93 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                       borderRadius: BorderRadius.circular(8.0)),
                   margin: EdgeInsets.only(
                       bottom: isLastMessageRight(index) ? 20.0 : 10.0,
-                      right: 10.0),
-                )
-              : document['type'] == 1
-                  // Image
+                      right: 10.0))
+              : document['type'] == 3
                   ? Container(
-                      child: FlatButton(
-                        child: Material(
-                          child: CachedNetworkImage(
-                            placeholder: (context, url) => Container(
-                              child: CircularProgressIndicator(
-                                valueColor:
-                                    AlwaysStoppedAnimation<Color>(themeColor),
-                              ),
-                              width: 200.0,
-                              height: 200.0,
-                              padding: EdgeInsets.all(70.0),
-                              decoration: BoxDecoration(
-                                color: greyColor2,
-                                borderRadius: BorderRadius.all(
-                                  Radius.circular(8.0),
+                      child: Text(
+                        document['content'],
+                        style: TextStyle(color: primaryColor),
+                      ),
+                      padding: EdgeInsets.fromLTRB(15.0, 10.0, 15.0, 10.0),
+                      width: 200.0,
+                      decoration: BoxDecoration(
+                          color: greyColor2,
+                          borderRadius: BorderRadius.circular(8.0)),
+                      margin: EdgeInsets.only(
+                          bottom: isLastMessageRight(index) ? 20.0 : 10.0,
+                          right: 10.0))
+                  : document['type'] == 1
+                      // Image
+                      ? Container(
+                          child: FlatButton(
+                            child: Material(
+                              child: CachedNetworkImage(
+                                placeholder: (context, url) => Container(
+                                  child: CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        themeColor),
+                                  ),
+                                  width: 200.0,
+                                  height: 200.0,
+                                  padding: EdgeInsets.all(70.0),
+                                  decoration: BoxDecoration(
+                                    color: greyColor2,
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(8.0),
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
-                            errorWidget: (context, url, error) => Material(
-                              child: Image.asset(
-                                'images/img_not_available.jpeg',
+                                errorWidget: (context, url, error) => Material(
+                                  child: Image.asset(
+                                    'images/img_not_available.jpeg',
+                                    width: 200.0,
+                                    height: 200.0,
+                                    fit: BoxFit.cover,
+                                  ),
+                                  borderRadius: BorderRadius.all(
+                                    Radius.circular(8.0),
+                                  ),
+                                  clipBehavior: Clip.hardEdge,
+                                ),
+                                imageUrl: document['content'],
                                 width: 200.0,
                                 height: 200.0,
                                 fit: BoxFit.cover,
                               ),
-                              borderRadius: BorderRadius.all(
-                                Radius.circular(8.0),
-                              ),
+                              borderRadius:
+                                  BorderRadius.all(Radius.circular(8.0)),
                               clipBehavior: Clip.hardEdge,
                             ),
-                            imageUrl: document['content'],
-                            width: 200.0,
-                            height: 200.0,
+                            onPressed: () {
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          FullPhoto(url: document['content'])));
+                            },
+                            padding: EdgeInsets.all(0),
+                          ),
+                          margin: EdgeInsets.only(
+                              bottom: isLastMessageRight(index) ? 20.0 : 10.0,
+                              right: 10.0),
+                        )
+                      // Sticker
+                      : Container(
+                          child: new Image.asset(
+                            'images/${document['content']}.gif',
+                            width: 100.0,
+                            height: 100.0,
                             fit: BoxFit.cover,
                           ),
-                          borderRadius: BorderRadius.all(Radius.circular(8.0)),
-                          clipBehavior: Clip.hardEdge,
-                        ),
-                        onPressed: () {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) =>
-                                      FullPhoto(url: document['content'])));
-                        },
-                        padding: EdgeInsets.all(0),
-                      ),
-                      margin: EdgeInsets.only(
-                          bottom: isLastMessageRight(index) ? 20.0 : 10.0,
-                          right: 10.0),
-                    )
-                  // Sticker
-                  : Container(
-                      child: new Image.asset(
-                        'images/${document['content']}.gif',
-                        width: 100.0,
-                        height: 100.0,
-                        fit: BoxFit.cover,
-                      ),
-                      margin: EdgeInsets.only(
-                          bottom: isLastMessageRight(index) ? 20.0 : 10.0,
-                          right: 10.0),
-                    ),
+                          margin: EdgeInsets.only(
+                              bottom: isLastMessageRight(index) ? 20.0 : 10.0,
+                              right: 10.0),
+                        )
         ],
         mainAxisAlignment: MainAxisAlignment.end,
       );
     } else {
       // Left (peer message)
-
-      print("Left (peer message)");
-      if (document['type'] == 3 && userType == 2) {
-        reviewAndRatingPopUp();
-        print("Review and rating showed up in expert side");
-        isReviewAndRatingShowedUp = true;
-      }
-
       return Container(
         child: Column(
           children: <Widget>[
@@ -450,17 +494,15 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                         ? Container(
                             child: Text(
                               document['content'],
-                              style: TextStyle(color: primaryColor),
+                              style: TextStyle(color: Colors.white),
                             ),
                             padding:
                                 EdgeInsets.fromLTRB(15.0, 10.0, 15.0, 10.0),
                             width: 200.0,
                             decoration: BoxDecoration(
-                                color: greyColor2,
+                                color: primaryColor,
                                 borderRadius: BorderRadius.circular(8.0)),
-                            margin: EdgeInsets.only(
-                                bottom: isLastMessageRight(index) ? 20.0 : 10.0,
-                                right: 10.0),
+                            margin: EdgeInsets.only(left: 10.0),
                           )
                         : document['type'] == 1
                             ? Container(
@@ -848,6 +890,8 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                       valueColor: AlwaysStoppedAnimation<Color>(themeColor));
                 } else {
                   listMessage = snapshot.data.documents;
+                  WidgetsBinding.instance.addPostFrameCallback(
+                      (_) => checkCusLeaveAfterFreeMinutesGone(context));
                   return ListView.builder(
                     padding: EdgeInsets.all(10.0),
                     itemBuilder: (context, index) =>
@@ -1018,9 +1062,12 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
               onPressed: () {
                 print(
                     "Review and rating showed up when customer don't want to pay");
+                sendMsgContent(cusLeaveMsg, 3);
                 isReviewAndRatingShowedUp = true;
+                needToShowPaymentUi = false;
+                Navigator.of(context).pop();
+                controller.stop();
                 reviewAndRatingPopUp();
-                onSendMessage(cusLeaveMsg, 3);
               },
             ),
             FlatButton(
@@ -1030,6 +1077,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                       fontFamily: 'Armata',
                       fontWeight: FontWeight.bold)),
               onPressed: () {
+                sendMsgContent(cusContinueMsg, 0);
                 getClientToken(amount, p.id);
               },
             ),
@@ -1051,26 +1099,23 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                   fontFamily: 'Armata',
                   fontWeight: FontWeight.bold)),
           content: Wrap(children: <Widget>[
+            AnimatedBuilder(
+                animation: controller,
+                builder: (BuildContext context, Widget child) {
+                  return Text("[$timerString] minute's left to complete your payment",
+                      style: TextStyle(
+                          color: Colors.black,
+                          fontFamily: 'Armata',
+                          fontWeight: FontWeight.bold));
+                }),
             Text(
-              "When you click [Continute Chat] app will check is your payment complete or not!",
+              "When payment completion time finish app will check is your payment complete or not. if not then you will not allowed to continue chat.",
               style: TextStyle(
                   color: Colors.redAccent,
                   fontFamily: 'Armata',
                   fontWeight: FontWeight.normal),
             )
-          ]),
-          actions: <Widget>[
-            FlatButton(
-              child: Text("Continute Chat",
-                  style: TextStyle(
-                      color: Colors.green,
-                      fontFamily: 'Armata',
-                      fontWeight: FontWeight.bold)),
-              onPressed: () {
-                checkPaymentStatus(plan.id);
-              },
-            ),
-          ],
+          ])
         );
       },
     );
@@ -1170,17 +1215,30 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
         .collection(groupChatId)
         .document(DateTime.now().millisecondsSinceEpoch.toString());
 
+    var obj;
+
+    if (type == 3) {
+      obj = {
+        'idFrom': id,
+        'idTo': peerId,
+        'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
+        'content': content,
+        'type': type,
+        'isReviewAndRatingShowedUp': 0
+      };
+    } else {
+      obj = {
+        'idFrom': id,
+        'idTo': peerId,
+        'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
+        'content': content,
+        'type': type,
+        'isReviewAndRatingShowedUp': -1
+      };
+    }
+
     Firestore.instance.runTransaction((transaction) async {
-      await transaction.set(
-        documentReference,
-        {
-          'idFrom': id,
-          'idTo': peerId,
-          'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
-          'content': content,
-          'type': type
-        },
-      );
+      await transaction.set(documentReference, obj);
     });
 
     listScrollController.animateTo(0.0,
@@ -1205,12 +1263,36 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
       if (code == 200) {
         Navigator.pop(context);
         isPaymentComplete = true;
+        Fluttertoast.showToast(msg: "You have successfully complete you payment, enjoy the conversation with the expert!");
         // payment not complete
       } else {
-        Fluttertoast.showToast(msg: "You didn't complete your payment yet!");
+
+        Fluttertoast.showToast(msg: "We need to push you from chat room cause you didn't complete your payment!");
+        sendMsgContent("Customer did't pay for the rest of the minute's",0);
+        Navigator.of(context).popUntil((route) => route.isFirst);
+        Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+                builder: (context) => PlanInfo(userType: userType, uid: uid)));
+
       }
     } else {
       throw Exception('Failed to load post');
+    }
+  }
+
+  checkCusLeaveAfterFreeMinutesGone(BuildContext context) {
+    print("Id of cus leave after free minute's gone $idOfCusLeaveMsg");
+    if (idOfCusLeaveMsg != null && !isReviewAndRatingShowedUp) {
+      Firestore.instance
+          .collection('messages')
+          .document(groupChatId)
+          .collection(groupChatId)
+          .document(idOfCusLeaveMsg)
+          .updateData(<String, dynamic>{'isReviewAndRatingShowedUp': 1});
+      reviewAndRatingPopUp();
+      controller.stop();
+      isReviewAndRatingShowedUp = true;
     }
   }
 }
