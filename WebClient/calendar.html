@@ -147,7 +147,7 @@
                                 let color = '';
 
                                 if(s.planList[i].id !== 0){
-                                    color = s.planList[i].cusUid == null ? "red" : "green";
+                                    color = s.planList[i].cusUid == null ? "yellow" : s.planList[i].isAcceptByCon ? "green" : "red";
                                 }
 
                                 events.push({
@@ -584,7 +584,7 @@
                 <div class="my-div">
                     <div class="my-div-head">
                         <div class="my-div-head-left">
-                            <h3 id="alertHeading">Loading</h3>
+                            <h3 id="alertHeading">No heading available</h3>
                         </div>
                         <div>
                             <i id="alertCloseBtn" class="fa fa-times-circle"></i>

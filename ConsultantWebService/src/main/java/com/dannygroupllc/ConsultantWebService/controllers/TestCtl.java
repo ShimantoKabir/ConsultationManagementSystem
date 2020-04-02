@@ -17,8 +17,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.persistence.EntityManagerFactory;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -69,30 +67,6 @@ public class TestCtl {
 
                 res.setMysqlConnectionStatus("OK");
                 res.setDatabaseCurrentDateTime(currentDateTime);
-
-                String planSelectSql = ""
-                        + "SELECT "
-                        + "	SUM(cus_rating = 5) AS five_star, "
-                        + "	SUM(cus_rating = 4) AS four_star , "
-                        + "	SUM(cus_rating = 3) AS three_star, "
-                        + "	SUM(cus_rating = 2) AS two_star, "
-                        + "	SUM(cus_rating = 1) AS one_star "
-                        + "FROM "
-                        + "	plan ";
-
-                Query planSelectQry = session.createNativeQuery(planSelectSql);
-                List<Object[]> resultList = planSelectQry.getResultList();
-
-                Integer ttlFiveStar = ((BigDecimal) resultList.get(0)[0]).intValue();
-                Integer ttlFourStar = ((BigDecimal) resultList.get(0)[1]).intValue();
-                Integer ttlThreeStar = ((BigDecimal) resultList.get(0)[2]).intValue();
-                Integer ttlTwoStar = ((BigDecimal) resultList.get(0)[3]).intValue();
-                Integer ttlOneStar = ((BigDecimal) resultList.get(0)[4]).intValue();
-
-                Double rat = Double.valueOf((5 * ttlFiveStar + 4 * ttlFourStar + 3 * ttlThreeStar + 2 * ttlTwoStar + 1 * ttlOneStar) /
-                        (ttlFiveStar + ttlFourStar + ttlThreeStar + ttlTwoStar + ttlOneStar));
-
-                System.out.println("RES = "+rat);
 
                 tx.commit();
 

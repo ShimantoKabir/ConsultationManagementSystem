@@ -502,15 +502,21 @@ public class PlanDaoImp implements PlanDao {
         Integer ttlTwoStar = ((BigDecimal) resultList.get(0)[3]).intValue();
         Integer ttlOneStar = ((BigDecimal) resultList.get(0)[4]).intValue();
 
-        Double rating = Double.valueOf((5 * ttlFiveStar + 4 * ttlFourStar + 3 * ttlThreeStar + 2 * ttlTwoStar + 1 * ttlOneStar) /
+        System.out.println(getClass().getName()+".updateRating: rating details => ttlFiveStar = "
+                +ttlFiveStar+", ttlFourStar = "+ttlFourStar+", ttlThreeStar = "
+                +ttlThreeStar+", ttlTwoStar = "+ttlTwoStar+", ttlOneStar = "
+                +ttlOneStar);
+
+        Double rating = Double.valueOf((5 * ttlFiveStar + 4 * ttlFourStar + 3 * ttlThreeStar
+                + 2 * ttlTwoStar + 1 * ttlOneStar) /
                 (ttlFiveStar + ttlFourStar + ttlThreeStar + ttlTwoStar + ttlOneStar));
 
         System.out.println(getClass().getName() + ".updateRating res = " + rating);
 
         FirestoreClient.getFirestore()
-                .collection("userInfoList")
-                .document(uid)
-                .update("rating", rating);
+            .collection("userInfoList")
+            .document(uid)
+            .update("rating", rating);
 
     }
 
