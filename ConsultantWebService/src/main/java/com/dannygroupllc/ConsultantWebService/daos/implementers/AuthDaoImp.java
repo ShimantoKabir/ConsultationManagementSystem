@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 @Repository
 public class AuthDaoImp implements AuthDao {
@@ -97,6 +96,7 @@ public class AuthDaoImp implements AuthDao {
 
         } catch (Exception e) {
 
+            e.printStackTrace();
             authRes.setCode(404);
             authRes.setMsg(e.getMessage());
             System.out.println(getClass().getName() + ".reload : " + e.getMessage());
@@ -271,6 +271,7 @@ public class AuthDaoImp implements AuthDao {
 
         } catch (Exception e) {
 
+            e.printStackTrace();
             authRes.setCode(404);
             authRes.setMsg(e.getMessage());
             System.out.println(getClass().getName()+".check Exception "+e.getMessage());

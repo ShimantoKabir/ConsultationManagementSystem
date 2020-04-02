@@ -1045,7 +1045,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                   fontWeight: FontWeight.normal),
             ),
             Text(
-              "[You have $paymentDuration minute's to coomplete your payemnt. Would to like to pay?]",
+              "You have $paymentDuration minute's to coomplete your payemnt. Would to like to pay?",
               style: TextStyle(
                   color: Colors.redAccent,
                   fontFamily: 'Armata',

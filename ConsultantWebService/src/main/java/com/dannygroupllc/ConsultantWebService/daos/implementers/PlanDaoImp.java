@@ -70,6 +70,7 @@ public class PlanDaoImp implements PlanDao {
 
         } catch (Exception e) {
 
+            e.printStackTrace();
             System.out.println(getClass().getName() + ".delete: " + e.getMessage());
             planRes.setCode(404);
             planRes.setMsg(e.getMessage());
@@ -166,6 +167,7 @@ public class PlanDaoImp implements PlanDao {
 
         } catch (Exception e) {
 
+            e.printStackTrace();
             System.out.println(getClass().getName() + ".changeAcceptStatus: " + e.getMessage());
             planRes.setCode(404);
             planRes.setMsg(e.getMessage());
@@ -289,6 +291,7 @@ public class PlanDaoImp implements PlanDao {
 
         } catch (Exception e) {
 
+            e.printStackTrace();
             System.out.println(getClass().getName() + ".getAllPlanByUser: " + e.getMessage());
             e.printStackTrace();
             return new ArrayList<>();
@@ -382,6 +385,7 @@ public class PlanDaoImp implements PlanDao {
 
         } catch (Exception e) {
 
+            e.printStackTrace();
             System.out.println(getClass().getName() + ".getReviewAndRating: " + e.getMessage());
             return new ArrayList<>();
 
@@ -454,6 +458,7 @@ public class PlanDaoImp implements PlanDao {
 
         } catch (Exception e) {
 
+            e.printStackTrace();
             System.out.println(getClass().getName() + "saveReviewAndRating: " + e.getMessage());
             planRes.setCode(404);
             planRes.setMsg(e.getMessage());
@@ -490,19 +495,20 @@ public class PlanDaoImp implements PlanDao {
         planSelectQry.setParameter("uid", uid);
         List<Object[]> resultList = planSelectQry.getResultList();
 
-        int ttlFiveStar = (int) resultList.get(0)[0];
-        int ttlFourStar = (int) resultList.get(0)[1];
-        int ttlThreeStar = (int) resultList.get(0)[2];
-        int ttlTwoStar = (int) resultList.get(0)[3];
-        int ttlOneStar = (int) resultList.get(0)[4];
+        // ((BigInteger) results.get(0)[5]).intValue()
+        Integer ttlFiveStar = ((BigInteger) resultList.get(0)[0]).intValue();
+        Integer ttlFourStar = ((BigInteger) resultList.get(0)[1]).intValue();
+        Integer ttlThreeStar = ((BigInteger) resultList.get(0)[2]).intValue();
+        Integer ttlTwoStar = ((BigInteger) resultList.get(0)[3]).intValue();
+        Integer ttlOneStar = ((BigInteger) resultList.get(0)[4]).intValue();
 
-        double res = (5 * ttlFiveStar + 4 * ttlFourStar + 3 * ttlThreeStar + 2 * ttlTwoStar + 1 * ttlOneStar) /
+        Integer res = (5 * ttlFiveStar + 4 * ttlFourStar + 3 * ttlThreeStar + 2 * ttlTwoStar + 1 * ttlOneStar) /
                 (ttlFiveStar + ttlFourStar + ttlThreeStar + ttlTwoStar + ttlOneStar);
 
         FirestoreClient.getFirestore()
-                .collection("userInfoList")
-                .document(uid)
-                .update("rating", res);
+        .collection("userInfoList")
+        .document(uid)
+        .update("rating", res);
 
     }
 
@@ -544,6 +550,7 @@ public class PlanDaoImp implements PlanDao {
 
         } catch (Exception e) {
 
+            e.printStackTrace();
             System.out.println(getClass().getName() + ".changeAreCusConHaveChattedStatus : Exception = " + e.getMessage());
             planRes.setCode(404);
             planRes.setMsg("Exception occurred!");
@@ -584,6 +591,7 @@ public class PlanDaoImp implements PlanDao {
 
         } catch (Exception e) {
 
+            e.printStackTrace();
             System.out.println(getClass().getName() + ".checkPaymentStatus : Exception = " + e.getMessage());
             e.printStackTrace();
             planRes.setCode(404);

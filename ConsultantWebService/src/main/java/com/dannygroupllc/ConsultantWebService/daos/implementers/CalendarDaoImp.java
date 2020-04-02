@@ -140,16 +140,8 @@ public class CalendarDaoImp implements CalendarDao {
                         havingPlanBeforeQry.setParameter("cusUid", p.getCusUid());
                         List<Object[]> results = havingPlanBeforeQry.getResultList();
 
-                        Integer freeMinutesForNewCustomer = p.getFreeMinutesForNewCustomer();
-
-                        System.out.println(getClass().getName()+".feePlan: "+results.size());
-
-                        if (results.size() == 0) {
-
-                            // free second available so find free minute
-                            freeMinutesForNewCustomer = p.getFreeMinutesForNewCustomer();
-
-                        }
+                        System.out.println(getClass().getName()+".createEvent free min res: "+results.size());
+                        Integer freeMinutesForNewCustomer = (results.size() == 0) ? p.getFreeMinutesForNewCustomer() : null;
 
                         // check event over lap
                         Plan planOverLapCheckingData = new Plan();
@@ -256,6 +248,7 @@ public class CalendarDaoImp implements CalendarDao {
 
         } catch (Exception e) {
 
+            e.printStackTrace();
             System.out.println(getClass().getName() + ".createEvent: Exception " + e.getMessage());
             calendarRes.setCode(404);
             calendarRes.setMsg(e.getMessage());

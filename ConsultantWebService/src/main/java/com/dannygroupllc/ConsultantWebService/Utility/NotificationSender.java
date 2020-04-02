@@ -42,6 +42,7 @@ public class NotificationSender {
 
         }catch (Exception e){
 
+            e.printStackTrace();
             System.out.println("com.dannygroupllc.ConsultantWebService.Utility.NotificationSender.send : "+
                     e.getMessage());
 

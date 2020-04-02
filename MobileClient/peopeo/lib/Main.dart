@@ -745,17 +745,15 @@ class MyHomePageState extends State<MyHomePage> {
     if (document['rating'] == null) {
       return Text("N/A",
           style: TextStyle(
-            fontSize: 15.0,
-            color: Colors.grey,
-            fontWeight: FontWeight.bold,
+            fontSize: 12.0,
+            fontWeight: FontWeight.w600,
             fontFamily: 'Armata',
           ));
     } else {
       return Text(document['rating'].toString(),
           style: TextStyle(
-            fontSize: 15.0,
-            color: Colors.grey,
-            fontWeight: FontWeight.bold,
+            fontSize: 12.0,
+            fontWeight: FontWeight.w600,
             fontFamily: 'Armata',
           ));
     }
@@ -877,4 +875,5 @@ class MyHomePageState extends State<MyHomePage> {
       ),
     );
   }
+
 }

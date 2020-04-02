@@ -16,7 +16,6 @@ import java.util.List;
 
 public class PaymentGatewayPro {
 
-    public String CLASS_NAME = "com.dannygroupllc.ConsultantWebService.processors.PaymentGatewayPro";
     public String merchantID = "m4cf84nkgkzz9ygh";
     public String privateKey = "68405d3c7ea54135c34865ea5c0d3f4e";
     public String publicKey = "d5vm3cgzsfs6jtc8";
@@ -32,7 +31,7 @@ public class PaymentGatewayPro {
 
         if (clientToken.length() > 0) {
 
-            System.out.println(CLASS_NAME + ".getClientToken: clientToken = " + clientToken);
+            System.out.println(getClass().getName()+".getClientToken: clientToken = " + clientToken);
             response.setCode(200);
             response.setMsg("Token generate successfully !");
             response.setClientToken(clientToken);
@@ -86,7 +85,7 @@ public class PaymentGatewayPro {
 
     public Response checkout(Request request, EntityManagerFactory entityManagerFactory) {
 
-        System.out.println(CLASS_NAME + ".checkout = Called");
+        System.out.println(getClass().getName()+".checkout = Called");
 
         Response response = new Response();
 
@@ -110,7 +109,7 @@ public class PaymentGatewayPro {
 
             if (authList.size() > 0) {
 
-                System.out.println(CLASS_NAME + ".checkout: Nonce " + request.getTransaction().getNonceFromTheClient());
+                System.out.println(getClass().getName()+".checkout: Nonce " + request.getTransaction().getNonceFromTheClient());
 
                 TransactionRequest transactionRequest = new TransactionRequest()
                         .amount(new BigDecimal(authList.get(0).getAmount()))
@@ -123,7 +122,7 @@ public class PaymentGatewayPro {
 
                 if (result.isSuccess()) {
 
-                    System.out.println(CLASS_NAME + "checkout: getTarget " + result.getTarget().getId());
+                    System.out.println(getClass().getName()+".checkout: getTarget " + result.getTarget().getId());
                     Query query = session.createNativeQuery("UPDATE plan SET payment_trans_id = :txId WHERE id = :id");
                     query.setParameter("txId", result.getTarget().getId());
                     query.setParameter("id", authList.get(0).getPlanId());
@@ -150,6 +149,7 @@ public class PaymentGatewayPro {
 
         } catch (Exception e) {
 
+            e.printStackTrace();
             response.setMsg("Exception occurred !");
             response.setCode(400);
 
