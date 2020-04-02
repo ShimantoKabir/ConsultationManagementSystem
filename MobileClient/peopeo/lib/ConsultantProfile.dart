@@ -394,7 +394,6 @@ class ConsultantProfileState extends State<ConsultantProfile>
           uid +
           "&time-zone=" +
           tz;
-
       print(calenderUrl);
 
       if (await canLaunch(calenderUrl)) {

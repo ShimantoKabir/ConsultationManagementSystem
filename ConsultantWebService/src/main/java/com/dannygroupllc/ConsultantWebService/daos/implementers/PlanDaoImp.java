@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import javax.servlet.http.HttpServletRequest;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -495,22 +496,21 @@ public class PlanDaoImp implements PlanDao {
         planSelectQry.setParameter("uid", uid);
         List<Object[]> resultList = planSelectQry.getResultList();
 
-        // ((BigInteger) results.get(0)[5]).intValue()
-        Integer ttlFiveStar = ((BigInteger) resultList.get(0)[0]).intValue();
-        Integer ttlFourStar = ((BigInteger) resultList.get(0)[1]).intValue();
-        Integer ttlThreeStar = ((BigInteger) resultList.get(0)[2]).intValue();
-        Integer ttlTwoStar = ((BigInteger) resultList.get(0)[3]).intValue();
-        Integer ttlOneStar = ((BigInteger) resultList.get(0)[4]).intValue();
+        Integer ttlFiveStar = ((BigDecimal) resultList.get(0)[0]).intValue();
+        Integer ttlFourStar = ((BigDecimal) resultList.get(0)[1]).intValue();
+        Integer ttlThreeStar = ((BigDecimal) resultList.get(0)[2]).intValue();
+        Integer ttlTwoStar = ((BigDecimal) resultList.get(0)[3]).intValue();
+        Integer ttlOneStar = ((BigDecimal) resultList.get(0)[4]).intValue();
 
-        Double res = Double.valueOf((5 * ttlFiveStar + 4 * ttlFourStar + 3 * ttlThreeStar + 2 * ttlTwoStar + 1 * ttlOneStar) /
+        Double rating = Double.valueOf((5 * ttlFiveStar + 4 * ttlFourStar + 3 * ttlThreeStar + 2 * ttlTwoStar + 1 * ttlOneStar) /
                 (ttlFiveStar + ttlFourStar + ttlThreeStar + ttlTwoStar + ttlOneStar));
 
-        System.out.println(getClass().getName()+".updateRating res = "+res);
+        System.out.println(getClass().getName() + ".updateRating res = " + rating);
 
         FirestoreClient.getFirestore()
-        .collection("userInfoList")
-        .document(uid)
-        .update("rating", res);
+                .collection("userInfoList")
+                .document(uid)
+                .update("rating", rating);
 
     }
 
