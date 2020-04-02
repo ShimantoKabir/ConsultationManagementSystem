@@ -28,8 +28,6 @@
             // let serverBaseUrl = "http://3.20.119.226:8080";
             // let webClientBaseUrl = "http://3.20.119.226/cms/index.html";
 
-            let timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
             // alert configuration start
             $('#alertCloseBtn').click(function () {
                 $('#myAlert').hide();
@@ -64,6 +62,7 @@
             let events = [];
             let freeMinutesForNewCustomer = null;
             let hourlyRate = null;
+            let timeZone = null;
 
             let urlParameters = new URLSearchParams(window.location.search);
 
@@ -80,6 +79,16 @@
             if (urlParameters.has('conid')) {
 
                 conId = urlParameters.get('conid');
+
+            } else {
+
+                isUrlOk = false;
+
+            }
+
+			if (urlParameters.has('time-zone')) {
+
+                timeZone = urlParameters.get('time-zone');
 
             } else {
 
@@ -135,7 +144,7 @@
 
                             for (let i = 0; i < s.planList.length; i++) {
 
-                                let color = 'gray';
+                                let color = '';
 
                                 if(s.planList[i].id !== 0){
                                     color = s.planList[i].cusUid == null ? "red" : "green";

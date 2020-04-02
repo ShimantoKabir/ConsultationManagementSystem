@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:peopeo/Const.dart';
 import 'package:peopeo/EditConsultantProfile.dart';
 import 'package:peopeo/FullPhoto.dart';
@@ -18,7 +19,9 @@ import 'package:peopeo/VideoPlayerScreen.dart';
 
 class ConsultantProfile extends StatefulWidget {
   final String uid;
+
   ConsultantProfile({Key key, @required this.uid}) : super(key: key);
+
   @override
   ConsultantProfileState createState() => new ConsultantProfileState(uid: uid);
 }
@@ -182,7 +185,13 @@ class ConsultantProfileState extends State<ConsultantProfile>
                                               new BorderRadius.circular(8.0),
                                           side: BorderSide(color: Colors.red)),
                                       onPressed: () async {
-                                         reloadAuth(uid);
+                                        getTimeZone().then((tz) {
+                                          reloadAuth(uid, tz);
+                                        }).catchError((er) {
+                                          print("Time zone error $er");
+                                          Fluttertoast.showToast(
+                                              msg: "Can't fetch time zone!");
+                                        });
                                       },
                                       color: Colors.red,
                                       textColor: Colors.white,
@@ -367,7 +376,7 @@ class ConsultantProfileState extends State<ConsultantProfile>
     }
   }
 
-  void reloadAuth(String uid) async {
+  void reloadAuth(String uid, String tz) async {
     String reqUrl = serverBaseUrl + '/auth/reload';
     Map<String, String> headers = {"Content-type": "application/json"};
     var request = {
@@ -378,8 +387,13 @@ class ConsultantProfileState extends State<ConsultantProfile>
     if (response.statusCode == 200) {
       String aid = HttpResponse.fromJson(json.decode(response.body)).aid;
       print(aid);
-      String calenderUrl =
-          webClientBaseUrl + "/calendar.html?aid=" + aid + "&conid=" + uid;
+      String calenderUrl = webClientBaseUrl +
+          "/calendar.html?aid=" +
+          aid +
+          "&conid=" +
+          uid +
+          "&time-zone=" +
+          tz;
 
       print(calenderUrl);
 
@@ -568,5 +582,17 @@ class ConsultantProfileState extends State<ConsultantProfile>
           ),
           subtitle: Text("Review: " + document.review)),
     );
+  }
+
+  Future<String> getTimeZone() async {
+    String timeZone;
+    try {
+      timeZone = await FlutterNativeTimezone.getLocalTimezone();
+    } catch (e) {
+      timeZone = null;
+      print("Time zone fetching exp = $e");
+    }
+    print("Time zone = $timeZone");
+    return timeZone;
   }
 }

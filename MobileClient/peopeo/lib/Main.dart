@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:badges/badges.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:peopeo/BookmarkViewer.dart';
 import 'package:peopeo/Const.dart';
 import 'package:peopeo/LikedUserViewer.dart';
@@ -341,7 +342,7 @@ class MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  void reloadAuth(DocumentSnapshot document) async {
+  void reloadAuth(DocumentSnapshot document, String tz) async {
     MySharedPreferences.getIntegerValue("userType").then((ut) {
       MySharedPreferences.getStringValue("uid").then((uid) async {
         if (ut == 1) {
@@ -364,13 +365,15 @@ class MyHomePageState extends State<MyHomePage> {
             };
 
             Response response =
-                await post(url, headers: headers, body: json.encode(request));
+            await post(url, headers: headers, body: json.encode(request));
 
             if (response.statusCode == 200) {
               print(response.body.toString());
 
               String aid =
-                  HttpResponse.fromJson(json.decode(response.body)).aid;
+                  HttpResponse
+                      .fromJson(json.decode(response.body))
+                      .aid;
 
               String calenderUrl = webClientBaseUrl +
                   "/calendar.html?aid=" +
@@ -382,7 +385,9 @@ class MyHomePageState extends State<MyHomePage> {
                   "&hourly-rate=" +
                   hr.toString() +
                   "&free-minutes=" +
-                  fm.toString();
+                  fm.toString() +
+                  "&time-zone=" +
+                  tz;
 
               print(calenderUrl);
 
@@ -398,21 +403,23 @@ class MyHomePageState extends State<MyHomePage> {
         } else {
           Fluttertoast.showToast(
               msg:
-                  "Because of you are a consultant you can't see another consultant calander!");
+              "Because of you are a consultant you can't see another consultant calander!");
         }
       });
     });
   }
 
-  Widget buildItem(
-      BuildContext context, DocumentSnapshot document, String uid) {
+  Widget buildItem(BuildContext context, DocumentSnapshot document,
+      String uid) {
     if (document['uid'] == uid) {
       return Container();
     } else {
       return Container(
         decoration: BoxDecoration(
             border: Border(
-                bottom: BorderSide(color: Theme.of(context).dividerColor))),
+                bottom: BorderSide(color: Theme
+                    .of(context)
+                    .dividerColor))),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -610,7 +617,12 @@ class MyHomePageState extends State<MyHomePage> {
                       // first reload auth on server side
                       // then redirect to browser and open calender
                       if (isUserLoggedIn) {
-                        reloadAuth(document);
+                        getTimeZone().then((tz) {
+                          reloadAuth(document, tz);
+                        }).catchError((er) {
+                          print("Time zone error $er");
+                          Fluttertoast.showToast(msg: "Can't fetch time zone!");
+                        });
                       } else {
                         goToLoginPage();
                       }
@@ -839,6 +851,18 @@ class MyHomePageState extends State<MyHomePage> {
     });
     fm.requestNotificationPermissions(
         const IosNotificationSettings(sound: true, badge: true, alert: true));
+  }
+
+  Future<String> getTimeZone() async {
+    String timeZone;
+    try {
+      timeZone = await FlutterNativeTimezone.getLocalTimezone();
+    } catch (e) {
+      timeZone = null;
+      print("Time zone fetching exp = $e");
+    }
+    print("Time zone = $timeZone");
+    return timeZone;
   }
 
   void showNotification(BuildContext context, Map<String, dynamic> message) {

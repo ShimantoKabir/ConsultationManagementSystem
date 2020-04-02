@@ -7,10 +7,8 @@ import com.dannygroupllc.ConsultantWebService.models.Plan;
 import com.dannygroupllc.ConsultantWebService.pojos.Notification;
 import com.dannygroupllc.ConsultantWebService.pojos.Response;
 import com.google.gson.Gson;
-import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
-
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import javax.servlet.http.HttpServletRequest;
@@ -19,7 +17,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
-import java.util.TimeZone;
 
 @Repository
 public class CalendarDaoImp implements CalendarDao {
@@ -87,7 +84,6 @@ public class CalendarDaoImp implements CalendarDao {
 
                 // check is the event need to create for customer or consultant
                 Plan p = c.getPlan();
-                p.setTimeZone(gc.getTimeZone().getID());
 
                 // consultant creating his plan
                 if (p.getCusUid() == null) {
