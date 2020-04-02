@@ -402,7 +402,7 @@ public class PlanDaoImp implements PlanDao {
 
             String sql;
 
-            if (plan.cusUid == null) {
+            if (plan.getCusUid() == null) {
 
                 sql = "UPDATE \n" +
                         "  plan \n" +
@@ -449,7 +449,7 @@ public class PlanDaoImp implements PlanDao {
                 // customer
             } else {
 
-                updateRating(plan.getConUid(), 1);
+                updateRating(plan.getCusUid(), 1);
 
             }
 
@@ -502,8 +502,10 @@ public class PlanDaoImp implements PlanDao {
         Integer ttlTwoStar = ((BigInteger) resultList.get(0)[3]).intValue();
         Integer ttlOneStar = ((BigInteger) resultList.get(0)[4]).intValue();
 
-        Integer res = (5 * ttlFiveStar + 4 * ttlFourStar + 3 * ttlThreeStar + 2 * ttlTwoStar + 1 * ttlOneStar) /
-                (ttlFiveStar + ttlFourStar + ttlThreeStar + ttlTwoStar + ttlOneStar);
+        Double res = Double.valueOf((5 * ttlFiveStar + 4 * ttlFourStar + 3 * ttlThreeStar + 2 * ttlTwoStar + 1 * ttlOneStar) /
+                (ttlFiveStar + ttlFourStar + ttlThreeStar + ttlTwoStar + ttlOneStar));
+
+        System.out.println(getClass().getName()+".updateRating res = "+res);
 
         FirestoreClient.getFirestore()
         .collection("userInfoList")
