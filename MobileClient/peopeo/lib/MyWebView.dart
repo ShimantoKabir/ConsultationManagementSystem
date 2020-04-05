@@ -1,65 +1,32 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter_webview_plugin/flutter_webview_plugin.dart';
-String url = 'http:codesfor.in';
 
-class MyWebView extends StatefulWidget {
-  MyWebView({Key key, this.title}) : super(key: key);
+import 'package:webview_flutter/webview_flutter.dart';
+
+class MyWebView extends StatelessWidget {
   final String title;
+  final String selectedUrl;
 
-  @override
-  NewWeb createState() => NewWeb();
-}
+  final Completer<WebViewController> _controller =
+  Completer<WebViewController>();
 
-class NewWeb extends State<MyWebView> {
-
-  final webview = FlutterWebviewPlugin();
-
-  TextEditingController controller = TextEditingController(text: url);
+  MyWebView({
+    @required this.title,
+    @required this.selectedUrl,
+  });
 
   @override
   Widget build(BuildContext context) {
-// TODO: implement build
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Webview"),
-      ),
-
-      body: Center(
-        child: Column(
-          children: <Widget>[
-            Container(
-              padding: EdgeInsets.all(10.0),
-              child: TextField(
-                controller: controller,
-              ),
-            ),
-            RaisedButton(
-              child: Text("Open Webview"),
-              onPressed: () {
-                Navigator.of(context).pushNamed("/webview");
-              },
-            )
-          ],
+        appBar: AppBar(
+          title: Text(title),
         ),
-      ),
-    );
-  }
-
-  @override
-  void initState() {
-// TODO: implement initState
-    super.initState();
-    webview.close();
-    controller.addListener(() {
-      url = controller.text;
-    });
-  }
-
-  @override
-  void dispose() {
-// TODO: implement dispose
-    webview.dispose();
-    controller.dispose();
-    super.dispose();
+        body: WebView(
+          initialUrl: selectedUrl,
+          javascriptMode: JavascriptMode.unrestricted,
+          onWebViewCreated: (WebViewController webViewController) {
+            _controller.complete(webViewController);
+          },
+        ));
   }
 }

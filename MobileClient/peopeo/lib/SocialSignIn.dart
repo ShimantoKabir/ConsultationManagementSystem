@@ -73,6 +73,11 @@ Future<Response> setUserCredential(
 }
 
 Future<Response> createUser(FirebaseUser user, int ut, String token) async {
+  
+  String hashTag = user.displayName;
+  hashTag = (user.email != null) ?  hashTag + user.email : hashTag;
+  hashTag = hashTag.replaceAll(' ', '');
+
   await databaseReference
       .collection("userInfoList")
       .document(user.uid)
@@ -90,6 +95,7 @@ Future<Response> createUser(FirebaseUser user, int ut, String token) async {
     'freeMinutesForNewCustomer': null,
     'fcmRegistrationToken': token,
     'rating': null,
+    'hashTag': hashTag
   });
   return createCustomerInBrainTree(user);
 }

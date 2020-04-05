@@ -98,27 +98,31 @@ class CustomerProfileState extends State<CustomerProfile>
                               child: Column(
                                 children: <Widget>[
                                   // likedUserIdList
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceAround,
-                                    children: <Widget>[
-                                      Column(
-                                        children: <Widget>[
-                                          IconButton(
-                                            icon: Icon(Icons.star),
-                                            onPressed: () {},
-                                          ),
-                                          Text(
-                                              getRating(
-                                                  snapshot.data.documents[0]),
-                                              style: TextStyle(
-                                                  fontSize: 12.0,
-                                                  fontFamily: 'Armata',
-                                                  fontWeight: FontWeight.w600))
-                                        ],
-                                      ),
-                                    ],
+                                  Text(
+                                    "Rating (" +
+                                        getRating(snapshot.data.documents[0])
+                                            .toString() +
+                                        ")",
+                                    textAlign: TextAlign.left,
+                                    style: TextStyle(
+                                      fontSize: 18.0,
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: 'Armata',
+                                    ),
                                   ),
+                                  RatingBar(
+                                    initialRating: getRating(
+                                        snapshot.data.documents[0]),
+                                    direction: Axis.horizontal,
+                                    itemCount: 5,
+                                    itemSize: 25.0,
+                                    itemBuilder: (context, index) => Icon(
+                                      Icons.star,
+                                      color: Colors.amber,
+                                    ),
+                                    onRatingUpdate: (double value) {},
+                                  )
                                 ],
                               ),
                             )
@@ -251,11 +255,11 @@ class CustomerProfileState extends State<CustomerProfile>
     );
   }
 
-  String getRating(document) {
+  double getRating(document) {
     if (document['rating'] == null) {
-      return "N/A";
+      return double.tryParse("0.0");
     } else {
-      return document['rating'].toString();
+      return double.tryParse(document['rating'].toString());
     }
   }
 

@@ -7,17 +7,18 @@
 
     <link rel="stylesheet" href="css/full-calendar.css"/>
     <link rel="stylesheet" href="css/grid.css"/>
+    <link rel="stylesheet" href="css/fab.css"/>
     <link rel="stylesheet" href="css/main.css"/>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <!--    <link rel="stylesheet" href="css/fontawesome.css"/>-->
-
+    <link rel="stylesheet" 
+    	href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <!--<link rel="stylesheet" href="css/fontawesome.css"/>-->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Armata"/>
 
     <script src="js/jquery.js"></script>
     <script src="js/jquery-ui.js"></script>
     <script src="js/moment.js"></script>
     <script src="js/full-calendar.js"></script>
-
+    <script src="js/fab.js"></script>
     <script>
 
         $(document).ready(function () {
@@ -51,7 +52,7 @@
             showAlert({
                 msg: 'Checking url, please wait....!',
                 bodyIcon: 'fa fa-refresh fa-spin',
-                ntsTaBtn: true,
+                ntsTaBtn: false,
                 alertHeading: 'Loading',
             });
 
@@ -571,142 +572,157 @@
                 $('#eventPopUp').hide();
             });
 
+            // fab on click listener
+			$('#fab').click(function () {
+                
+				let link = document.createElement('a');
+				link.href = "intent:#Intent;action=com.dannygroupllc.cms.peopeo.open;category=android.intent.category.DEFAULT;category=android.intent.category.BROWSABLE;S.msg_from_browser=Launched%20from%20Browser;end";
+				document.body.appendChild(link);
+				link.click();   
+                
+            });
+
         });
 
     </script>
 
 </head>
 <body>
-<div class="my-model" id="myAlert" style="z-index: 3" hidden>
-    <div class="container" style="margin-top: 50px" >
-        <div class="row justify-content-center">
-            <div class="col-sm-6">
-                <div class="my-div">
-                    <div class="my-div-head">
-                        <div class="my-div-head-left">
-                            <h3 id="alertHeading">No heading available</h3>
-                        </div>
-                        <div>
-                            <i id="alertCloseBtn" class="fa fa-times-circle"></i>
-                        </div>
-                    </div>
-                    <div class="my-div-body">
-                        <table>
-                            <tbody>
-                            <tr>
-                                <td style="font-size: 50px">
-                                    <i id="alertIcon"></i>
-                                </td>
-                                <td>
-                                    <p id="alertMsg">No message available..... !</p>
-                                </td>
-                            </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="my-div-foot">
-                        <div class="my-div-foot-left">
-                            <button id="alertTryAgainBtn" class="my-btn">Try Again</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-<div class="my-model" id="eventPopUp" hidden>
-    <div class="container" style="margin-top: 50px" >
-        <div class="row justify-content-center">
-            <div class="col-sm-12">
-                <div class="my-div">
-                    <div class="my-div-head">
-                        <div class="my-div-head-left">
-                            <h3>Event</h3>
-                        </div>
-                        <div class="my-div-head-right" >
-                            <i id="eventClosePupUpIcon" class="fa fa-times-circle"></i>
-                        </div>
-                    </div>
-                    <div class="my-div-body">
-                        <table>
-                            <tbody>
-                            <tr>
-                                <td colspan="2" id="freeMinutesForNewCustomer">
-                                    <p style="text-align: center;color: green;font-weight: bold">
-                                        [Request didn't accept yet]
-                                    </p>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <b>Topic</b>
-                                </td>
-                                <td>
-                                    <textarea placeholder="Please write down summary of discussion topics"
-                                              id="topic">    
-                                    </textarea>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <b>Start Date</b>
-                                </td>
-                                <td>
-                                    <input readonly type="date" id="fromDate">
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><b>Start Time</b></td>
-                                <td>
-                                    <input readonly type="time" id="fromTime">
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><b>End Date</b></td>
-                                <td><input readonly type="date" id="toDate"></td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <b>End Time</b>
-                                </td>
-                                <td>
-                                    <input readonly type="time" id="toTime">
-                                </td>
-                            </tr>
-                            <tr>
-                                <td colspan="2" id="requestAcceptStatus">
-                                    <p style="text-align: center;color: red;font-weight: bold">
-                                        [Request didn't accept yet]
-                                    </p>
-                                </td>
-                            </tr>
-                            <tr id="timeLeftToAcceptRequest" >
-                                <td style="text-align: center;color: red;font-weight: bold" colspan="2" ></td>
-                            </tr>
-                            <tr id="acceptRequestAction">
-                                <td>
-                                    <button class="my-btn" style="width: 100%" id="requestAccept">Accept</button>
-                                </td>
-                                <td>
-                                    <button class="my-btn" style="width: 100%" id="requestCancel">Cancel</button>
-                                </td>
-                            </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="my-div-foot">
-                        <div class="my-div-foot-left">
-                            <button class="my-btn" id="eventBookBtn"></button>
-                        </div>
-                        <div class="my-div-foot-right">
-                            <button class="my-btn" id="eventDeleteBtn">Delete</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-<div id="calendar" style="margin: 10px"></div>
+	<div class="my-model" id="myAlert" style="z-index: 3" hidden>
+	    <div class="container" style="margin-top: 50px" >
+	        <div class="row justify-content-center">
+	            <div class="col-sm-6">
+	                <div class="my-div">
+	                    <div class="my-div-head">
+	                        <div class="my-div-head-left">
+	                            <h3 id="alertHeading">No heading available</h3>
+	                        </div>
+	                        <div>
+	                            <i id="alertCloseBtn" class="fa fa-times-circle"></i>
+	                        </div>
+	                    </div>
+	                    <div class="my-div-body">
+	                        <table>
+	                            <tbody>
+	                            <tr>
+	                                <td style="font-size: 50px">
+	                                    <i id="alertIcon"></i>
+	                                </td>
+	                                <td>
+	                                    <p id="alertMsg">No message available..... !</p>
+	                                </td>
+	                            </tr>
+	                            </tbody>
+	                        </table>
+	                    </div>
+	                    <div class="my-div-foot">
+	                        <div class="my-div-foot-left">
+	                            <button id="alertTryAgainBtn" class="my-btn">Try Again</button>
+	                        </div>
+	                    </div>
+	                </div>
+	            </div>
+	        </div>
+	    </div>
+	</div>
+	<div class="my-model" id="eventPopUp" hidden>
+	    <div class="container" style="margin-top: 50px" >
+	        <div class="row justify-content-center">
+	            <div class="col-sm-12">
+	                <div class="my-div">
+	                    <div class="my-div-head">
+	                        <div class="my-div-head-left">
+	                            <h3>Event</h3>
+	                        </div>
+	                        <div class="my-div-head-right" >
+	                            <i id="eventClosePupUpIcon" class="fa fa-times-circle"></i>
+	                        </div>
+	                    </div>
+	                    <div class="my-div-body">
+	                        <table>
+	                            <tbody>
+	                            <tr>
+	                                <td colspan="2" id="freeMinutesForNewCustomer">
+	                                    <p style="text-align: center;color: green;font-weight: bold">
+	                                        [Request didn't accept yet]
+	                                    </p>
+	                                </td>
+	                            </tr>
+	                            <tr>
+	                                <td>
+	                                    <b>Topic</b>
+	                                </td>
+	                                <td>
+	                                    <textarea placeholder="Please write down summary of discussion topics"
+	                                              id="topic">    
+	                                    </textarea>
+	                                </td>
+	                            </tr>
+	                            <tr>
+	                                <td>
+	                                    <b>Start Date</b>
+	                                </td>
+	                                <td>
+	                                    <input readonly type="date" id="fromDate">
+	                                </td>
+	                            </tr>
+	                            <tr>
+	                                <td><b>Start Time</b></td>
+	                                <td>
+	                                    <input readonly type="time" id="fromTime">
+	                                </td>
+	                            </tr>
+	                            <tr>
+	                                <td><b>End Date</b></td>
+	                                <td><input readonly type="date" id="toDate"></td>
+	                            </tr>
+	                            <tr>
+	                                <td>
+	                                    <b>End Time</b>
+	                                </td>
+	                                <td>
+	                                    <input readonly type="time" id="toTime">
+	                                </td>
+	                            </tr>
+	                            <tr>
+	                                <td colspan="2" id="requestAcceptStatus">
+	                                    <p style="text-align: center;color: red;font-weight: bold">
+	                                        [Request didn't accept yet]
+	                                    </p>
+	                                </td>
+	                            </tr>
+	                            <tr id="timeLeftToAcceptRequest" >
+	                                <td style="text-align: center;color: red;font-weight: bold" colspan="2" ></td>
+	                            </tr>
+	                            <tr id="acceptRequestAction">
+	                                <td>
+	                                    <button class="my-btn" style="width: 100%" id="requestAccept">Accept</button>
+	                                </td>
+	                                <td>
+	                                    <button class="my-btn" style="width: 100%" id="requestCancel">Cancel</button>
+	                                </td>
+	                            </tr>
+	                            </tbody>
+	                        </table>
+	                    </div>
+	                    <div class="my-div-foot">
+	                        <div class="my-div-foot-left">
+	                            <button class="my-btn" id="eventBookBtn"></button>
+	                        </div>
+	                        <div class="my-div-foot-right">
+	                            <button class="my-btn" id="eventDeleteBtn">Delete</button>
+	                        </div>
+	                    </div>
+	                </div>
+	            </div>
+	        </div>
+	    </div>
+	</div>
+	<div id="calendar" style="margin: 10px"></div>
+	<div class="st-actionContainer right-bottom">
+		<div class="st-btn-container right-bottom">
+			<div class="st-button-main" id="fab" ><i class="fa fa-home"></i></div>
+		</div>
+	</div>
 </body>
 </html>

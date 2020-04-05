@@ -47,11 +47,32 @@ class EditConsultantProfileState extends State<EditConsultantProfile> {
   int maxWidth = 250;
   String tempDir;
   String filePath;
+  String hourlyRate;
+  String freeMinutesForNewCustomer;
+  String email;
 
   @override
   void initState() {
     super.initState();
     getTemporaryDirectory().then((d) => tempDir = d.path);
+
+    Firestore.instance
+        .collection('userInfoList')
+        .document(uid)
+        .get()
+        .then((doc) {
+      int hr = (doc['hourlyRate'] == null) ? null : doc['hourlyRate'];
+      int fm = (doc['freeMinutesForNewCustomer'] == null)
+          ? null
+          : doc['freeMinutesForNewCustomer'];
+
+      email = (doc['email'] == null) ? '' : doc['email'];
+
+      setState(() {
+        hourlyRate = (hr == null) ? '0' : hr.toString();
+        freeMinutesForNewCustomer = (fm == null) ? '0' : fm.toString();
+      });
+    });
   }
 
   @override
@@ -114,46 +135,94 @@ class EditConsultantProfileState extends State<EditConsultantProfile> {
                                   EdgeInsets.fromLTRB(15.0, 5.0, 5.0, 5.0),
                               border: OutlineInputBorder(),
                               labelText:
-                                  getHourlyRate(snapshot.data.documents[0])),
-                          controller: hourlyRateTECtl,
-                        ),
-                      ),
-                    ),
-                    Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(10.0),
-                        child: TextField(
-                          decoration: InputDecoration(
-                              contentPadding:
-                                  EdgeInsets.fromLTRB(15.0, 5.0, 5.0, 5.0),
-                              border: OutlineInputBorder(),
-                              labelText: getFreeMinutesForNewCustomer(
-                                  snapshot.data.documents[0])),
-                          controller: freeMinuteTECtl,
-                        ),
-                      ),
-                    ),
-                    Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(10.0),
-                        child: TextField(
-                          decoration: InputDecoration(
-                              contentPadding:
-                                  EdgeInsets.fromLTRB(15.0, 5.0, 5.0, 5.0),
-                              border: OutlineInputBorder(),
-                              labelText:
                                   getPhoneNumber(snapshot.data.documents[0])),
                           controller: phoneNumberTECtl,
                         ),
                       ),
                     ),
+                    Container(
+                      width: MediaQuery.of(context).size.width,
+                      margin: EdgeInsets.fromLTRB(10.0, 0.0, 0.0, 0.0),
+                      child: Text("Hourly Rate(\$/Hour)",
+                          style: TextStyle(
+                            fontSize: 15.0,
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Armata',
+                          )),
+                    ),
+                    Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(color: Colors.grey),
+                          borderRadius: BorderRadius.all(Radius.circular(5)),
+                        ),
+                        margin: EdgeInsets.all(10.0),
+                        padding: EdgeInsets.fromLTRB(15.0, 0.0, 0.0, 0.0),
+                        width: MediaQuery.of(context).size.width,
+                        child: DropdownButton<String>(
+                          value: hourlyRate,
+                          isExpanded: true,
+                          underline: SizedBox(),
+                          onChanged: (String newValue) {
+                            setState(() {
+                              hourlyRate = newValue;
+                            });
+                          },
+                          items: <String>['0', '5', '10', '15', '20']
+                              .map<DropdownMenuItem<String>>((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(value),
+                            );
+                          }).toList(),
+                        )),
+                    Container(
+                      width: MediaQuery.of(context).size.width,
+                      margin: EdgeInsets.fromLTRB(10.0, 0.0, 0.0, 0.0),
+                      child: Text("Free minute's for new customer",
+                          style: TextStyle(
+                            fontSize: 15.0,
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Armata',
+                          )),
+                    ),
+                    Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          border: Border.all(color: Colors.grey),
+                          borderRadius: BorderRadius.all(Radius.circular(5)),
+                        ),
+                        margin: EdgeInsets.all(10.0),
+                        padding: EdgeInsets.fromLTRB(15.0, 0.0, 0.0, 0.0),
+                        width: MediaQuery.of(context).size.width,
+                        child: DropdownButton<String>(
+                          value: freeMinutesForNewCustomer,
+                          isExpanded: true,
+                          underline: SizedBox(),
+                          onChanged: (String newValue) {
+                            setState(() {
+                              freeMinutesForNewCustomer = newValue;
+                            });
+                          },
+                          items: <String>['0', '5', '10', '15', '20']
+                              .map<DropdownMenuItem<String>>((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(value),
+                            );
+                          }).toList(),
+                        )),
                     Center(
                       child: Padding(
                         padding: EdgeInsets.all(10.0),
                         child: TextField(
+                          maxLines: 4,
+                          keyboardType: TextInputType.multiline,
                           decoration: InputDecoration(
                               contentPadding:
-                                  EdgeInsets.fromLTRB(15.0, 5.0, 5.0, 5.0),
+                                  EdgeInsets.fromLTRB(15.0, 15.0, 15.0, 15.0),
                               border: OutlineInputBorder(),
                               labelText: getShortDescription(
                                   snapshot.data.documents[0])),
@@ -165,9 +234,11 @@ class EditConsultantProfileState extends State<EditConsultantProfile> {
                       child: Padding(
                         padding: EdgeInsets.all(10.0),
                         child: TextField(
+                          maxLines: 8,
+                          keyboardType: TextInputType.multiline,
                           decoration: InputDecoration(
                               contentPadding:
-                                  EdgeInsets.fromLTRB(15.0, 5.0, 5.0, 5.0),
+                                  EdgeInsets.fromLTRB(15.0, 15.0, 15.0, 15.0),
                               border: OutlineInputBorder(),
                               labelText: getLongDescription(
                                   snapshot.data.documents[0])),
@@ -175,28 +246,46 @@ class EditConsultantProfileState extends State<EditConsultantProfile> {
                         ),
                       ),
                     ),
-                    Center(
+                    Container(
+                      width: MediaQuery.of(context).size.width,
+                      margin: EdgeInsets.all(10.0),
                       child: OutlineButton(
-                        child: Text('SAVE'),
+                        child: Text("SAVE",
+                            style: TextStyle(
+                              fontSize: 15.0,
+                              color: Colors.red,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'Armata',
+                            )),
                         onPressed: () {
-                          if (hourlyRateTECtl.text.isEmpty) {
+                          if (displayNameTECtl.text.toString().isEmpty) {
                             Fluttertoast.showToast(
-                                msg: "Hourly rate required!");
-                          } else if (freeMinuteTECtl.text.isEmpty) {
+                                msg: "Display name required!");
+                          } else if (hourlyRate == null) {
                             Fluttertoast.showToast(
-                                msg: "Hourly rate required!");
+                                msg: "Select your hourly rate!");
+                          } else if (freeMinutesForNewCustomer == null) {
+                            Fluttertoast.showToast(
+                                msg: "Select free minute for new customer!");
                           } else {
                             Firestore.instance
                                 .collection('userInfoList')
                                 .document(uid)
                                 .updateData({
                               'displayName': displayNameTECtl.text.toString(),
-                              'hourlyRate': int.tryParse(hourlyRateTECtl.text),
+                              'hourlyRate': int.tryParse(hourlyRate),
                               'freeMinutesForNewCustomer':
-                                  int.tryParse(freeMinuteTECtl.text),
+                                  int.tryParse(freeMinutesForNewCustomer),
                               'phoneNumber': phoneNumberTECtl.text,
-                              'shortDescription': shortDesTECtl.text.toString(),
-                              'longDescription': longDesTECtl.text.toString(),
+                              'shortDescription':
+                                  (shortDesTECtl.text.toString().isEmpty)
+                                      ? null
+                                      : shortDesTECtl.text.toString(),
+                              'longDescription':
+                                  (longDesTECtl.text.toString().isEmpty)
+                                      ? null
+                                      : longDesTECtl.text.toString(),
+                              'hashTag': getHashTag()
                             });
                           }
                         },
@@ -316,7 +405,6 @@ class EditConsultantProfileState extends State<EditConsultantProfile> {
                                       "Video uploading limit has been finished!");
                             } else {
                               String uuid = new Uuid().v1();
-
                               // get video from device
                               FilePicker.getFile(type: FileType.video)
                                   .then((pickedFile) {
@@ -354,7 +442,6 @@ class EditConsultantProfileState extends State<EditConsultantProfile> {
                                         'thmUrl': thmUrl,
                                         'thmPath': "images/" + thmName,
                                       });
-
                                       Navigator.pop(context);
                                     });
                                   });
@@ -392,13 +479,19 @@ class EditConsultantProfileState extends State<EditConsultantProfile> {
     );
   }
 
-  getHourlyRate(document) {
+  Widget getHourlyRate(document) {
     if (document['hourlyRate'] == null) {
-      return "Hourly Rate Not Set Yet";
+      hourlyRate = "Select Hourly Rate";
     } else {
-      hourlyRateTECtl.text = document['hourlyRate'].toString();
-      return "Hourly Rate";
+      hourlyRate = document['hourlyRate'].toString();
     }
+    return Text(hourlyRate,
+        style: TextStyle(
+          fontSize: 15.0,
+          color: Colors.black54,
+          fontWeight: FontWeight.bold,
+          fontFamily: 'Armata',
+        ));
   }
 
   getFreeMinutesForNewCustomer(document) {
@@ -421,7 +514,7 @@ class EditConsultantProfileState extends State<EditConsultantProfile> {
 
   getShortDescription(document) {
     if (document['shortDescription'] == null) {
-      return "Short Description";
+      return "Short Description not set yet";
     } else {
       shortDesTECtl.text = document['shortDescription'].toString();
       return "Short Description";
@@ -430,7 +523,7 @@ class EditConsultantProfileState extends State<EditConsultantProfile> {
 
   getLongDescription(document) {
     if (document['longDescription'] == null) {
-      return "Long Discription";
+      return "Long Discription not set yet";
     } else {
       longDesTECtl.text = document['longDescription'].toString();
       return "Long Discription";
@@ -439,10 +532,10 @@ class EditConsultantProfileState extends State<EditConsultantProfile> {
 
   getPhoneNumber(document) {
     if (document['phoneNumber'] == null) {
-      return "Phone Number Not Set Yet";
+      return "Phone Number not set yet (Optional)";
     } else {
       phoneNumberTECtl.text = document['phoneNumber'].toString();
-      return "Phone Number";
+      return "Phone Number (Optional)";
     }
   }
 
@@ -597,5 +690,40 @@ class EditConsultantProfileState extends State<EditConsultantProfile> {
         },
       ),
     );
+  }
+
+  String getHashTag() {
+    String hashTag = '';
+
+    if (shortDesTECtl.text.toString().isNotEmpty) {
+      String text = shortDesTECtl.text.toString();
+
+      RegExp exp = new RegExp(r"\B#\w\w+");
+      exp.allMatches(text).forEach((match) {
+        String res = match.group(0).replaceAll("#", "");
+
+        if (res != null) {
+          print(res);
+          hashTag = hashTag + res;
+        }
+      });
+    }
+
+    if (longDesTECtl.text.toString().isNotEmpty) {
+      String text = longDesTECtl.text.toString();
+
+      RegExp exp = new RegExp(r"\B#\w\w+");
+      exp.allMatches(text).forEach((match) {
+        String res = match.group(0).replaceAll("#", "");
+        if (res != null) {
+          print(res);
+          hashTag = hashTag + res;
+        }
+      });
+    }
+
+    hashTag = hashTag + displayNameTECtl.text.toString() + email;
+    hashTag = hashTag.replaceAll(' ', '');
+    return hashTag;
   }
 }

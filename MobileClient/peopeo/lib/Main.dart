@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:badges/badges.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:peopeo/BookmarkViewer.dart';
 import 'package:peopeo/Const.dart';
 import 'package:peopeo/LikedUserViewer.dart';
@@ -221,7 +222,8 @@ class MyHomePageState extends State<MyHomePage> {
                             userInfoList.add(UserInfo(
                                 uid: val.data['uid'],
                                 displayName: val.data['displayName'],
-                                email: val.data['email']));
+                                email: val.data['email'],
+                                hashTag : val.data['hashTag']));
                           });
                           showSearch(
                               context: context,
@@ -529,15 +531,6 @@ class MyHomePageState extends State<MyHomePage> {
                             Column(
                               children: <Widget>[
                                 IconButton(
-                                  icon: Icon(Icons.star),
-                                  onPressed: () {},
-                                ),
-                                getRating(document)
-                              ],
-                            ),
-                            Column(
-                              children: <Widget>[
-                                IconButton(
                                   icon: Icon(Icons.attach_money),
                                   onPressed: () {},
                                 ),
@@ -563,6 +556,31 @@ class MyHomePageState extends State<MyHomePage> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
+                  Row(
+                    children: <Widget>[
+                      Text(
+                        "("+getRating(document).toString()+")",
+                        textAlign: TextAlign.left,
+                        style: TextStyle(
+                          fontSize: 18.0,
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Armata',
+                        ),
+                      ),
+                      RatingBar(
+                        initialRating: getRating(document),
+                        direction: Axis.horizontal,
+                        itemCount: 5,
+                        itemSize: 25.0,
+                        itemBuilder: (context, index) => Icon(
+                          Icons.star,
+                          color: Colors.amber,
+                        ),
+                        onRatingUpdate: (double value) {},
+                      )
+                    ],
+                  ),
                   getDisplayName(document),
                   SizedBox(
                     height: 10.0,
@@ -643,14 +661,14 @@ class MyHomePageState extends State<MyHomePage> {
 
   getLike(DocumentSnapshot document) {
     if (document['like'] == null) {
-      return Text('0',
+      return Text('0 Like',
           style: TextStyle(
             fontSize: 12.0,
             fontWeight: FontWeight.w600,
             fontFamily: 'Armata',
           ));
     } else {
-      return Text(document['like'].toString(),
+      return Text(document['like'].toString()+" Like",
           style: TextStyle(
             fontSize: 12.0,
             fontWeight: FontWeight.w600,
@@ -662,7 +680,8 @@ class MyHomePageState extends State<MyHomePage> {
   getFreeMinutes(DocumentSnapshot document) {
     if (document['freeMinutesForNewCustomer'] == null) {
       return Text(
-        "[No fres minute's for new customer]",
+        "[No fres minute for new customer]",
+        textAlign: TextAlign.center,
         style: TextStyle(color: Colors.green, fontFamily: "Armata"),
       );
     } else {
@@ -670,6 +689,7 @@ class MyHomePageState extends State<MyHomePage> {
         "[" +
             document['freeMinutesForNewCustomer'].toString() +
             " minute's free for new customer]",
+        textAlign: TextAlign.center,
         style: TextStyle(color: Colors.green, fontFamily: "Armata"),
       );
     }
@@ -678,13 +698,13 @@ class MyHomePageState extends State<MyHomePage> {
   getHourlyRate(DocumentSnapshot document) {
     if (document['hourlyRate'] == null) {
       return Text(
-        "N/A",
+        "\$0/Hour",
         style: TextStyle(
             fontSize: 12.0, fontWeight: FontWeight.w600, fontFamily: 'Armata'),
       );
     } else {
       return Text(
-        document['hourlyRate'].toString() + " \$/H",
+        "\$"+document['hourlyRate'].toString() + "/Hour",
         style: TextStyle(
             fontSize: 12.0, fontWeight: FontWeight.w600, fontFamily: 'Armata'),
       );
@@ -693,7 +713,7 @@ class MyHomePageState extends State<MyHomePage> {
 
   getDisplayName(DocumentSnapshot document) {
     if (document['displayName'] == null) {
-      return Text("N/A",
+      return Text("Display name not set yet",
           textAlign: TextAlign.left,
           style: TextStyle(
             fontSize: 18.0,
@@ -715,7 +735,7 @@ class MyHomePageState extends State<MyHomePage> {
 
   getShortDescription(DocumentSnapshot document) {
     if (document['shortDescription'] == null) {
-      return Text("N/A",
+      return Text("Short description not set yet",
           style: TextStyle(
             fontSize: 15.0,
             color: Colors.black54,
@@ -735,7 +755,7 @@ class MyHomePageState extends State<MyHomePage> {
 
   getLongDescription(DocumentSnapshot document) {
     if (document['longDescription'] == null) {
-      return Text("N/A",
+      return Text("Long description not set yet",
           style: TextStyle(
             fontSize: 15.0,
             color: Colors.grey,
@@ -753,21 +773,11 @@ class MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  getRating(DocumentSnapshot document) {
+  double getRating(document) {
     if (document['rating'] == null) {
-      return Text("N/A",
-          style: TextStyle(
-            fontSize: 12.0,
-            fontWeight: FontWeight.w600,
-            fontFamily: 'Armata',
-          ));
+      return double.tryParse("0.0");
     } else {
-      return Text(document['rating'].toString(),
-          style: TextStyle(
-            fontSize: 12.0,
-            fontWeight: FontWeight.w600,
-            fontFamily: 'Armata',
-          ));
+      return double.tryParse(document['rating'].toString());
     }
   }
 

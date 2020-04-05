@@ -145,9 +145,17 @@ class EditCustomerProfileState extends State<EditCustomerProfile> {
                         ),
                       ),
                     ),
-                    Center(
+                    Container(
+                      width: MediaQuery.of(context).size.width,
+                      margin: EdgeInsets.all(10.0),
                       child: OutlineButton(
-                        child: Text('SAVE'),
+                        child: Text("SAVE",
+                            style: TextStyle(
+                              fontSize: 15.0,
+                              color: Colors.red,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'Armata',
+                            )),
                         onPressed: () {
                           if (displayNameTECtl.text.isEmpty) {
                             Fluttertoast.showToast(
@@ -157,10 +165,10 @@ class EditCustomerProfileState extends State<EditCustomerProfile> {
                                 .collection('userInfoList')
                                 .document(uid)
                                 .updateData({
-                              'displayName': displayNameTECtl.text.toString(),
-                              'phoneNumber': phoneNumberTECtl.text,
-                              'shortDescription': shortDesTECtl.text.toString(),
-                              'longDescription': longDesTECtl.text.toString(),
+                              'displayName': (displayNameTECtl.text.toString().isEmpty) ? null : displayNameTECtl.text.toString(),
+                              'phoneNumber': (phoneNumberTECtl.text.toString().isEmpty) ? null : phoneNumberTECtl.text.toString(),
+                              'shortDescription': (shortDesTECtl.text.toString().isEmpty) ? null : shortDesTECtl.text.toString(),
+                              'longDescription': (longDesTECtl.text.toString().isEmpty) ? null : longDesTECtl.text.toString(),
                             });
                           }
                         },
@@ -385,7 +393,7 @@ class EditCustomerProfileState extends State<EditCustomerProfile> {
 
   getPhoneNumber(document) {
     if (document['phoneNumber'] == null) {
-      return "Phone Number Not Set Yet";
+      return "Phone Number Not Set Yet (Optional)";
     } else {
       phoneNumberTECtl.text = document['phoneNumber'].toString();
       return "Phone Number";

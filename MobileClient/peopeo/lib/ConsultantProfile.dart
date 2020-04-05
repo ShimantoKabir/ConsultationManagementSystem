@@ -137,21 +137,6 @@ class ConsultantProfileState extends State<ConsultantProfile>
                                       Column(
                                         children: <Widget>[
                                           IconButton(
-                                            icon: Icon(Icons.star),
-                                            onPressed: () {},
-                                          ),
-                                          Text(
-                                              getRating(
-                                                  snapshot.data.documents[0]),
-                                              style: TextStyle(
-                                                  fontSize: 12.0,
-                                                  fontFamily: 'Armata',
-                                                  fontWeight: FontWeight.w600))
-                                        ],
-                                      ),
-                                      Column(
-                                        children: <Widget>[
-                                          IconButton(
                                             icon: Icon(Icons.attach_money),
                                             onPressed: () {},
                                           ),
@@ -169,12 +154,15 @@ class ConsultantProfileState extends State<ConsultantProfile>
                                   Padding(
                                     padding: const EdgeInsets.fromLTRB(
                                         2.0, 15.0, 2.0, 2.0),
-                                    child: Text(
-                                      getFreeMinutesForNewCustomer(
-                                          snapshot.data.documents[0]),
-                                      style: TextStyle(
-                                          color: Colors.green,
-                                          fontFamily: "Armata"),
+                                    child: Center(
+                                      child: Text(
+                                        getFreeMinutesForNewCustomer(
+                                            snapshot.data.documents[0]),
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                            color: Colors.green,
+                                            fontFamily: "Armata"),
+                                      ),
                                     ),
                                   ),
                                   Padding(
@@ -212,6 +200,34 @@ class ConsultantProfileState extends State<ConsultantProfile>
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: <Widget>[
+                            Row(
+                              children: <Widget>[
+                                Text(
+                                  "("+getRating(snapshot.data.documents[0]).toString()+")",
+                                  textAlign: TextAlign.left,
+                                  style: TextStyle(
+                                    fontSize: 18.0,
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'Armata',
+                                  ),
+                                ),
+                                RatingBar(
+                                  initialRating: getRating(snapshot.data.documents[0]),
+                                  direction: Axis.horizontal,
+                                  itemCount: 5,
+                                  itemSize: 25.0,
+                                  itemBuilder: (context, index) => Icon(
+                                    Icons.star,
+                                    color: Colors.amber,
+                                  ),
+                                  onRatingUpdate: (double value) {},
+                                )
+                              ],
+                            ),
+                            SizedBox(
+                              height: 10.0,
+                            ),
                             Text(
                               getDisplayName(snapshot.data.documents[0]),
                               textAlign: TextAlign.left,
@@ -312,7 +328,7 @@ class ConsultantProfileState extends State<ConsultantProfile>
                 ],
               );
             } else {
-              return Text('No user info found');
+              return Text('No user info found!');
             }
           }),
       floatingActionButton: Visibility(
@@ -336,15 +352,15 @@ class ConsultantProfileState extends State<ConsultantProfile>
 
   getHourlyRate(document) {
     if (document['hourlyRate'] == null) {
-      return "N/A";
+      return "\$0/Hour";
     } else {
-      return document['hourlyRate'].toString() + " \$/H";
+      return "\$" + document['hourlyRate'].toString() + "/Hour";
     }
   }
 
   getFreeMinutesForNewCustomer(document) {
     if (document['freeMinutesForNewCustomer'] == null) {
-      return "[N/A free minute's for new customer]";
+      return "[No free minute's for new customer]";
     } else {
       return "[" +
           document['freeMinutesForNewCustomer'].toString() +
@@ -354,7 +370,7 @@ class ConsultantProfileState extends State<ConsultantProfile>
 
   String getDisplayName(document) {
     if (document['displayName'] == null) {
-      return "Not set yet";
+      return "Display name not set yet";
     } else {
       return document['displayName'].toString();
     }
@@ -362,7 +378,7 @@ class ConsultantProfileState extends State<ConsultantProfile>
 
   String getShortDescription(document) {
     if (document['shortDescription'] == null) {
-      return "Short description set yet";
+      return "Short description not set yet";
     } else {
       return document['shortDescription'].toString();
     }
@@ -370,7 +386,7 @@ class ConsultantProfileState extends State<ConsultantProfile>
 
   String getLongDescription(document) {
     if (document['longDescription'] == null) {
-      return "Long description set yet";
+      return "Long description not set yet";
     } else {
       return document['longDescription'].toString();
     }
@@ -504,17 +520,17 @@ class ConsultantProfileState extends State<ConsultantProfile>
 
   getTotalLike(document) {
     if (document['like'] == null) {
-      return "N/A";
+      return "0 Like";
     } else {
-      return document['like'].toString();
+      return document['like'].toString() + " Like";
     }
   }
 
-  String getRating(document) {
+  double getRating(document) {
     if (document['rating'] == null) {
-      return "N/A";
+      return double.tryParse("0.0");
     } else {
-      return document['rating'].toString();
+      return double.tryParse(document['rating'].toString());
     }
   }
 

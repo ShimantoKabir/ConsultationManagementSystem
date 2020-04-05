@@ -19,6 +19,8 @@ import 'package:peopeo/Const.dart';
 import 'package:peopeo/HttpResponse.dart';
 import 'package:peopeo/fullPhoto.dart';
 
+import 'MyWebView.dart';
+
 class Chat extends StatefulWidget {
   final String peerId;
   final String peerAvatar;
@@ -1189,13 +1191,15 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
 
   void goBrowserForPayment(String aid) async {
     String url = webClientBaseUrl + '/payment.html?aid=' + aid + "&uid=" + uid;
-    if (await canLaunch(url)) {
-      Navigator.of(context).pop();
-      paymentCheckingPopUp(context);
-      await launch(url);
-    } else {
-      throw 'Could not launch $url';
-    }
+    Navigator.of(context).pop();
+    paymentCheckingPopUp(context);
+
+    Navigator.of(context).push(MaterialPageRoute(
+        builder: (BuildContext context) => MyWebView(
+          title: "Payment",
+          selectedUrl: url,
+        )));
+
   }
 
   @override
