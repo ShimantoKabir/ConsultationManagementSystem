@@ -206,8 +206,8 @@ public class PlanDaoImp implements PlanDao {
                         "  IF(p.free_minutes_for_new_customer IS NOT NULL,'complete',p.payment_trans_id) AS payment_trans_id, \n" +
                         "  p.topic AS topic, \n" +
                         "  p.created_date AS created_date, \n" +
-                        "  DATE_FORMAT(CONVERT_TZ(p.start_time,'UTC', '" + p.getTimeZone() + "'),'%Y-%m-%d %T') AS f_start_time, \n" +
-                        "  DATE_FORMAT(CONVERT_TZ(p.end_time,'UTC', '" + p.getTimeZone() + "'),'%Y-%m-%d %T') AS f_end_time, \n" +
+                        "  DATE_FORMAT(CONVERT_TZ(p.start_time,'UTC',p.time_zone),'%Y-%m-%d %T') AS f_start_time, \n" +
+                        "  DATE_FORMAT(CONVERT_TZ(p.end_time,'UTC',p.time_zone),'%Y-%m-%d %T') AS f_end_time, \n" +
                         "  SUBDATE(p.start_time,INTERVAL 30 MINUTE) AS before_start_time \n" +
                         "FROM\n" +
                         "  plan AS p\n" +
@@ -231,8 +231,8 @@ public class PlanDaoImp implements PlanDao {
                         "  IF(p.free_minutes_for_new_customer IS NOT NULL,'complete',p.payment_trans_id) AS payment_trans_id, \n" +
                         "  p.topic AS topic, \n" +
                         "  p.created_date AS created_date, \n" +
-                        "  DATE_FORMAT(CONVERT_TZ(p.start_time,'UTC', '" + p.getTimeZone() + "'),'%Y-%m-%d %T') AS f_start_time, \n" +
-                        "  DATE_FORMAT(CONVERT_TZ(p.end_time,'UTC', '" + p.getTimeZone() + "'),'%Y-%m-%d %T') AS f_end_time, \n" +
+                        "  DATE_FORMAT(CONVERT_TZ(p.start_time,'UTC',p.time_zone),'%Y-%m-%d %T') AS f_start_time, \n" +
+                        "  DATE_FORMAT(CONVERT_TZ(p.end_time,'UTC',p.time_zone),'%Y-%m-%d %T') AS f_end_time, \n" +
                         "  SUBDATE(p.start_time,INTERVAL 30 MINUTE) AS before_start_time \n" +
                         "FROM\n" +
                         "  plan AS p \n" +

@@ -387,9 +387,12 @@ class EditConsultantProfileState extends State<EditConsultantProfile> {
                       ),
                     ),
                     Center(
-                      child: OutlineButton(
-                        child: Text('Pick Video To Upload'),
+                      child: RaisedButton(
+                        shape: new RoundedRectangleBorder(
+                            borderRadius: new BorderRadius.circular(8.0),
+                            side: BorderSide(color: Colors.red)),
                         onPressed: () {
+
                           showAlertDialog(
                               context, "Video uploading please wait...!");
 
@@ -402,7 +405,7 @@ class EditConsultantProfileState extends State<EditConsultantProfile> {
                             if (im.documents.length > 4) {
                               Fluttertoast.showToast(
                                   msg:
-                                      "Video uploading limit has been finished!");
+                                  "Video uploading limit has been finished!");
                             } else {
                               String uuid = new Uuid().v1();
                               // get video from device
@@ -418,12 +421,12 @@ class EditConsultantProfileState extends State<EditConsultantProfile> {
                                   // get thumbnail img
                                   // form video url
                                   VideoThumbnail.thumbnailFile(
-                                          video: vdUrl,
-                                          thumbnailPath: tempDir,
-                                          imageFormat: format,
-                                          maxHeight: maxHeight,
-                                          maxWidth: maxWidth,
-                                          quality: quality)
+                                      video: vdUrl,
+                                      thumbnailPath: tempDir,
+                                      imageFormat: format,
+                                      maxHeight: maxHeight,
+                                      maxWidth: maxWidth,
+                                      quality: quality)
                                       .then((thmImg) {
                                     setState(() {
                                       fileType = 'image';
@@ -449,8 +452,13 @@ class EditConsultantProfileState extends State<EditConsultantProfile> {
                               });
                             }
                           });
+
                         },
-                      ),
+                        color: Colors.red,
+                        textColor: Colors.white,
+                        child: Text("Upload Image".toUpperCase(),
+                            style: TextStyle(fontSize: 14)),
+                      )
                     )
                   ],
                 );
@@ -636,8 +644,6 @@ class EditConsultantProfileState extends State<EditConsultantProfile> {
 
     return ListTile(
       leading: Container(
-        height: 150.0,
-        width: 100.0,
         decoration: new BoxDecoration(
           shape: BoxShape.rectangle,
           image: new DecorationImage(

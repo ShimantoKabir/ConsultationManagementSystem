@@ -65,7 +65,7 @@ class PlanInfoState extends State<PlanInfo> {
                   headerBuilder: (BuildContext context, int index) {
                     return new Container(
                         child: Text(
-                            snapshot.data[index].startTime.substring(0, 12),
+                            snapshot.data[index].fStartTime.substring(0, 12),
                             style: TextStyle(
                                 fontSize: 15.0,
                                 color: Colors.black,
@@ -91,16 +91,16 @@ class PlanInfoState extends State<PlanInfo> {
                                     fontWeight: FontWeight.bold)),
                             Text(
                                 "Start Time " +
-                                    snapshot.data[index].startTime.substring(12,
-                                        snapshot.data[index].startTime.length),
+                                    snapshot.data[index].fStartTime.substring(11,
+                                        snapshot.data[index].fStartTime.length),
                                 style: TextStyle(
                                     color: Colors.black,
                                     fontFamily: 'Armata',
                                     fontWeight: FontWeight.normal)),
                             Text(
                                 "End Time " +
-                                    snapshot.data[index].endTime.substring(12,
-                                        snapshot.data[index].endTime.length),
+                                    snapshot.data[index].fEndTime.substring(11,
+                                        snapshot.data[index].fEndTime.length),
                                 style: TextStyle(
                                     color: Colors.black,
                                     fontFamily: 'Armata',
@@ -112,8 +112,8 @@ class PlanInfoState extends State<PlanInfo> {
                     );
                   },
                   hasSameHeader: (int a, int b) {
-                    return snapshot.data[a].startTime.substring(0, 6) ==
-                        snapshot.data[b].startTime.substring(0, 6);
+                    return snapshot.data[a].fStartTime.substring(0, 9) ==
+                        snapshot.data[b].fStartTime.substring(0, 9);
                   },
                   itemExtend: null,
                 );
@@ -125,12 +125,9 @@ class PlanInfoState extends State<PlanInfo> {
 
   Future<List<Plan>> getPlanList() async {
     String timeZone = await FlutterNativeTimezone.getLocalTimezone();
-
     String url = serverBaseUrl + '/plan/get-all-plan-by-user';
     Map<String, String> headers = {"Content-type": "application/json"};
-
     var request;
-
     if (userType == 2) {
       request = {
         'plan': {'conUid': uid, 'userType': 2, 'timeZone': timeZone}
@@ -140,10 +137,8 @@ class PlanInfoState extends State<PlanInfo> {
         'plan': {'cusUid': uid, 'userType': 1, 'timeZone': timeZone}
       };
     }
-
     Response response =
         await post(url, headers: headers, body: json.encode(request));
-
     if (response.statusCode == 200) {
       print(response.body.toString());
       return HttpResponse.fromJson(json.decode(response.body)).planList;
