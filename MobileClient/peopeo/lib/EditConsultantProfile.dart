@@ -731,5 +731,6 @@ class EditConsultantProfileState extends State<EditConsultantProfile> {
     hashTag = hashTag + displayNameTECtl.text.toString() + email;
     hashTag = hashTag.replaceAll(' ', '');
     return hashTag;
+
   }
 }

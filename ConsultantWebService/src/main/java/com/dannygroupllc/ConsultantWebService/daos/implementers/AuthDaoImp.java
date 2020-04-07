@@ -48,15 +48,15 @@ public class AuthDaoImp implements AuthDao {
 
                 String sql = ""
                         + "UPDATE "
-                        + "	auth "
+                        + " auth "
                         + "SET "
-                        + "	a_id =:aId, "
-                        + "	ip =:ip, "
-                        + "	client_token =:clientToken, "
-                        + "	plan_id =:planId, "
-                        + "	amount =:amount "
+                        + " a_id =:aId, "
+                        + " ip =:ip, "
+                        + " client_token =:clientToken, "
+                        + " plan_id =:planId, "
+                        + " amount =:amount "
                         + "WHERE "
-                        + "	u_id =:uId";
+                        + " u_id =:uId";
 
                 Query authUpdateQuery = entityManager.createNativeQuery(sql);
 
@@ -179,8 +179,8 @@ public class AuthDaoImp implements AuthDao {
                 String planFetchingSql = "SELECT \n" +
                         "  p.id AS id,\n" +
                         "  p.topic AS topic,\n" +
-                        "  p.start_time AS start_time,\n" +
-                        "  p.end_time AS end_time,\n" +
+                        "  DATE_FORMAT(CONVERT_TZ(start_time,'UTC',time_zone),'%Y-%m-%d %T') AS f_start_time,\n" +
+                        "  DATE_FORMAT(CONVERT_TZ(end_time,'UTC',time_zone),'%Y-%m-%d %T') AS f_end_time,\n" +
                         "  p.is_accept_by_con AS is_accept_by_con,\n" +
                         "  p.payment_trans_id AS payment_trans_id,\n" +
                         "  p.free_minutes_for_new_customer AS free_minutes_for_new_customer,\n" +
@@ -193,8 +193,8 @@ public class AuthDaoImp implements AuthDao {
                         "  ) AS is_booking_acceptance_time_passed,\n" +
                         "  HOUR(p.time_diff) AS hour_diff,\n" +
                         "  MINUTE(p.time_diff) AS minute_diff, \n" +
-                        "  DATE_SUB(p.start_time,INTERVAL 5 MINUTE) AS before_padding, \n" +
-                        "  DATE_ADD(p.end_time,INTERVAL 5 MINUTE) AS after_padding \n" +
+                        "  DATE_FORMAT(DATE_SUB(CONVERT_TZ(start_time,'UTC',time_zone),INTERVAL 5 MINUTE),'%Y-%m-%d %T') AS before_padding, \n" +
+                        "  DATE_FORMAT(DATE_ADD(CONVERT_TZ(end_time,'UTC',time_zone),INTERVAL 5 MINUTE),'%Y-%m-%d %T') AS after_padding \n" +
                         "FROM\n" +
                         "  (SELECT \n" +
                         "    *,\n" +
@@ -225,14 +225,14 @@ public class AuthDaoImp implements AuthDao {
 
                         bp.setId(0);
                         bp.setTopic("Before Break time!");
-                        bp.setStartTime((Date) result[12]);
-                        bp.setEndTime((Date) result[2]);
+                        bp.setfStartTime((String) result[12]);
+                        bp.setfEndTime((String) result[2]);
                         rPlanList.add(bp);
 
                         np.setId((Integer) result[0]);
                         np.setTopic((String) result[1]);
-                        np.setStartTime((Date) result[2]);
-                        np.setEndTime((Date) result[3]);
+                        np.setfStartTime((String) result[2]);
+                        np.setfEndTime((String) result[3]);
                         np.setAcceptByCon((Boolean) result[4]);
                         np.setPaymentTransId((String) result[5]);
                         np.setFreeMinutesForNewCustomer((Integer) result[6]);
@@ -244,8 +244,8 @@ public class AuthDaoImp implements AuthDao {
 
                         ap.setId(0);
                         ap.setTopic("After break time!");
-                        ap.setStartTime((Date) result[3]);
-                        ap.setEndTime((Date) result[13]);
+                        ap.setfStartTime((String) result[3]);
+                        ap.setfEndTime((String) result[13]);
                         rPlanList.add(ap);
 
                     }

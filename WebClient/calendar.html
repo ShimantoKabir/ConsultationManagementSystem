@@ -23,11 +23,11 @@
 
         $(document).ready(function () {
 
-            // let serverBaseUrl = "http://192.168.43.179:8080";
-            // let webClientBaseUrl = "http://192.168.43.132/consultationmanagementsystem/webclient";
+            let serverBaseUrl = "http://192.168.43.179:8080";
+            let webClientBaseUrl = "http://192.168.43.132/consultationmanagementsystem/webclient";
 
-            let serverBaseUrl = "http://3.20.119.226:8080";
-            let webClientBaseUrl = "http://3.20.119.226/cms/index.html";
+            // let serverBaseUrl = "http://3.20.119.226:8080";
+            // let webClientBaseUrl = "http://3.20.119.226/cms/index.html";
 
             // alert configuration start
             $('#alertCloseBtn').click(function () {
@@ -143,19 +143,22 @@
 
                         } else {
 
+
+                            console.log(JSON.stringify(s.planList));
+
                             for (let i = 0; i < s.planList.length; i++) {
 
                                 let color = '';
 
                                 if(s.planList[i].id !== 0){
-                                    color = s.planList[i].cusUid == null ? "yellow" : s.planList[i].isAcceptByCon ? "green" : "red";
+                                    color = s.planList[i].cusUid == null ? "blue" : s.planList[i].isAcceptByCon ? "green" : "red";
                                 }
 
                                 events.push({
                                     id: s.planList[i].id,
                                     title: s.planList[i].topic,
-                                    start: new Date(s.planList[i].startTime),
-                                    end: new Date(s.planList[i].endTime),
+                                    start: s.planList[i].fStartTime,
+                                    end: s.planList[i].fEndTime,
                                     color: color,
                                     isAcceptByCon: s.planList[i].isAcceptByCon,
                                     paymentTransId: s.planList[i].paymentTransId == null ? null : s.planList[i]
