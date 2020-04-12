@@ -481,6 +481,7 @@ class EditCustomerProfileState extends State<EditCustomerProfile> {
   }
 
   Widget buildItem(BuildContext context, document, String fileType) {
+
     String imgUrl;
     String collectionName;
     String alertMsg;
@@ -495,61 +496,82 @@ class EditCustomerProfileState extends State<EditCustomerProfile> {
       alertMsg = "Image deleting please wait...!";
     }
 
-    return ListTile(
-      leading: Container(
-        height: 150.0,
-        width: 100.0,
-        decoration: new BoxDecoration(
-          shape: BoxShape.rectangle,
-          image: new DecorationImage(
-              fit: BoxFit.fill, image: new NetworkImage(imgUrl)),
-        ),
-      ),
-      trailing: IconButton(
-        icon: Icon(Icons.delete),
-        onPressed: () {
-          showAlertDialog(context, alertMsg);
-          if (fileType == "vd") {
-            FirebaseStorage.instance
-                .ref()
-                .child(document['videoPath'])
-                .delete()
-                .then((v) {
-              FirebaseStorage.instance
-                  .ref()
-                  .child(document['thmPath'])
-                  .delete()
-                  .then((t) {
-                Firestore.instance
-                    .collection('userInfoList')
-                    .document(uid)
-                    .collection(collectionName)
-                    .document(document['uuid'])
-                    .delete()
-                    .then((du) {
-                  Navigator.pop(context);
-                });
-              });
-            });
-          } else {
-            FirebaseStorage.instance
-                .ref()
-                .child(document['path'])
-                .delete()
-                .then((df) {
-              Firestore.instance
-                  .collection('userInfoList')
-                  .document(uid)
-                  .collection(collectionName)
-                  .document(document['uuid'])
-                  .delete()
-                  .then((du) {
-                Navigator.pop(context);
-              });
-            });
-          }
-        },
+    return Card(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Image.network(
+              imgUrl,
+              fit:BoxFit.cover
+          ),
+          ButtonBar(
+            buttonHeight: 10.0,
+            children: <Widget>[
+              FlatButton(
+                child: const Text('BUY TICKETS'),
+                onPressed: () { /* ... */ },
+              ),
+              FlatButton(
+                child: const Text('LISTEN'),
+                onPressed: () { /* ... */ },
+              ),
+            ],
+          ),
+        ],
       ),
     );
+
+//    return ListTile(
+//      leading: Image.network(
+//          imgUrl,
+//          fit:BoxFit.cover
+//      ),
+//      trailing: IconButton(
+//        icon: Icon(Icons.delete),
+//        onPressed: () {
+//          showAlertDialog(context, alertMsg);
+//          if (fileType == "vd") {
+//            FirebaseStorage.instance
+//                .ref()
+//                .child(document['videoPath'])
+//                .delete()
+//                .then((v) {
+//              FirebaseStorage.instance
+//                  .ref()
+//                  .child(document['thmPath'])
+//                  .delete()
+//                  .then((t) {
+//                Firestore.instance
+//                    .collection('userInfoList')
+//                    .document(uid)
+//                    .collection(collectionName)
+//                    .document(document['uuid'])
+//                    .delete()
+//                    .then((du) {
+//                  Navigator.pop(context);
+//                });
+//              });
+//            });
+//          } else {
+//            FirebaseStorage.instance
+//                .ref()
+//                .child(document['path'])
+//                .delete()
+//                .then((df) {
+//              Firestore.instance
+//                  .collection('userInfoList')
+//                  .document(uid)
+//                  .collection(collectionName)
+//                  .document(document['uuid'])
+//                  .delete()
+//                  .then((du) {
+//                Navigator.pop(context);
+//              });
+//            });
+//          }
+//        },
+//      ),
+//    );
+
   }
 }

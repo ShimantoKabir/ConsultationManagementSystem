@@ -84,7 +84,9 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
   String imageUrl;
   int totalChatDuration = 0;
   String idOfCusLeaveMsg;
+  String idOfCusSuccessPaymentMsg;
   int chargedMinutes = 0;
+  DateTime reviewAndRatingShowDateTime;
 
   final TextEditingController textEditingController =
       new TextEditingController();
@@ -120,7 +122,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
 
     final DateTime startDateTime = DateTime.parse(plan.fStartTime);
     final DateTime endDateTime = DateTime.parse(plan.fEndTime);
-    final DateTime pdAddWithEndDateTime = (fm == null)
+    reviewAndRatingShowDateTime = (fm == null)
         ? null
         : endDateTime.add(Duration(minutes: paymentDuration));
     final DateTime fmAddWithStartDateTime =
@@ -136,7 +138,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
     print("Plan hourly rate  = $hr");
     print("Total chat duration = $totalChatDuration");
     print("Free min add with start date time = $fmAddWithStartDateTime");
-    print("Free min add with end date time = $pdAddWithEndDateTime");
+    print("Riview and rating show date time = $reviewAndRatingShowDateTime");
 
     // if free minute's[10] equal to
     // total chat duration[10] or
@@ -165,16 +167,16 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
         // logic for start time ticker
         if (!isTimeTickerRunning && dateTimeNow.isAfter(startDateTime)) {
           int m = calculateDuration(endDateTime, dateTimeNow);
-          startTimeTicker(controller, m);
           print('Time ticker started!');
           isTimeTickerRunning = true;
+          startTimeTicker(controller, m);
         }
 
         // logic for review and rating
         if (!isReviewAndRatingShowedUp && dateTimeNow.isAfter(endDateTime)) {
-          reviewAndRatingPopUp();
           print('Review and rating showed up!');
           isReviewAndRatingShowedUp = true;
+          reviewAndRatingPopUp();
         }
 
         // if available
@@ -197,15 +199,15 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
           int detectedChatDuration =
               (needToShowPaymentUi) ? fm : totalChatDuration;
           int chatDuration = detectedChatDuration - passedAwayMinutes;
-
-          startTimeTicker(controller, chatDuration);
           isTimeTickerRunning = true;
+          startTimeTicker(controller, chatDuration);
+
         }
 
         // logic for show up payment ui
         // if payment ui showed up that means
         // total chat duration must be greater
-        // than free minute's
+        // than free minutes
         if (needToShowPaymentUi &&
             dateTimeNow.isAfter(fmAddWithStartDateTime) &&
             controller.isDismissed &&
@@ -213,15 +215,15 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
           // open payment ui only for customer
           int m = calculateDuration(endDateTime, startDateTime);
           chargedMinutes = m - fm;
+
           if (userType == 1) {
-            int chargeAmount = (hr * (chargedMinutes / 60)).round();
-            chargeAmount = (chargeAmount == 0) ? 1 : chargeAmount;
-            confirmPopUp(context, chargeAmount.toString(), plan);
+            double chargeAmount = hr * (chargedMinutes / 60);
+            confirmPopUp(context, chargeAmount.toStringAsFixed(2), plan);
           }
 
           // but start time ticker for all
-          startTimeTicker(controller, paymentDuration);
           isPaymentUiShowedUp = true;
+          startTimeTicker(controller, paymentDuration);
         }
 
         // logic for start time ticker after
@@ -229,20 +231,21 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
         if (dateTimeNow.isAfter(fmAndPdAddWithStartDateTime) &&
             controller.isDismissed &&
             !isChargedMinutesStarted) {
-
           // customer
-          if(userType == 1){
-            checkPaymentStatus(plan.id);
+          if (userType == 1) {
+            checkPaymentStatus(plan.id, true);
           }
 
-          startTimeTicker(controller, chargedMinutes);
           isChargedMinutesStarted = true;
+          startTimeTicker(controller, chargedMinutes);
+
         }
 
         // logic for popup review and rating
         if (isPaymentUiShowedUp &&
             !isReviewAndRatingShowedUp &&
-            dateTimeNow.isAfter(pdAddWithEndDateTime)) {
+            controller.isDismissed &&
+            dateTimeNow.isAfter(reviewAndRatingShowDateTime)) {
           reviewAndRatingPopUp();
           print('Show popup for review and rating in time tiker block!');
           isReviewAndRatingShowedUp = true;
@@ -330,18 +333,23 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
         changeChattedStatus(plan.id, uid, peerId);
         isFirstMsgSend = true;
       }
-
     } else {
       Fluttertoast.showToast(msg: 'Nothing to send');
     }
   }
 
   Widget buildItem(int index, DocumentSnapshot document) {
+    
     idOfCusLeaveMsg = (document['type'] == 3 &&
             document['isReviewAndRatingShowedUp'] == 0 &&
             !isReviewAndRatingShowedUp)
         ? document.documentID
         : idOfCusLeaveMsg;
+
+    idOfCusSuccessPaymentMsg = (document['type'] == 4 &&
+        document['isPaymentCompleteAfterFreeMinuteGone'] == 0)
+        ? document.documentID
+        : idOfCusSuccessPaymentMsg;
 
     if (document['idFrom'] == id) {
       // Right (my message)
@@ -376,73 +384,91 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                       margin: EdgeInsets.only(
                           bottom: isLastMessageRight(index) ? 20.0 : 10.0,
                           right: 10.0))
-                  : document['type'] == 1
-                      // Image
+                  : document['type'] == 4
                       ? Container(
-                          child: FlatButton(
-                            child: Material(
-                              child: CachedNetworkImage(
-                                placeholder: (context, url) => Container(
-                                  child: CircularProgressIndicator(
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                        themeColor),
-                                  ),
-                                  width: 200.0,
-                                  height: 200.0,
-                                  padding: EdgeInsets.all(70.0),
-                                  decoration: BoxDecoration(
-                                    color: greyColor2,
-                                    borderRadius: BorderRadius.all(
-                                      Radius.circular(8.0),
+                          child: Text(
+                            document['content'],
+                            style: TextStyle(color: primaryColor),
+                          ),
+                          padding: EdgeInsets.fromLTRB(15.0, 10.0, 15.0, 10.0),
+                          width: 200.0,
+                          decoration: BoxDecoration(
+                              color: greyColor2,
+                              borderRadius: BorderRadius.circular(8.0)),
+                          margin: EdgeInsets.only(
+                              bottom: isLastMessageRight(index) ? 20.0 : 10.0,
+                              right: 10.0))
+                      : document['type'] == 1
+                          // Image
+                          ? Container(
+                              child: FlatButton(
+                                child: Material(
+                                  child: CachedNetworkImage(
+                                    placeholder: (context, url) => Container(
+                                      child: CircularProgressIndicator(
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                                themeColor),
+                                      ),
+                                      width: 200.0,
+                                      height: 200.0,
+                                      padding: EdgeInsets.all(70.0),
+                                      decoration: BoxDecoration(
+                                        color: greyColor2,
+                                        borderRadius: BorderRadius.all(
+                                          Radius.circular(8.0),
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ),
-                                errorWidget: (context, url, error) => Material(
-                                  child: Image.asset(
-                                    'images/img_not_available.jpeg',
+                                    errorWidget: (context, url, error) =>
+                                        Material(
+                                      child: Image.asset(
+                                        'images/img_not_available.jpeg',
+                                        width: 200.0,
+                                        height: 200.0,
+                                        fit: BoxFit.cover,
+                                      ),
+                                      borderRadius: BorderRadius.all(
+                                        Radius.circular(8.0),
+                                      ),
+                                      clipBehavior: Clip.hardEdge,
+                                    ),
+                                    imageUrl: document['content'],
                                     width: 200.0,
                                     height: 200.0,
                                     fit: BoxFit.cover,
                                   ),
-                                  borderRadius: BorderRadius.all(
-                                    Radius.circular(8.0),
-                                  ),
+                                  borderRadius:
+                                      BorderRadius.all(Radius.circular(8.0)),
                                   clipBehavior: Clip.hardEdge,
                                 ),
-                                imageUrl: document['content'],
-                                width: 200.0,
-                                height: 200.0,
+                                onPressed: () {
+                                  Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) => FullPhoto(
+                                              url: document['content'])));
+                                },
+                                padding: EdgeInsets.all(0),
+                              ),
+                              margin: EdgeInsets.only(
+                                  bottom:
+                                      isLastMessageRight(index) ? 20.0 : 10.0,
+                                  right: 10.0),
+                            )
+                          // Sticker
+                          : Container(
+                              child: new Image.asset(
+                                'images/${document['content']}.gif',
+                                width: 100.0,
+                                height: 100.0,
                                 fit: BoxFit.cover,
                               ),
-                              borderRadius:
-                                  BorderRadius.all(Radius.circular(8.0)),
-                              clipBehavior: Clip.hardEdge,
-                            ),
-                            onPressed: () {
-                              Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) =>
-                                          FullPhoto(url: document['content'])));
-                            },
-                            padding: EdgeInsets.all(0),
-                          ),
-                          margin: EdgeInsets.only(
-                              bottom: isLastMessageRight(index) ? 20.0 : 10.0,
-                              right: 10.0),
-                        )
-                      // Sticker
-                      : Container(
-                          child: new Image.asset(
-                            'images/${document['content']}.gif',
-                            width: 100.0,
-                            height: 100.0,
-                            fit: BoxFit.cover,
-                          ),
-                          margin: EdgeInsets.only(
-                              bottom: isLastMessageRight(index) ? 20.0 : 10.0,
-                              right: 10.0),
-                        )
+                              margin: EdgeInsets.only(
+                                  bottom:
+                                      isLastMessageRight(index) ? 20.0 : 10.0,
+                                  right: 10.0),
+                            )
         ],
         mainAxisAlignment: MainAxisAlignment.end,
       );
@@ -506,72 +532,88 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                                 borderRadius: BorderRadius.circular(8.0)),
                             margin: EdgeInsets.only(left: 10.0),
                           )
-                        : document['type'] == 1
+                        : document['type'] == 4
                             ? Container(
-                                child: FlatButton(
-                                  child: Material(
-                                    child: CachedNetworkImage(
-                                      placeholder: (context, url) => Container(
-                                        child: CircularProgressIndicator(
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                  themeColor),
-                                        ),
-                                        width: 200.0,
-                                        height: 200.0,
-                                        padding: EdgeInsets.all(70.0),
-                                        decoration: BoxDecoration(
-                                          color: greyColor2,
-                                          borderRadius: BorderRadius.all(
-                                            Radius.circular(8.0),
+                                child: Text(
+                                  document['content'],
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                                padding:
+                                    EdgeInsets.fromLTRB(15.0, 10.0, 15.0, 10.0),
+                                width: 200.0,
+                                decoration: BoxDecoration(
+                                    color: primaryColor,
+                                    borderRadius: BorderRadius.circular(8.0)),
+                                margin: EdgeInsets.only(left: 10.0),
+                              )
+                            : document['type'] == 1
+                                ? Container(
+                                    child: FlatButton(
+                                      child: Material(
+                                        child: CachedNetworkImage(
+                                          placeholder: (context, url) =>
+                                              Container(
+                                            child: CircularProgressIndicator(
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                      themeColor),
+                                            ),
+                                            width: 200.0,
+                                            height: 200.0,
+                                            padding: EdgeInsets.all(70.0),
+                                            decoration: BoxDecoration(
+                                              color: greyColor2,
+                                              borderRadius: BorderRadius.all(
+                                                Radius.circular(8.0),
+                                              ),
+                                            ),
                                           ),
-                                        ),
-                                      ),
-                                      errorWidget: (context, url, error) =>
-                                          Material(
-                                        child: Image.asset(
-                                          'assets/images/img_not_available.jpeg',
+                                          errorWidget: (context, url, error) =>
+                                              Material(
+                                            child: Image.asset(
+                                              'assets/images/img_not_available.jpeg',
+                                              width: 200.0,
+                                              height: 200.0,
+                                              fit: BoxFit.cover,
+                                            ),
+                                            borderRadius: BorderRadius.all(
+                                              Radius.circular(8.0),
+                                            ),
+                                            clipBehavior: Clip.hardEdge,
+                                          ),
+                                          imageUrl: document['content'],
                                           width: 200.0,
                                           height: 200.0,
                                           fit: BoxFit.cover,
                                         ),
                                         borderRadius: BorderRadius.all(
-                                          Radius.circular(8.0),
-                                        ),
+                                            Radius.circular(8.0)),
                                         clipBehavior: Clip.hardEdge,
                                       ),
-                                      imageUrl: document['content'],
-                                      width: 200.0,
-                                      height: 200.0,
+                                      onPressed: () {
+                                        Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                                builder: (context) => FullPhoto(
+                                                    url: document['content'])));
+                                      },
+                                      padding: EdgeInsets.all(0),
+                                    ),
+                                    margin: EdgeInsets.only(left: 10.0),
+                                  )
+                                : Container(
+                                    child: new Image.asset(
+                                      'assets/images/${document['content']}.gif',
+                                      width: 100.0,
+                                      height: 100.0,
                                       fit: BoxFit.cover,
                                     ),
-                                    borderRadius:
-                                        BorderRadius.all(Radius.circular(8.0)),
-                                    clipBehavior: Clip.hardEdge,
+                                    margin: EdgeInsets.only(
+                                        bottom: isLastMessageRight(index)
+                                            ? 20.0
+                                            : 10.0,
+                                        right: 10.0),
                                   ),
-                                  onPressed: () {
-                                    Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (context) => FullPhoto(
-                                                url: document['content'])));
-                                  },
-                                  padding: EdgeInsets.all(0),
-                                ),
-                                margin: EdgeInsets.only(left: 10.0),
-                              )
-                            : Container(
-                                child: new Image.asset(
-                                  'assets/images/${document['content']}.gif',
-                                  width: 100.0,
-                                  height: 100.0,
-                                  fit: BoxFit.cover,
-                                ),
-                                margin: EdgeInsets.only(
-                                    bottom:
-                                        isLastMessageRight(index) ? 20.0 : 10.0,
-                                    right: 10.0),
-                              ),
               ],
             )
           ],
@@ -891,9 +933,11 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                   return CircularProgressIndicator(
                       valueColor: AlwaysStoppedAnimation<Color>(themeColor));
                 } else {
+                  
                   listMessage = snapshot.data.documents;
                   WidgetsBinding.instance.addPostFrameCallback(
-                      (_) => checkCusLeaveAfterFreeMinutesGone(context));
+                      (_) => actionAfterFreeMinutesGone(context));
+                  
                   return ListView.builder(
                     padding: EdgeInsets.all(10.0),
                     itemBuilder: (context, index) =>
@@ -1104,7 +1148,8 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
             AnimatedBuilder(
                 animation: controller,
                 builder: (BuildContext context, Widget child) {
-                  return Text("[$timerString] minute's left to complete your payment",
+                  return Text(
+                      "[$timerString] minute's left to complete your payment",
                       style: TextStyle(
                           color: Colors.black,
                           fontFamily: 'Armata',
@@ -1117,7 +1162,19 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                   fontFamily: 'Armata',
                   fontWeight: FontWeight.normal),
             )
-          ])
+          ]),
+          actions: <Widget>[
+            FlatButton(
+              child: Text('Continue Chat',
+                  style: TextStyle(
+                      color: Colors.green,
+                      fontFamily: 'Armata',
+                      fontWeight: FontWeight.bold)),
+              onPressed: () {
+                checkPaymentStatus(plan.id, false);
+              },
+            )
+          ],
         );
       },
     );
@@ -1191,15 +1248,22 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
 
   void goBrowserForPayment(String aid) async {
     String url = webClientBaseUrl + '/payment.html?aid=' + aid + "&uid=" + uid;
-    Navigator.of(context).pop();
+    Navigator.of(context, rootNavigator: true).pop();
     paymentCheckingPopUp(context);
 
-    Navigator.of(context).push(MaterialPageRoute(
-        builder: (BuildContext context) => MyWebView(
-          title: "Payment",
-          selectedUrl: url,
-        )));
-
+    if (isAppInDevelopmentModel) {
+      if (await canLaunch(url)) {
+        await launch(url);
+      } else {
+        throw 'Could not launch $url';
+      }
+    } else {
+      Navigator.of(context).push(MaterialPageRoute(
+          builder: (BuildContext context) => MyWebView(
+                title: "Payment",
+                selectedUrl: url,
+              )));
+    }
   }
 
   @override
@@ -1211,6 +1275,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
   }
 
   void sendMsgContent(String content, int type) {
+
     textEditingController.clear();
 
     var documentReference = Firestore.instance
@@ -1229,6 +1294,15 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
         'content': content,
         'type': type,
         'isReviewAndRatingShowedUp': 0
+      };
+    } else if (type == 4) {
+      obj = {
+        'idFrom': id,
+        'idTo': peerId,
+        'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
+        'content': content,
+        'type': type,
+        'isPaymentCompleteAfterFreeMinuteGone': 0
       };
     } else {
       obj = {
@@ -1249,7 +1323,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
         duration: Duration(milliseconds: 300), curve: Curves.easeOut);
   }
 
-  void checkPaymentStatus(int id) async {
+  void checkPaymentStatus(int id, bool isCalledFromTimerPeriodic) async {
     String url = serverBaseUrl + '/plan/check-payment-status';
     Map<String, String> headers = {"Content-type": "application/json"};
     var request = {
@@ -1265,28 +1339,38 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
 
       // payment complete
       if (code == 200) {
+
         Navigator.pop(context);
         isPaymentComplete = true;
-        Fluttertoast.showToast(msg: "You have successfully complete you payment, enjoy the conversation with the expert!");
+        Fluttertoast.showToast(
+            msg:
+                "You have successfully complete your payment, "
+                    "enjoy the conversation the expert!");
+
+        if (!isCalledFromTimerPeriodic) {
+          sendMsgContent(
+              "I have successfully complete payment, let's chat.", 4);
+        }
+
         // payment not complete
       } else {
-
-        Fluttertoast.showToast(msg: "We need to push you from chat room cause you didn't complete your payment!");
-        sendMsgContent("Customer did't pay for the rest of the minute's",0);
-        Navigator.of(context).popUntil((route) => route.isFirst);
-        Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-                builder: (context) => PlanInfo(userType: userType, uid: uid)));
-
+        sendMsgContent("Customer payment unsuccessful!", 3);
+        isReviewAndRatingShowedUp = true;
+        Navigator.of(context).pop();
+        controller.stop();
+        reviewAndRatingPopUp();
       }
     } else {
       throw Exception('Failed to load post');
     }
   }
 
-  checkCusLeaveAfterFreeMinutesGone(BuildContext context) {
+  actionAfterFreeMinutesGone(BuildContext context) {
+
     print("Id of cus leave after free minute's gone $idOfCusLeaveMsg");
+    print("Id of cus payment success after free minute's gone"
+        " $idOfCusSuccessPaymentMsg");
+
     if (idOfCusLeaveMsg != null && !isReviewAndRatingShowedUp) {
       Firestore.instance
           .collection('messages')
@@ -1298,5 +1382,24 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
       controller.stop();
       isReviewAndRatingShowedUp = true;
     }
+
+    if (idOfCusSuccessPaymentMsg != null && !isChargedMinutesStarted){
+
+      Firestore.instance
+          .collection('messages')
+          .document(groupChatId)
+          .collection(groupChatId)
+          .document(idOfCusSuccessPaymentMsg)
+          .updateData(<String, dynamic>{'isPaymentCompleteAfterFreeMinuteGone': 1});
+
+      isChargedMinutesStarted = true;
+      startTimeTicker(controller, chargedMinutes);
+      reviewAndRatingShowDateTime =
+          DateTime.now().add(Duration(minutes: chargedMinutes));
+      print(
+          "Changed review and rating show date time = $reviewAndRatingShowDateTime");
+
+    }
+
   }
 }

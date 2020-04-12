@@ -23,11 +23,11 @@
 
         $(document).ready(function () {
 
-            let serverBaseUrl = "http://192.168.43.179:8080";
-            let webClientBaseUrl = "http://192.168.43.132/consultationmanagementsystem/webclient";
+            // let serverBaseUrl = "http://192.168.43.179:8080";
+            // let webClientBaseUrl = "http://192.168.43.132/consultationmanagementsystem/webclient";
 
-            // let serverBaseUrl = "http://3.20.119.226:8080";
-            // let webClientBaseUrl = "http://3.20.119.226/cms/index.html";
+            let serverBaseUrl = "http://3.20.119.226:8080";
+            let webClientBaseUrl = "http://3.20.119.226/cms/index.html";
 
             // alert configuration start
             $('#alertCloseBtn').click(function () {
@@ -64,6 +64,7 @@
             let freeMinutesForNewCustomer = null;
             let hourlyRate = null;
             let timeZone = null;
+            let topicPlaceHolder = '';
 
             let urlParameters = new URLSearchParams(window.location.search);
 
@@ -113,9 +114,11 @@
                     isUrlOk = false;
                 }
 
+                $('#topic').attr('placeholder','Summary of topics...');
                 $('#eventBookBtn').text("Book");
 
             } else {
+            	$('#topic').attr('placeholder','Unavailability reason...');
                 $('#eventBookBtn').text("Save");
             }
 
@@ -656,9 +659,7 @@
 	                                    <b>Topic</b>
 	                                </td>
 	                                <td>
-	                                    <textarea placeholder="Please write down summary of discussion topics"
-	                                              id="topic">    
-	                                    </textarea>
+	                                    <textarea id="topic"></textarea>
 	                                </td>
 	                            </tr>
 	                            <tr>

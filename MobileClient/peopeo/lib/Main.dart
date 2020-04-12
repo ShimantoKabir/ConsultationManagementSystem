@@ -668,7 +668,7 @@ class MyHomePageState extends State<MyHomePage> {
             fontFamily: 'Armata',
           ));
     } else {
-      return Text(document['like'].toString()+" Like",
+      return Text(document['like'].toString()+" Likes",
           style: TextStyle(
             fontSize: 12.0,
             fontWeight: FontWeight.w600,
@@ -680,7 +680,7 @@ class MyHomePageState extends State<MyHomePage> {
   getFreeMinutes(DocumentSnapshot document) {
     if (document['freeMinutesForNewCustomer'] == null) {
       return Text(
-        "[No fres minute for new customer]",
+        "[No fres minutes for new customer]",
         textAlign: TextAlign.center,
         style: TextStyle(color: Colors.green, fontFamily: "Armata"),
       );
@@ -688,7 +688,7 @@ class MyHomePageState extends State<MyHomePage> {
       return Text(
         "[" +
             document['freeMinutesForNewCustomer'].toString() +
-            " minute's free for new customer]",
+            " minutes free for new customer]",
         textAlign: TextAlign.center,
         style: TextStyle(color: Colors.green, fontFamily: "Armata"),
       );
@@ -858,6 +858,7 @@ class MyHomePageState extends State<MyHomePage> {
       print("onMessage: message = $message");
 
       showNotification(context, message);
+
     });
     fm.requestNotificationPermissions(
         const IosNotificationSettings(sound: true, badge: true, alert: true));

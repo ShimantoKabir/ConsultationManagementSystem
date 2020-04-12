@@ -374,12 +374,9 @@ class CustomerProfileState extends State<CustomerProfile>
             );
           }
         },
-        child: Container(
-          decoration: new BoxDecoration(
-            shape: BoxShape.rectangle,
-            image: new DecorationImage(
-                fit: BoxFit.fill, image: new NetworkImage(imgUrl)),
-          ),
+        child: Image.network(
+            imgUrl,
+            fit:BoxFit.cover
         ));
   }
 

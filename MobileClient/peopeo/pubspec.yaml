@@ -38,6 +38,8 @@ dependencies:
   flutter_native_timezone: ^1.0.4
   flutter_webview_plugin: ^0.3.10+1
   webview_flutter: ^0.3.19+9
+  date_format: ^1.0.8
+  intl: ^0.16.1
 
 dev_dependencies:
   flutter_test:

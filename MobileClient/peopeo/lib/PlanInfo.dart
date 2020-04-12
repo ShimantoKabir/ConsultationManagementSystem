@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:peopeo/Const.dart';
 import 'package:peopeo/HttpResponse.dart';
@@ -12,6 +11,7 @@ import 'package:side_header_list_view/side_header_list_view.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:peopeo/Chat.dart';
 import 'package:peopeo/Plan.dart';
+import 'package:intl/intl.dart';
 
 class PlanInfo extends StatefulWidget {
   final String uid;
@@ -28,6 +28,7 @@ class PlanInfo extends StatefulWidget {
 class PlanInfoState extends State<PlanInfo> {
   String uid;
   int userType;
+  DateFormat df = new DateFormat('dd-MM-yyyy hh:mm a');
 
   PlanInfoState({Key key, @required this.uid, @required this.userType});
 
@@ -60,12 +61,16 @@ class PlanInfoState extends State<PlanInfo> {
                 ));
               } else {
                 return SideHeaderListView(
+
                   itemCount: snapshot.data.length,
                   padding: new EdgeInsets.all(5.0),
                   headerBuilder: (BuildContext context, int index) {
-                    return new Container(
+
+                    String st = df.format(DateTime.parse(snapshot.data[index].fStartTime));
+
+                    return Container(
                         child: Text(
-                            snapshot.data[index].fStartTime.substring(0, 12),
+                            st.substring(0, 10),
                             style: TextStyle(
                                 fontSize: 15.0,
                                 color: Colors.black,
@@ -73,6 +78,11 @@ class PlanInfoState extends State<PlanInfo> {
                                 fontWeight: FontWeight.bold)));
                   },
                   itemBuilder: (BuildContext context, int index) {
+
+                    String tp = snapshot.data[index].topic;
+                    String st = df.format(DateTime.parse(snapshot.data[index].fStartTime));
+                    String et = df.format(DateTime.parse(snapshot.data[index].fEndTime));
+
                     return Card(
                       elevation: 2.0,
                       child: Padding(
@@ -82,7 +92,7 @@ class PlanInfoState extends State<PlanInfo> {
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: <Widget>[
-                            Text(snapshot.data[index].topic,
+                            Text("Topic $tp",
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                     color: Colors.black,
@@ -90,17 +100,13 @@ class PlanInfoState extends State<PlanInfo> {
                                     fontSize: 15.0,
                                     fontWeight: FontWeight.bold)),
                             Text(
-                                "Start Time " +
-                                    snapshot.data[index].fStartTime.substring(11,
-                                        snapshot.data[index].fStartTime.length),
+                                "Start Time " + st.substring(11,st.length),
                                 style: TextStyle(
                                     color: Colors.black,
                                     fontFamily: 'Armata',
                                     fontWeight: FontWeight.normal)),
                             Text(
-                                "End Time " +
-                                    snapshot.data[index].fEndTime.substring(11,
-                                        snapshot.data[index].fEndTime.length),
+                                "End Time " + et.substring(11,et.length),
                                 style: TextStyle(
                                     color: Colors.black,
                                     fontFamily: 'Armata',
@@ -181,6 +187,7 @@ class PlanInfoState extends State<PlanInfo> {
   }
 
   showPaymentButtonOrChatButton(Plan p) {
+
     String buttonText = "Start Chat";
     // handle consultant
     if (userType == 2) {
@@ -204,6 +211,7 @@ class PlanInfoState extends State<PlanInfo> {
             onPressed: () {
               final fStartTime = DateTime.parse(p.fStartTime);
               final fEndTime = DateTime.parse(p.fEndTime);
+
 
               // allow enter chat room before 5 minutes
               print("before sub start time $fStartTime");
@@ -286,15 +294,16 @@ class PlanInfoState extends State<PlanInfo> {
                     fontFamily: 'Armata',
                     fontWeight: FontWeight.bold)),
             onPressed: () {
+
               final fStartTime = DateTime.parse(p.fStartTime);
               final fEndTime = DateTime.parse(p.fEndTime);
 
-              int millis = fEndTime.difference(fStartTime).inMilliseconds;
-              double minutes = (millis / 1000) / 60;
+              int milliseconds = fEndTime.difference(fStartTime).inMilliseconds;
 
-              double costPerMinute = p.hourlyRate / 60;
-              double totalCostForCus = minutes * costPerMinute;
-              confirmPopUp(context, totalCostForCus.toString(), p);
+              Duration timeDuration = Duration(milliseconds: milliseconds);
+              double chargeAmount = p.hourlyRate * (timeDuration.inMinutes / 60);
+              confirmPopUp(context, chargeAmount.toStringAsFixed(2), p);
+
             },
           ),
         );
@@ -312,6 +321,7 @@ class PlanInfoState extends State<PlanInfo> {
                     fontFamily: 'Armata',
                     fontWeight: FontWeight.bold)),
             onPressed: () {
+
               int fm = p.freeMinutesForNewCustomer;
               print("free minute = $fm");
 

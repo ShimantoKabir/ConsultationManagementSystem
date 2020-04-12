@@ -38,6 +38,7 @@ class ConsultantProfileState extends State<ConsultantProfile>
 
   @override
   void initState() {
+
     tabList.add(Tab(icon: Icon(Icons.camera)));
     tabList.add(Tab(icon: Icon(Icons.video_library)));
     tabList.add(Tab(icon: Icon(Icons.comment)));
@@ -509,12 +510,9 @@ class ConsultantProfileState extends State<ConsultantProfile>
             );
           }
         },
-        child: Container(
-          decoration: new BoxDecoration(
-            shape: BoxShape.rectangle,
-            image: new DecorationImage(
-                fit: BoxFit.fill, image: new NetworkImage(imgUrl)),
-          ),
+        child: Image.network(
+            imgUrl,
+            fit:BoxFit.cover
         ));
   }
 
@@ -522,7 +520,7 @@ class ConsultantProfileState extends State<ConsultantProfile>
     if (document['like'] == null) {
       return "0 Like";
     } else {
-      return document['like'].toString() + " Like";
+      return document['like'].toString() + " Like's";
     }
   }
 

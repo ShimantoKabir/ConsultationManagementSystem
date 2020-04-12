@@ -11,3 +11,4 @@ final String cusContinueMsg = "Wait i am about to complete my payment.";
 final String serverBaseUrl = "http://192.168.43.179:8080";
 // final String webClientBaseUrl = "http://3.20.119.226/cms";
 final String webClientBaseUrl = "http://192.168.43.132/consultationmanagementsystem/webclient";
+bool isAppInDevelopmentModel = true;
