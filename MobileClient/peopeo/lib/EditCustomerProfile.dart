@@ -22,6 +22,7 @@ class EditCustomerProfile extends StatefulWidget {
 }
 
 class EditCustomerProfileState extends State<EditCustomerProfile> {
+
   EditCustomerProfileState({Key key, @required this.uid});
 
   TextEditingController displayNameTECtl = TextEditingController();
@@ -45,304 +46,294 @@ class EditCustomerProfileState extends State<EditCustomerProfile> {
   int maxWidth = 250;
   String tempDir;
   String filePath;
+  String email;
 
   @override
   void initState() {
     super.initState();
     getTemporaryDirectory().then((d) => tempDir = d.path);
+
+    Firestore.instance
+        .collection('userInfoList')
+        .document(uid)
+        .get()
+        .then((doc) {
+
+      email = (doc['email'] == null) ? '' : doc['email'];
+      displayNameTECtl.text = doc['displayName'];
+      phoneNumberTECtl.text = doc['phoneNumber'];
+      shortDesTECtl.text = doc['shortDescription'];
+      longDesTECtl.text = doc['longDescription'];
+
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-          iconTheme: IconThemeData(color: Colors.black),
-          backgroundColor: Colors.white,
-          title: Text("Edit Profile",
-              style: TextStyle(
-                  color: Colors.black,
-                  fontFamily: 'Armata',
-                  fontWeight: FontWeight.bold)),
-          centerTitle: true),
-      body: SingleChildScrollView(
-        child: StreamBuilder(
-            stream: Firestore.instance
-                .collection('userInfoList')
-                .where('uid', isEqualTo: uid)
-                .snapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.hasData) {
-                return Column(
-                  children: <Widget>[
-                    Center(
-                      child: Padding(
-                          padding: EdgeInsets.all(10.0),
-                          child: Container(
-                            height: 150.0,
-                            width: 150.0,
-                            decoration: new BoxDecoration(
-                              shape: BoxShape.circle,
-                              image: new DecorationImage(
-                                  fit: BoxFit.fill,
-                                  image: NetworkImage(
-                                      snapshot.data.documents[0]['photoUrl'])),
-                            ),
-                          )),
-                    ),
-                    Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(10.0),
-                        child: TextField(
-                          decoration: InputDecoration(
-                              contentPadding:
-                                  EdgeInsets.fromLTRB(15.0, 5.0, 5.0, 5.0),
-                              border: OutlineInputBorder(),
-                              labelText:
-                                  getDisplayName(snapshot.data.documents[0])),
-                          controller: displayNameTECtl,
-                        ),
-                      ),
-                    ),
-                    Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(10.0),
-                        child: TextField(
-                          decoration: InputDecoration(
-                              contentPadding:
-                                  EdgeInsets.fromLTRB(15.0, 5.0, 5.0, 5.0),
-                              border: OutlineInputBorder(),
-                              labelText:
-                                  getPhoneNumber(snapshot.data.documents[0])),
-                          controller: phoneNumberTECtl,
-                        ),
-                      ),
-                    ),
-                    Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(10.0),
-                        child: TextField(
-                          decoration: InputDecoration(
-                              contentPadding:
-                                  EdgeInsets.fromLTRB(15.0, 5.0, 5.0, 5.0),
-                              border: OutlineInputBorder(),
-                              labelText: getShortDescription(
-                                  snapshot.data.documents[0])),
-                          controller: shortDesTECtl,
-                        ),
-                      ),
-                    ),
-                    Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(10.0),
-                        child: TextField(
-                          decoration: InputDecoration(
-                              contentPadding:
-                                  EdgeInsets.fromLTRB(15.0, 5.0, 5.0, 5.0),
-                              border: OutlineInputBorder(),
-                              labelText: getLongDescription(
-                                  snapshot.data.documents[0])),
-                          controller: longDesTECtl,
-                        ),
-                      ),
-                    ),
-                    Container(
-                      width: MediaQuery.of(context).size.width,
-                      margin: EdgeInsets.all(10.0),
-                      child: OutlineButton(
-                        child: Text("SAVE",
-                            style: TextStyle(
-                              fontSize: 15.0,
-                              color: Colors.red,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'Armata',
-                            )),
-                        onPressed: () {
-                          if (displayNameTECtl.text.isEmpty) {
-                            Fluttertoast.showToast(
-                                msg: "Display name required!");
-                          } else {
-                            Firestore.instance
-                                .collection('userInfoList')
-                                .document(uid)
-                                .updateData({
-                              'displayName': (displayNameTECtl.text.toString().isEmpty) ? null : displayNameTECtl.text.toString(),
-                              'phoneNumber': (phoneNumberTECtl.text.toString().isEmpty) ? null : phoneNumberTECtl.text.toString(),
-                              'shortDescription': (shortDesTECtl.text.toString().isEmpty) ? null : shortDesTECtl.text.toString(),
-                              'longDescription': (longDesTECtl.text.toString().isEmpty) ? null : longDesTECtl.text.toString(),
-                            });
-                          }
-                        },
-                      ),
-                    ),
-                    Container(
-                      height: 200,
-                      child: StreamBuilder(
-                        stream: Firestore.instance
-                            .collection('userInfoList')
-                            .document(uid)
-                            .collection("imageUrlList")
-                            .snapshots(),
-                        builder: (context, snapshot) {
-                          if (!snapshot.hasData) {
-                            return Center(
-                              child: CircularProgressIndicator(
-                                valueColor:
-                                    AlwaysStoppedAnimation<Color>(Colors.red),
-                              ),
-                            );
-                          } else {
-                            return ListView.builder(
-                              scrollDirection: Axis.vertical,
-                              itemBuilder: (context, index) => buildItem(
-                                  context,
-                                  snapshot.data.documents[index],
-                                  'im'),
-                              itemCount: snapshot.data.documents.length,
-                            );
-                          }
-                        },
-                      ),
-                    ),
-                    Center(
-                      child: OutlineButton(
-                        child: Text('Pick Image To Upload'),
-                        onPressed: () {
-                          setState(() {
-                            fileType = 'image';
-                          });
-                          CollectionReference cr = Firestore.instance
-                              .collection('userInfoList')
-                              .document(uid)
-                              .collection("imageUrlList");
-
-                          cr.getDocuments().then((im) {
-                            if (im.documents.length > 8) {
-                              Fluttertoast.showToast(
-                                  msg:
-                                      "Image uploading limit has been finished!");
-                            } else {
-                              showAlertDialog(
-                                  context, "Image uploading please wait...!");
-
-                              String uuid = new Uuid().v1();
-
-                              pickFile(context, uuid).then((imUrl) {
-                                cr.document(uuid).setData({
-                                  'uuid': uuid,
-                                  'path': "images/" + fileName,
-                                  'imageUrl': imUrl,
-                                });
-
-                                Navigator.pop(context);
-                              });
-                            }
-                          });
-                        },
-                      ),
-                    ),
-                    Container(
-                      height: 200,
-                      child: StreamBuilder(
-                        stream: Firestore.instance
-                            .collection('userInfoList')
-                            .document(uid)
-                            .collection("videoThumbnailUrlList")
-                            .snapshots(),
-                        builder: (context, snapshot) {
-                          if (!snapshot.hasData) {
-                            return Center(
-                              child: CircularProgressIndicator(
-                                valueColor:
-                                    AlwaysStoppedAnimation<Color>(Colors.red),
-                              ),
-                            );
-                          } else {
-                            return ListView.builder(
-                              scrollDirection: Axis.vertical,
-                              itemBuilder: (context, index) => buildItem(
-                                  context,
-                                  snapshot.data.documents[index],
-                                  'vd'),
-                              itemCount: snapshot.data.documents.length,
-                            );
-                          }
-                        },
-                      ),
-                    ),
-                    Center(
-                      child: OutlineButton(
-                        child: Text('Pick Video To Upload'),
-                        onPressed: () {
-                          showAlertDialog(
-                              context, "Video uploading please wait...!");
-
-                          CollectionReference cr = Firestore.instance
-                              .collection('userInfoList')
-                              .document(uid)
-                              .collection("videoThumbnailUrlList");
-
-                          cr.getDocuments().then((im) {
-                            if (im.documents.length > 4) {
-                              Fluttertoast.showToast(
-                                  msg:
-                                      "Video uploading limit has been finished!");
-                            } else {
-                              String uuid = new Uuid().v1();
-
-                              // get video from device
-                              FilePicker.getFile(type: FileType.video)
-                                  .then((pickedFile) {
-                                // upload the video
-                                setState(() {
-                                  fileType = 'video';
-                                });
-                                String vdName =
-                                    uuid + p.extension(pickedFile.path);
-                                uploadFile(pickedFile, vdName).then((vdUrl) {
-                                  // get thumbnail img
-                                  // form video url
-                                  VideoThumbnail.thumbnailFile(
-                                          video: vdUrl,
-                                          thumbnailPath: tempDir,
-                                          imageFormat: format,
-                                          maxHeight: maxHeight,
-                                          maxWidth: maxWidth,
-                                          quality: quality)
-                                      .then((thmImg) {
-                                    setState(() {
-                                      fileType = 'image';
-                                    });
-
-                                    File thmFile = new File(thmImg);
-                                    String thmName =
-                                        uuid + p.extension(thmFile.path);
-                                    // upload thumbnail img
-                                    uploadFile(File(thmImg), thmName)
-                                        .then((thmUrl) {
-                                      cr.document(uuid).setData({
-                                        'uuid': uuid,
-                                        'videoPath': "videos/" + vdName,
-                                        'videoUrl': vdUrl,
-                                        'thmUrl': thmUrl,
-                                        'thmPath': "images/" + thmName,
-                                      });
-
-                                      Navigator.pop(context);
-                                    });
-                                  });
-                                });
-                              });
-                            }
-                          });
-                        },
-                      ),
-                    )
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: DefaultTabController(
+        length: 3,
+        child: Scaffold(
+            appBar: AppBar(
+                bottom: TabBar(
+                  tabs: [
+                    Tab(icon: Icon(Icons.person_outline, color: Colors.black)),
+                    Tab(icon: Icon(Icons.camera, color: Colors.black)),
+                    Tab(icon: Icon(Icons.video_library, color: Colors.black)),
                   ],
-                );
-              } else {
-                return Text('No user info found');
-              }
-            }),
+                ),
+                iconTheme: IconThemeData(color: Colors.black),
+                backgroundColor: Colors.white,
+                title: Text("Edit Profile",
+                    style: TextStyle(
+                        color: Colors.black,
+                        fontFamily: 'Armata',
+                        fontWeight: FontWeight.bold)),
+                centerTitle: true),
+            body: TabBarView(
+              children: [
+                SingleChildScrollView(
+                  child: StreamBuilder(
+                      stream: Firestore.instance
+                          .collection('userInfoList')
+                          .where('uid', isEqualTo: uid)
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData) {
+                          return Column(
+                            children: <Widget>[
+                              Center(
+                                child: Padding(
+                                    padding: EdgeInsets.all(10.0),
+                                    child: Container(
+                                      height: 150.0,
+                                      width: 150.0,
+                                      decoration: new BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        image: new DecorationImage(
+                                            fit: BoxFit.fill,
+                                            image: NetworkImage(snapshot.data
+                                                .documents[0]['photoUrl'])),
+                                      ),
+                                    )),
+                              ),
+                              Container(
+                                width: MediaQuery.of(context).size.width,
+                                margin:
+                                EdgeInsets.fromLTRB(10.0, 0.0, 0.0, 0.0),
+                                child: Text("Display Name",
+                                    style: TextStyle(
+                                      fontSize: 15.0,
+                                      color: Colors.red,
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: 'Armata',
+                                    )),
+                              ),
+                              Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(10.0),
+                                  child: TextField(
+                                    decoration: InputDecoration(
+                                        contentPadding: EdgeInsets.fromLTRB(
+                                            15.0, 5.0, 5.0, 5.0),
+                                        border: OutlineInputBorder()),
+                                    controller: displayNameTECtl,
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                width: MediaQuery.of(context).size.width,
+                                margin:
+                                EdgeInsets.fromLTRB(10.0, 0.0, 0.0, 0.0),
+                                child: Text("Phone Number(Optional)",
+                                    style: TextStyle(
+                                      fontSize: 15.0,
+                                      color: Colors.red,
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: 'Armata',
+                                    )),
+                              ),
+                              Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(10.0),
+                                  child: TextField(
+                                    decoration: InputDecoration(
+                                        contentPadding: EdgeInsets.fromLTRB(
+                                            15.0, 5.0, 5.0, 5.0),
+                                        border: OutlineInputBorder()),
+                                    controller: phoneNumberTECtl,
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                width: MediaQuery.of(context).size.width,
+                                margin:
+                                EdgeInsets.fromLTRB(10.0, 0.0, 0.0, 0.0),
+                                child: Text("Short Description",
+                                    style: TextStyle(
+                                      fontSize: 15.0,
+                                      color: Colors.red,
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: 'Armata',
+                                    )),
+                              ),
+                              Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(10.0),
+                                  child: TextField(
+                                    maxLines: 4,
+                                    keyboardType: TextInputType.multiline,
+                                    decoration: InputDecoration(
+                                        contentPadding: EdgeInsets.fromLTRB(
+                                            15.0, 15.0, 15.0, 15.0),
+                                        border: OutlineInputBorder()),
+                                    controller: shortDesTECtl,
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                width: MediaQuery.of(context).size.width,
+                                margin:
+                                EdgeInsets.fromLTRB(10.0, 0.0, 0.0, 0.0),
+                                child: Text("Long Description",
+                                    style: TextStyle(
+                                      fontSize: 15.0,
+                                      color: Colors.red,
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: 'Armata',
+                                    )),
+                              ),
+                              Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(10.0),
+                                  child: TextField(
+                                    maxLines: 8,
+                                    keyboardType: TextInputType.multiline,
+                                    decoration: InputDecoration(
+                                        contentPadding: EdgeInsets.fromLTRB(
+                                            15.0, 15.0, 15.0, 15.0),
+                                        border: OutlineInputBorder()),
+                                    controller: longDesTECtl,
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                width: MediaQuery.of(context).size.width,
+                                margin: EdgeInsets.all(10.0),
+                                child: RaisedButton(
+                                  color: Colors.red,
+                                  textColor: Colors.white,
+                                  child: Text("SAVE",
+                                      style: TextStyle(fontSize: 14)),
+                                  shape: new RoundedRectangleBorder(
+                                      borderRadius:
+                                      new BorderRadius.circular(8.0),
+                                      side: BorderSide(color: Colors.red)),
+                                  onPressed: () {
+                                    if (displayNameTECtl.text
+                                        .toString()
+                                        .isEmpty) {
+                                      Fluttertoast.showToast(
+                                          msg: "Display name required!");
+                                    } else {
+
+                                      showAlertDialog(context,"Saving information.");
+
+                                      Firestore.instance
+                                          .collection('userInfoList')
+                                          .document(uid)
+                                          .updateData({
+                                        'displayName':
+                                        displayNameTECtl.text.toString(),
+                                        'phoneNumber': phoneNumberTECtl.text,
+                                        'shortDescription': (shortDesTECtl.text
+                                            .toString()
+                                            .isEmpty)
+                                            ? null
+                                            : shortDesTECtl.text.toString(),
+                                        'longDescription': (longDesTECtl.text
+                                            .toString()
+                                            .isEmpty)
+                                            ? null
+                                            : longDesTECtl.text.toString(),
+                                        'hashTag': getHashTag()
+                                      }).then((val){
+
+                                        Navigator.of(context, rootNavigator: true).pop();
+                                        Fluttertoast.showToast(msg: "Information save successfully!");
+
+                                      }).catchError((err){
+
+                                        print(err);
+                                        Navigator.of(context, rootNavigator: true).pop();
+                                        Fluttertoast.showToast(msg: "Some thing went wrong!");
+
+                                      });
+                                    }
+                                  },
+                                ),
+                              )
+                            ],
+                          );
+                        } else {
+                          return Text('No user info found');
+                        }
+                      }),
+                ),
+                StreamBuilder(
+                  stream: Firestore.instance
+                      .collection('userInfoList')
+                      .document(uid)
+                      .collection("imageUrlList")
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                        ),
+                      );
+                    } else {
+                      return ListView.builder(
+                        scrollDirection: Axis.vertical,
+                        itemBuilder: (context, index) => buildItem(
+                            context, snapshot.data.documents, 'im', index),
+                        itemCount: snapshot.data.documents.length + 1,
+                      );
+                    }
+                  },
+                ),
+                StreamBuilder(
+                  stream: Firestore.instance
+                      .collection('userInfoList')
+                      .document(uid)
+                      .collection("videoThumbnailUrlList")
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                        ),
+                      );
+                    } else {
+                      return Column(
+                        children: <Widget>[
+                          ListView.builder(
+                            shrinkWrap: true,
+                            scrollDirection: Axis.vertical,
+                            itemBuilder: (context, index) => buildItem(
+                                context, snapshot.data.documents, 'vd', index),
+                            itemCount: snapshot.data.documents.length + 1,
+                          )
+                        ],
+                      );
+                    }
+                  },
+                )
+              ],
+            )),
       ),
     );
   }
@@ -364,45 +355,8 @@ class EditCustomerProfileState extends State<EditCustomerProfile> {
     );
   }
 
-  getDisplayName(document) {
-    if (document['displayName'] == null) {
-      return "Display Name Not Set Yet";
-    } else {
-      displayNameTECtl.text = document['displayName'].toString();
-      return "Display Name";
-    }
-  }
-
-  getShortDescription(document) {
-    if (document['shortDescription'] == null) {
-      return "Short Description";
-    } else {
-      shortDesTECtl.text = document['shortDescription'].toString();
-      return "Short Description";
-    }
-  }
-
-  getLongDescription(document) {
-    if (document['longDescription'] == null) {
-      return "Long Discription";
-    } else {
-      longDesTECtl.text = document['longDescription'].toString();
-      return "Long Discription";
-    }
-  }
-
-  getPhoneNumber(document) {
-    if (document['phoneNumber'] == null) {
-      return "Phone Number Not Set Yet (Optional)";
-    } else {
-      phoneNumberTECtl.text = document['phoneNumber'].toString();
-      return "Phone Number";
-    }
-  }
-
   Future<String> pickFile(BuildContext context, String uuid) async {
     Future<String> futureFileUrl;
-
     try {
       if (fileType == 'image') {
         file = await FilePicker.getFile(type: FileType.image);
@@ -449,11 +403,12 @@ class EditCustomerProfileState extends State<EditCustomerProfile> {
       print(e.toString());
       futureFileUrl = null;
     }
-
     return futureFileUrl;
   }
 
   Future<String> uploadFile(File file, String filename) async {
+    print(fileType);
+
     StorageReference storageReference;
     if (fileType == 'image') {
       storageReference =
@@ -480,98 +435,232 @@ class EditCustomerProfileState extends State<EditCustomerProfile> {
     return url;
   }
 
-  Widget buildItem(BuildContext context, document, String fileType) {
-
+  Widget buildItem(BuildContext context, documents, String ft, int i) {
     String imgUrl;
     String collectionName;
     String alertMsg;
+    String btnText;
 
-    if (fileType == "vd") {
-      imgUrl = document['thmUrl'];
-      collectionName = "videoThumbnailUrlList";
-      alertMsg = "Video deleting please wait...!";
+    if (i == 0) {
+      btnText = (ft == "vd") ? "Upload Video" : "Upload Image";
+
+      return Padding(
+        padding: EdgeInsets.all(16.0),
+        child: RaisedButton(
+          color: Colors.red,
+          textColor: Colors.white,
+          child: Text(btnText, style: TextStyle(fontSize: 14)),
+          shape: new RoundedRectangleBorder(
+              borderRadius: new BorderRadius.circular(8.0),
+              side: BorderSide(color: Colors.red)),
+          onPressed: () {
+            // upload video
+            if (ft == "vd") {
+
+              showAlertDialog(context, "Video uploading please wait...!");
+
+              CollectionReference cr = Firestore.instance
+                  .collection('userInfoList')
+                  .document(uid)
+                  .collection("videoThumbnailUrlList");
+
+              cr.getDocuments().then((im) {
+                if (im.documents.length > 4) {
+                  Fluttertoast.showToast(
+                      msg: "Video uploading limit has been finished!");
+                } else {
+                  String uuid = new Uuid().v1();
+                  // get video from device
+                  FilePicker.getFile(type: FileType.video).then((pickedFile) {
+                    // upload the video
+                    setState(() {
+                      fileType = 'video';
+                    });
+
+                    String vdName = uuid + p.extension(pickedFile.path);
+
+                    uploadFile(pickedFile, vdName).then((vdUrl) {
+                      // get thumbnail img
+                      // form video url
+                      VideoThumbnail.thumbnailFile(
+                          video: vdUrl,
+                          thumbnailPath: tempDir,
+                          imageFormat: format,
+                          maxHeight: maxHeight,
+                          maxWidth: maxWidth,
+                          quality: quality)
+                          .then((thmImg) {
+                        setState(() {
+                          fileType = 'image';
+                        });
+
+                        File thmFile = new File(thmImg);
+                        String thmName = uuid + p.extension(thmFile.path);
+                        // upload thumbnail img
+                        uploadFile(File(thmImg), thmName).then((thmUrl) {
+                          cr.document(uuid).setData({
+                            'uuid': uuid,
+                            'videoPath': "videos/" + vdName,
+                            'videoUrl': vdUrl,
+                            'thmUrl': thmUrl,
+                            'thmPath': "images/" + thmName,
+                          });
+                          print("Time to close loading");
+                          Navigator.of(context, rootNavigator: true).pop();
+                        });
+                      });
+                    });
+                  });
+                }
+              });
+
+              // upload image
+            } else {
+
+              setState(() {
+                fileType = 'image';
+              });
+
+              CollectionReference cr = Firestore.instance
+                  .collection('userInfoList')
+                  .document(uid)
+                  .collection("imageUrlList");
+
+              cr.getDocuments().then((im) {
+                if (im.documents.length > 8) {
+                  Fluttertoast.showToast(
+                      msg:
+                      "Image uploading limit has been finished!");
+                } else {
+
+                  showAlertDialog(
+                      context, "Image uploading please wait...!");
+
+                  String uuid = new Uuid().v1();
+
+                  pickFile(context, uuid).then((imUrl) {
+                    cr.document(uuid).setData({
+                      'uuid': uuid,
+                      'path': "images/" + fileName,
+                      'imageUrl': imUrl,
+                    });
+                    print("Time to close loading");
+                    Navigator.of(context, rootNavigator: true).pop();
+                  });
+                }
+              });
+
+            }
+          },
+        ),
+      );
     } else {
-      imgUrl = document['imageUrl'];
-      collectionName = "imageUrlList";
-      alertMsg = "Image deleting please wait...!";
+      var document = documents[i - 1];
+
+      if (ft == "vd") {
+        imgUrl = document['thmUrl'];
+        collectionName = "videoThumbnailUrlList";
+        alertMsg = "Video deleting please wait...!";
+      } else {
+        imgUrl = document['imageUrl'];
+        collectionName = "imageUrlList";
+        alertMsg = "Image deleting please wait...!";
+      }
+
+      return Card(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Image.network(imgUrl, fit: BoxFit.cover),
+            ButtonBar(
+              buttonHeight: 10.0,
+              children: <Widget>[
+                FlatButton(
+                  child: Icon(Icons.delete),
+                  onPressed: () {
+
+                    showAlertDialog(context, alertMsg);
+
+                    if (ft == "vd") {
+                      FirebaseStorage.instance
+                          .ref()
+                          .child(document['videoPath'])
+                          .delete()
+                          .then((v) {
+                        FirebaseStorage.instance
+                            .ref()
+                            .child(document['thmPath'])
+                            .delete()
+                            .then((t) {
+                          Firestore.instance
+                              .collection('userInfoList')
+                              .document(uid)
+                              .collection(collectionName)
+                              .document(document['uuid'])
+                              .delete()
+                              .then((du) {
+                            Navigator.of(context, rootNavigator: true).pop();
+                          });
+                        });
+                      });
+                    } else {
+                      FirebaseStorage.instance
+                          .ref()
+                          .child(document['path'])
+                          .delete()
+                          .then((df) {
+                        Firestore.instance
+                            .collection('userInfoList')
+                            .document(uid)
+                            .collection(collectionName)
+                            .document(document['uuid'])
+                            .delete()
+                            .then((du) {
+                          Navigator.of(context, rootNavigator: true).pop();
+                        });
+                      });
+                    }
+
+                  },
+                )
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  String getHashTag() {
+    String hashTag = '';
+
+    if (shortDesTECtl.text.toString().isNotEmpty) {
+      String text = shortDesTECtl.text.toString();
+      RegExp exp = new RegExp(r"\B#\w\w+");
+      exp.allMatches(text).forEach((match) {
+        String res = match.group(0).replaceAll("#", "");
+        if (res != null) {
+          print(res);
+          hashTag = hashTag + res;
+        }
+      });
     }
 
-    return Card(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Image.network(
-              imgUrl,
-              fit:BoxFit.cover
-          ),
-          ButtonBar(
-            buttonHeight: 10.0,
-            children: <Widget>[
-              FlatButton(
-                child: const Text('BUY TICKETS'),
-                onPressed: () { /* ... */ },
-              ),
-              FlatButton(
-                child: const Text('LISTEN'),
-                onPressed: () { /* ... */ },
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+    if (longDesTECtl.text.toString().isNotEmpty) {
+      String text = longDesTECtl.text.toString();
+      RegExp exp = new RegExp(r"\B#\w\w+");
+      exp.allMatches(text).forEach((match) {
+        String res = match.group(0).replaceAll("#", "");
+        if (res != null) {
+          print(res);
+          hashTag = hashTag + res;
+        }
+      });
+    }
 
-//    return ListTile(
-//      leading: Image.network(
-//          imgUrl,
-//          fit:BoxFit.cover
-//      ),
-//      trailing: IconButton(
-//        icon: Icon(Icons.delete),
-//        onPressed: () {
-//          showAlertDialog(context, alertMsg);
-//          if (fileType == "vd") {
-//            FirebaseStorage.instance
-//                .ref()
-//                .child(document['videoPath'])
-//                .delete()
-//                .then((v) {
-//              FirebaseStorage.instance
-//                  .ref()
-//                  .child(document['thmPath'])
-//                  .delete()
-//                  .then((t) {
-//                Firestore.instance
-//                    .collection('userInfoList')
-//                    .document(uid)
-//                    .collection(collectionName)
-//                    .document(document['uuid'])
-//                    .delete()
-//                    .then((du) {
-//                  Navigator.pop(context);
-//                });
-//              });
-//            });
-//          } else {
-//            FirebaseStorage.instance
-//                .ref()
-//                .child(document['path'])
-//                .delete()
-//                .then((df) {
-//              Firestore.instance
-//                  .collection('userInfoList')
-//                  .document(uid)
-//                  .collection(collectionName)
-//                  .document(document['uuid'])
-//                  .delete()
-//                  .then((du) {
-//                Navigator.pop(context);
-//              });
-//            });
-//          }
-//        },
-//      ),
-//    );
-
+    hashTag = hashTag + displayNameTECtl.text.toString() + email;
+    hashTag = hashTag.replaceAll(' ', '');
+    return hashTag;
   }
+
 }

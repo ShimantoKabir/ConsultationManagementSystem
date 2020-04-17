@@ -22,6 +22,7 @@ class EditConsultantProfile extends StatefulWidget {
 }
 
 class EditConsultantProfileState extends State<EditConsultantProfile> {
+
   EditConsultantProfileState({Key key, @required this.uid});
 
   TextEditingController displayNameTECtl = TextEditingController();
@@ -338,6 +339,9 @@ class EditConsultantProfileState extends State<EditConsultantProfile> {
                                           msg:
                                               "Select free minute for new customer!");
                                     } else {
+
+                                      showAlertDialog(context,"Saving information.");
+
                                       Firestore.instance
                                           .collection('userInfoList')
                                           .document(uid)
@@ -360,6 +364,17 @@ class EditConsultantProfileState extends State<EditConsultantProfile> {
                                             ? null
                                             : longDesTECtl.text.toString(),
                                         'hashTag': getHashTag()
+                                      }).then((val){
+
+                                        Navigator.of(context, rootNavigator: true).pop();
+                                        Fluttertoast.showToast(msg: "Information save successfully!");
+
+                                      }).catchError((err){
+
+                                        print(err);
+                                        Navigator.of(context, rootNavigator: true).pop();
+                                        Fluttertoast.showToast(msg: "Some thing went wrong!");
+
                                       });
                                     }
                                   },

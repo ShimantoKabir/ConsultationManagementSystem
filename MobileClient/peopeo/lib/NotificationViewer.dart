@@ -61,8 +61,8 @@ class NotificationViewerState extends State<NotificationViewer> {
         title: Text(document['title']),
         subtitle: Wrap(
           children: <Widget>[
-            Text("Start time "+document['startTime']),
-            Text("End time "+document['endTime'])
+            Text(getStartTime(document)),
+            Text(getEndTime(document))
           ],
         ),
         trailing: Icon(Icons.touch_app),
@@ -75,5 +75,24 @@ class NotificationViewerState extends State<NotificationViewer> {
         },
       ),
     );
+  }
+
+  String getStartTime(document) {
+
+    if(document['startTime'] == null){
+      return document['body'];
+    }else {
+      return document['startTime'];
+    }
+  }
+
+  String getEndTime(document) {
+
+    if(document['endTime'] == null){
+      return "";
+    }else {
+      return document['endTime'];
+    }
+
   }
 }

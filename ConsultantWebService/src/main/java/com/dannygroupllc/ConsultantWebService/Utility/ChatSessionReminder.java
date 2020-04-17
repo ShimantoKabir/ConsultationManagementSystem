@@ -20,7 +20,7 @@ import java.net.URI;
 public class ChatSessionReminder {
 
     @Async
-    @Scheduled(fixedRate = 500000)
+    @Scheduled(fixedRate = 60000)
     public void remind() {
 
         try {

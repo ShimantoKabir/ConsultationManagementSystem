@@ -14,6 +14,16 @@ class MySharedPreferences{
     return preferences.getInt(key);
   }
 
+  static Future<bool> getBooleanValue(String key) async {
+    preferences = await SharedPreferences.getInstance();
+    return preferences.getBool(key);
+  }
+
+  static Future<bool> setBooleanValue(String key,bool val) async {
+    preferences = await SharedPreferences.getInstance();
+    return preferences.setBool(key,val);
+  }
+
   static Future<List<String>> getStringList(String key) async {
     preferences = await SharedPreferences.getInstance();
     return preferences.getStringList(key);

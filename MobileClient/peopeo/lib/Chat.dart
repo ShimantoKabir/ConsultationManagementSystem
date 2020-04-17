@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:peopeo/MySharedPreferences.dart';
 import 'package:peopeo/PlanInfo.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
@@ -13,12 +14,10 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:peopeo/Plan.dart';
 import 'package:peopeo/Const.dart';
 import 'package:peopeo/HttpResponse.dart';
 import 'package:peopeo/fullPhoto.dart';
-
 import 'MyWebView.dart';
 
 class Chat extends StatefulWidget {
@@ -201,7 +200,6 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
           int chatDuration = detectedChatDuration - passedAwayMinutes;
           isTimeTickerRunning = true;
           startTimeTicker(controller, chatDuration);
-
         }
 
         // logic for show up payment ui
@@ -238,7 +236,6 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
 
           isChargedMinutesStarted = true;
           startTimeTicker(controller, chargedMinutes);
-
         }
 
         // logic for popup review and rating
@@ -339,7 +336,6 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
   }
 
   Widget buildItem(int index, DocumentSnapshot document) {
-    
     idOfCusLeaveMsg = (document['type'] == 3 &&
             document['isReviewAndRatingShowedUp'] == 0 &&
             !isReviewAndRatingShowedUp)
@@ -347,7 +343,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
         : idOfCusLeaveMsg;
 
     idOfCusSuccessPaymentMsg = (document['type'] == 4 &&
-        document['isPaymentCompleteAfterFreeMinuteGone'] == 0)
+            document['isPaymentCompleteAfterFreeMinuteGone'] == 0)
         ? document.documentID
         : idOfCusSuccessPaymentMsg;
 
@@ -647,18 +643,60 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
   }
 
   Future<bool> onBackPress() {
-    if (isShowSticker) {
-      setState(() {
-        isShowSticker = false;
-      });
-    } else {
-      Firestore.instance
-          .collection('userInfoList')
-          .document(id)
-          .updateData({'chattingWith': null});
-      Navigator.pop(context);
-    }
-    return Future.value(false);
+    return showDialog(
+          context: context,
+          builder: (context) => new AlertDialog(
+            title: new Text('Alert',
+                style: TextStyle(
+                  fontSize: 18.0,
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Armata',
+                )),
+            content: new Text('Do you want to leave the chat room?',
+                style: TextStyle(
+                  fontSize: 18.0,
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Armata',
+                )),
+            actions: <Widget>[
+              FlatButton(
+                  child: Text('No',
+                      style: TextStyle(
+                          color: Colors.black,
+                          fontFamily: 'Armata',
+                          fontWeight: FontWeight.bold)),
+                  onPressed: () => Navigator.of(context).pop(false)),
+              FlatButton(
+                  child: Text('Yes',
+                      style: TextStyle(
+                          color: Colors.green,
+                          fontFamily: 'Armata',
+                          fontWeight: FontWeight.bold)),
+                  onPressed: () {
+
+                    if (isShowSticker) {
+                      setState(() {
+                        isShowSticker = false;
+                      });
+                    } else {
+                      Firestore.instance
+                          .collection('userInfoList')
+                          .document(id)
+                          .updateData({'chattingWith': null});
+                    }
+
+                    sendMsgContent("Customer payment unsuccessful!", 3);
+                    isReviewAndRatingShowedUp = true;
+                    controller.stop();
+                    reviewAndRatingPopUp();
+
+                  })
+            ],
+          ),
+        ) ??
+        false;
   }
 
   @override
@@ -667,6 +705,12 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
       appBar: new AppBar(
           iconTheme: IconThemeData(color: Colors.black),
           backgroundColor: Colors.white,
+          leading: InkWell(
+            onTap: (){
+              onBackPress();
+            },
+            child: Icon(Icons.stop),
+          ),
           title: new Text(displayName,
               style: TextStyle(
                   color: Colors.black,
@@ -924,7 +968,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
               stream: Firestore.instance
                   .collection('messages')
                   .document(groupChatId)
-                  .collection(groupChatId)
+                  .collection('conversations')
                   .orderBy('timestamp', descending: true)
                   .limit(20)
                   .snapshots(),
@@ -933,11 +977,10 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                   return CircularProgressIndicator(
                       valueColor: AlwaysStoppedAnimation<Color>(themeColor));
                 } else {
-                  
                   listMessage = snapshot.data.documents;
                   WidgetsBinding.instance.addPostFrameCallback(
                       (_) => actionAfterFreeMinutesGone(context));
-                  
+
                   return ListView.builder(
                     padding: EdgeInsets.all(10.0),
                     itemBuilder: (context, index) =>
@@ -1145,18 +1188,8 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                   fontFamily: 'Armata',
                   fontWeight: FontWeight.bold)),
           content: Wrap(children: <Widget>[
-            AnimatedBuilder(
-                animation: controller,
-                builder: (BuildContext context, Widget child) {
-                  return Text(
-                      "[$timerString] minute's left to complete your payment",
-                      style: TextStyle(
-                          color: Colors.black,
-                          fontFamily: 'Armata',
-                          fontWeight: FontWeight.bold));
-                }),
             Text(
-              "When payment completion time finish app will check is your payment complete or not. if not then you will not allowed to continue chat.",
+              "Payment successfull",
               style: TextStyle(
                   color: Colors.redAccent,
                   fontFamily: 'Armata',
@@ -1249,21 +1282,39 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
   void goBrowserForPayment(String aid) async {
     String url = webClientBaseUrl + '/payment.html?aid=' + aid + "&uid=" + uid;
     Navigator.of(context, rootNavigator: true).pop();
-    paymentCheckingPopUp(context);
 
-    if (isAppInDevelopmentModel) {
-      if (await canLaunch(url)) {
-        await launch(url);
-      } else {
-        throw 'Could not launch $url';
-      }
-    } else {
-      Navigator.of(context).push(MaterialPageRoute(
-          builder: (BuildContext context) => MyWebView(
-                title: "Payment",
-                selectedUrl: url,
-              )));
-    }
+    Navigator.of(context).push(MaterialPageRoute(
+        builder: (BuildContext context) => MyWebView(
+          title: "Payment",
+          url: url,
+        ))).whenComplete((){
+
+      MySharedPreferences.getBooleanValue('isPaymentSuccessful').then((isPaymentSuccessful){
+
+        if(isPaymentSuccessful){
+          paymentCheckingPopUp(context); 
+        }else {
+
+          Fluttertoast.showToast(
+              msg: "Payment unsuccessful!",
+              toastLength: Toast.LENGTH_LONG,
+              gravity: ToastGravity.BOTTOM,
+              timeInSecForIosWeb: 1,
+              backgroundColor: Colors.red,
+              textColor: Colors.white,
+              fontSize: 16.0
+          );
+
+          sendMsgContent("Customer payment unsuccessful!", 3);
+          isReviewAndRatingShowedUp = true;
+          controller.stop();
+          reviewAndRatingPopUp();
+
+        }
+
+      });
+
+    });
   }
 
   @override
@@ -1275,13 +1326,17 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
   }
 
   void sendMsgContent(String content, int type) {
-
     textEditingController.clear();
 
-    var documentReference = Firestore.instance
-        .collection('messages')
-        .document(groupChatId)
-        .collection(groupChatId)
+    var gcrDocumentReference =
+        Firestore.instance.collection('messages').document(groupChatId);
+
+    gcrDocumentReference.setData({
+      'groupChatId': groupChatId,
+    });
+
+    var covDocumentReference = gcrDocumentReference
+        .collection('conversations')
         .document(DateTime.now().millisecondsSinceEpoch.toString());
 
     var obj;
@@ -1316,7 +1371,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
     }
 
     Firestore.instance.runTransaction((transaction) async {
-      await transaction.set(documentReference, obj);
+      await transaction.set(covDocumentReference, obj);
     });
 
     listScrollController.animateTo(0.0,
@@ -1339,13 +1394,11 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
 
       // payment complete
       if (code == 200) {
-
         Navigator.pop(context);
         isPaymentComplete = true;
         Fluttertoast.showToast(
-            msg:
-                "You have successfully complete your payment, "
-                    "enjoy the conversation the expert!");
+            msg: "You have successfully complete your payment, "
+                "enjoy the conversation the expert!");
 
         if (!isCalledFromTimerPeriodic) {
           sendMsgContent(
@@ -1366,7 +1419,6 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
   }
 
   actionAfterFreeMinutesGone(BuildContext context) {
-
     print("Id of cus leave after free minute's gone $idOfCusLeaveMsg");
     print("Id of cus payment success after free minute's gone"
         " $idOfCusSuccessPaymentMsg");
@@ -1375,7 +1427,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
       Firestore.instance
           .collection('messages')
           .document(groupChatId)
-          .collection(groupChatId)
+          .collection('conversations')
           .document(idOfCusLeaveMsg)
           .updateData(<String, dynamic>{'isReviewAndRatingShowedUp': 1});
       reviewAndRatingPopUp();
@@ -1383,14 +1435,14 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
       isReviewAndRatingShowedUp = true;
     }
 
-    if (idOfCusSuccessPaymentMsg != null && !isChargedMinutesStarted){
-
+    if (idOfCusSuccessPaymentMsg != null && !isChargedMinutesStarted) {
       Firestore.instance
           .collection('messages')
           .document(groupChatId)
-          .collection(groupChatId)
+          .collection('conversations')
           .document(idOfCusSuccessPaymentMsg)
-          .updateData(<String, dynamic>{'isPaymentCompleteAfterFreeMinuteGone': 1});
+          .updateData(
+              <String, dynamic>{'isPaymentCompleteAfterFreeMinuteGone': 1});
 
       isChargedMinutesStarted = true;
       startTimeTicker(controller, chargedMinutes);
@@ -1398,8 +1450,6 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
           DateTime.now().add(Duration(minutes: chargedMinutes));
       print(
           "Changed review and rating show date time = $reviewAndRatingShowDateTime");
-
     }
-
   }
 }

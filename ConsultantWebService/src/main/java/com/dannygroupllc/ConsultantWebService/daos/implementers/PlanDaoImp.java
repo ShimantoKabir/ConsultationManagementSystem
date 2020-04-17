@@ -25,12 +25,14 @@ public class PlanDaoImp implements PlanDao {
     public EntityManager entityManager;
     public Gson gson;
     public SimpleDateFormat sdf;
+    public SimpleDateFormat sdf24Hour;
 
     @Autowired
     public PlanDaoImp(EntityManager entityManager) {
         this.entityManager = entityManager;
         gson = new Gson();
         sdf = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss a");
+        sdf24Hour = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss");
     }
 
     @Override
@@ -618,26 +620,86 @@ public class PlanDaoImp implements PlanDao {
 
         try {
 
-            String planSql = "SELECT \n" +
-                    "  CONVERT_TZ(start_time, 'UTC', time_zone) AS start_time,\n" +
-                    "  CONVERT_TZ(end_time, 'UTC', time_zone) AS end_time, \n" +
-                    "  cus_uid, \n" +
-                    "  con_uid \n" +
-                    "FROM\n" +
-                    "  plan \n" +
-                    "WHERE is_accept_by_con IS TRUE AND start_time BETWEEN NOW() \n" +
-                    "  AND DATE_ADD(NOW(), INTERVAL 5 MINUTE)";
+            String chatCancelSql = ""
+                    + "SELECT "
+                    + "  CONVERT_TZ(start_time, 'UTC', time_zone) AS start_time, "
+                    + "  CONVERT_TZ(end_time, 'UTC', time_zone) AS end_time, "
+                    + "  DATE_SUB(CONVERT_TZ(start_time, 'UTC', time_zone), INTERVAL 28 MINUTE) AS st, "
+                    + "  IF(free_minutes_for_new_customer IS NULL,'no','yes') AS is_free_min_available, "
+                    + "  IF(payment_trans_id IS NULL,'no','yes') AS is_payment_complete, "
+                    + "  cus_uid, "
+                    + "  con_uid "
+                    + "FROM "
+                    + "  plan "
+                    + "WHERE is_accept_by_con IS TRUE AND st BETWEEN NOW() "
+                    + "  AND DATE_ADD(NOW(), INTERVAL 1 MINUTE)";
 
-            Query authQuery = entityManager.createNativeQuery(planSql);
-            List<Object[]> resultList = authQuery.getResultList();
+            Query chatCancelQry = entityManager.createNativeQuery(chatCancelSql);
+            List<Object[]> chatCancelQryList = chatCancelQry.getResultList();
 
-            for (int i = 0; i < resultList.size(); i++) {
+            for (Object[] objects : chatCancelQryList) {
 
                 Plan p = new Plan();
-                p.setStartTime((Date) resultList.get(i)[0]);
-                p.setEndTime((Date) resultList.get(i)[1]);
-                p.setCusUid((String) resultList.get(i)[2]);
-                p.setConUid((String) resultList.get(i)[3]);
+                p.setStartTime((Date) objects[0]);
+                p.setEndTime((Date) objects[1]);
+                String isFreeMinAvailable = (String) objects[3];
+                String isPaymentComplete = (String) objects[4];
+                p.setCusUid((String) objects[5]);
+                p.setConUid((String) objects[6]);
+
+                if (isFreeMinAvailable.equals("no") && isPaymentComplete.equals("no")) {
+
+                    System.out.println(getClass().getName() + "Chat Session cancel: Plan" + gson.toJson(p));
+
+                    Notification nForCus = new Notification();
+                    nForCus.setUid(p.getCusUid());
+                    nForCus.setTitle("Chat Session Canceled");
+                    nForCus.setBody("You did not make payment. Chat session at "+sdf24Hour.format(p.getStartTime())+" is canceled");
+                    nForCus.setStartTime(sdf.format(p.getStartTime()));
+                    nForCus.setEndTime(sdf.format(p.getEndTime()));
+
+                    NotificationSender.send(nForCus);
+
+                    Notification nForCon = new Notification();
+                    nForCon.setUid(p.getConUid());
+                    nForCon.setTitle("Chat Session Canceled");
+                    nForCon.setBody("Customer did not make payment. Chat session at X:XX is canceled");
+                    nForCon.setStartTime(sdf.format(p.getStartTime()));
+                    nForCon.setEndTime(sdf.format(p.getEndTime()));
+
+                    NotificationSender.send(nForCon);
+
+                }
+
+            }
+
+            String reminderSql = ""
+                    + "SELECT "
+                    + "  CONVERT_TZ(start_time, 'UTC', time_zone) AS start_time, "
+                    + "  CONVERT_TZ(end_time, 'UTC', time_zone) AS end_time, "
+                    + "  DATE_SUB(CONVERT_TZ(start_time, 'UTC', time_zone), INTERVAL 1 HOUR) AS st, "
+                    + "  DATE_SUB(CONVERT_TZ(end_time, 'UTC', time_zone), INTERVAL 1 HOUR) AS et, "
+                    + "  IF(free_minutes_for_new_customer IS NULL,'no','yes') AS is_free_min_available, "
+                    + "  IF(payment_trans_id IS NULL,'no','yes') AS is_payment_complete, "
+                    + "  cus_uid, "
+                    + "  con_uid "
+                    + "FROM "
+                    + "  plan "
+                    + "WHERE is_accept_by_con IS TRUE AND st BETWEEN NOW() "
+                    + "  AND DATE_ADD(NOW(), INTERVAL 1 MINUTE)";
+
+            Query reminderQry = entityManager.createNativeQuery(reminderSql);
+            List<Object[]> reminderList = reminderQry.getResultList();
+
+            for (Object[] objects : reminderList) {
+
+                Plan p = new Plan();
+                p.setStartTime((Date) objects[0]);
+                p.setEndTime((Date) objects[1]);
+                String isFreeMinAvailable = (String) objects[4];
+                String isPaymentComplete = (String) objects[5];
+                p.setCusUid((String) objects[6]);
+                p.setConUid((String) objects[7]);
 
                 System.out.println(getClass().getName() + ".remindPlanToUser: Plan" + gson.toJson(p));
 
@@ -661,9 +723,21 @@ public class PlanDaoImp implements PlanDao {
 
                 NotificationSender.send(nForCon);
 
+                if (isFreeMinAvailable.equals("no") && isPaymentComplete.equals("no")) {
+
+                    Notification nForPayment = new Notification();
+                    nForPayment.setUid(p.getConUid());
+                    nForPayment.setTitle("Payment Reminder");
+                    nForPayment.setBody("You didn't complete your payment for the chat session, which will start on "+sdf.format(p.getStartTime())+", Please complete your payment before 30 minute.");
+                    nForPayment.setStartTime(sdf.format(p.getStartTime()));
+                    nForPayment.setEndTime(sdf.format(p.getEndTime()));
+
+                    NotificationSender.send(nForPayment);
+
+                }
+
             }
 
-            System.out.println(getClass().getName() + ".remindPlanToUser: planList" + gson.toJson(resultList));
             plan.setCode(200);
             plan.setMsg("Reminder send successfully!");
 

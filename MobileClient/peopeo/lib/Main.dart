@@ -4,10 +4,12 @@ import 'package:badges/badges.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
-import 'package:peopeo/BookmarkViewer.dart';
+import 'package:peopeo/ChattedUserViewer.dart';
 import 'package:peopeo/Const.dart';
+import 'package:peopeo/CustomerListViewer.dart';
 import 'package:peopeo/LikedUserViewer.dart';
 import 'package:peopeo/MySharedPreferences.dart';
+import 'package:peopeo/MyWebView.dart';
 import 'package:peopeo/NotificationViewer.dart';
 import 'package:peopeo/PlanInfo.dart';
 import 'package:peopeo/UserInfo.dart';
@@ -223,7 +225,7 @@ class MyHomePageState extends State<MyHomePage> {
                                 uid: val.data['uid'],
                                 displayName: val.data['displayName'],
                                 email: val.data['email'],
-                                hashTag : val.data['hashTag']));
+                                hashTag: val.data['hashTag']));
                           });
                           showSearch(
                               context: context,
@@ -238,85 +240,112 @@ class MyHomePageState extends State<MyHomePage> {
                   icon: Icon(Icons.favorite),
                   onPressed: () {
                     if (isUserLoggedIn) {
-                      List<Map<String, dynamic>> likedUserIdList = [];
 
-                      MySharedPreferences.getStringValue("uid").then((uid) {
-                        Firestore.instance
-                            .collection('userInfoList')
-                            .document(uid)
-                            .collection("likedUserIdList")
-                            .getDocuments()
-                            .then((docs) {
-                          docs.documents.forEach((f) {
-                            print(f.data);
-                            Map<String, dynamic> likeObj = f.data;
+                      MySharedPreferences.getIntegerValue(
+                          "userType").then((userType) {
+                        if (userType == 1) {
 
-                            Firestore.instance
-                                .collection('userInfoList')
-                                .document(likeObj['expertUid'])
-                                .get()
-                                .then((u) {
-                              likedUserIdList.add(u.data);
+                          showAlertDialog(
+                              context, "Gathering user that you liked...");
+                          MySharedPreferences.getStringValue("uid").then((uid) {
+
+                            getLikedUserIdList(uid).then((res) async {
+
+                              Navigator.of(context, rootNavigator: true).pop();
 
                               Navigator.of(context).push(
                                 MaterialPageRoute(
                                   builder: (context) {
                                     return LikedUserViewer(
                                         uid: uid,
-                                        likedUserIdList: likedUserIdList);
+                                        likedUserIdList: res);
                                   },
                                 ),
                               );
+
                             });
                           });
-                        });
-                      });
-                    } else {
-                      goToLoginPage();
-                    }
-                  }),
-              IconButton(
-                  icon: Icon(Icons.bookmark),
-                  onPressed: () {
-                    if (isUserLoggedIn) {
-                      List<Map<String, dynamic>> bookMarkUserIdList = [];
-                      MySharedPreferences.getStringValue("uid").then((uid) {
-                        Firestore.instance
-                            .collection('userInfoList')
-                            .document(uid)
-                            .collection("bookMarkUserIdList")
-                            .getDocuments()
-                            .then((docs) {
-                          docs.documents.forEach((f) {
-                            print(f.data);
-                            Map<String, dynamic> likeObj = f.data;
+
+                        } else {
+
+                          showAlertDialog(
+                              context, "Fetching customer list...");
+
+                          List<Map<String, dynamic>> customerList = [];
+
+                          MySharedPreferences.getStringValue("uid").then((uid) {
 
                             Firestore.instance
                                 .collection('userInfoList')
-                                .document(likeObj['expertUid'])
-                                .get()
-                                .then((u) {
-                              bookMarkUserIdList.add(u.data);
+                                .document(uid)
+                                .collection('likedUserIdList')
+                                .getDocuments()
+                                .then((cusDocs){
+
+                              cusDocs.documents.forEach((f) {
+
+                                customerList.add(f.data);
+
+                              });
+
+                              Navigator.of(context, rootNavigator: true).pop();
+                              print(customerList.length);
 
                               Navigator.of(context).push(
                                 MaterialPageRoute(
                                   builder: (context) {
-                                    return BookmarkViewer(
+                                    return CustomerListViewer(
                                         uid: uid,
-                                        bookMarkUserIdList: bookMarkUserIdList);
+                                        customerList: customerList);
                                   },
                                 ),
                               );
+
                             });
+
                           });
-                        });
+
+                        }
                       });
+
                     } else {
                       goToLoginPage();
                     }
                   }),
               IconButton(
-                  icon: Icon(Icons.schedule),
+                  icon: Icon(Icons.history),
+                  onPressed: () {
+                    if (isUserLoggedIn) {
+
+                      showAlertDialog(
+                          context, "Gathering user that you chatted before.");
+
+                      MySharedPreferences.getStringValue("uid").then((uid) {
+
+                         getAllChattedUserInfo(uid).then((chattedUserIdList){
+
+                           Navigator.of(context, rootNavigator: true).pop();
+
+                           Navigator.of(context).push(
+                             MaterialPageRoute(
+                               builder: (context) {
+                                 return ChattedUserViewer(
+                                     uid: uid,
+                                     chattedUserIdList: chattedUserIdList);
+                               },
+                             ),
+                           );
+
+                         });
+
+                      });
+
+                    } else {
+                      goToLoginPage();
+                    }
+                  }),
+              IconButton(
+                  icon: Icon(Icons.calendar_today),
                   onPressed: () {
                     if (isUserLoggedIn) {
                       MySharedPreferences.getIntegerValue("userType")
@@ -437,33 +466,6 @@ class MyHomePageState extends State<MyHomePage> {
                         stream: Firestore.instance
                             .collection('userInfoList')
                             .document(uid)
-                            .collection("likedUserIdList")
-                            .where('expertUid', isEqualTo: document['uid'])
-                            .snapshots(),
-                        builder: (context, snapshot) {
-                          if (snapshot.hasData) {
-                            if (snapshot.data.documents.length == 1) {
-                              return Icon(Icons.favorite, color: Colors.red);
-                            } else {
-                              return Icon(Icons.favorite, color: Colors.grey);
-                            }
-                          } else {
-                            return Icon(Icons.favorite, color: Colors.white10);
-                          }
-                        }),
-                    onPressed: () {
-                      if (isUserLoggedIn) {
-                        addToFavorite(document['uid'], uid);
-                      } else {
-                        goToLoginPage();
-                      }
-                    },
-                  ),
-                  IconButton(
-                    icon: StreamBuilder(
-                        stream: Firestore.instance
-                            .collection('userInfoList')
-                            .document(uid)
                             .collection("bookMarkUserIdList")
                             .where('expertUid', isEqualTo: document['uid'])
                             .snapshots(),
@@ -485,7 +487,13 @@ class MyHomePageState extends State<MyHomePage> {
                         goToLoginPage();
                       }
                     },
-                  )
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.share, color: Colors.grey),
+                    onPressed: () {
+
+                    },
+                  ),
                 ],
               ),
             ),
@@ -516,16 +524,59 @@ class MyHomePageState extends State<MyHomePage> {
                             Column(
                               children: <Widget>[
                                 IconButton(
-                                  icon: Icon(Icons.thumb_up),
+                                  icon: Icon(Icons.favorite),
                                   onPressed: () {
                                     if (isUserLoggedIn) {
-                                      giveThumbUp(document['uid']);
+                                      MySharedPreferences.getIntegerValue(
+                                          "userType").then((userType) {
+                                        if (userType == 1) {
+                                          giveLike(document, uid);
+                                        } else {
+                                          Fluttertoast.showToast(
+                                              msg: "You can't like any expert, cause you are registered as expert!");
+                                        }
+                                      });
                                     } else {
                                       goToLoginPage();
                                     }
                                   },
                                 ),
-                                getLike(document)
+                                StreamBuilder(
+                                  stream: Firestore.instance
+                                      .collection('userInfoList')
+                                      .document(document['uid'])
+                                      .collection("likedUserIdList")
+                                      .snapshots(),
+                                  builder: (context, snapshot) {
+                                    if (snapshot.hasData) {
+                                      if (snapshot.data.documents.length == 1) {
+                                        return Text(
+                                            snapshot.data.documents.length
+                                                .toString() +
+                                                " Likes",
+                                            style: TextStyle(
+                                              fontSize: 12.0,
+                                              fontWeight: FontWeight.w600,
+                                              fontFamily: 'Armata',
+                                            ));
+                                      } else {
+                                        return Text('0 Like',
+                                            style: TextStyle(
+                                              fontSize: 12.0,
+                                              fontWeight: FontWeight.w600,
+                                              fontFamily: 'Armata',
+                                            ));
+                                      }
+                                    } else {
+                                      return Text('0 Like',
+                                          style: TextStyle(
+                                            fontSize: 12.0,
+                                            fontWeight: FontWeight.w600,
+                                            fontFamily: 'Armata',
+                                          ));
+                                    }
+                                  },
+                                )
                               ],
                             ),
                             Column(
@@ -559,7 +610,7 @@ class MyHomePageState extends State<MyHomePage> {
                   Row(
                     children: <Widget>[
                       Text(
-                        "("+getRating(document).toString()+")",
+                        "(" + getRating(document).toString() + ")",
                         textAlign: TextAlign.left,
                         style: TextStyle(
                           fontSize: 18.0,
@@ -573,10 +624,11 @@ class MyHomePageState extends State<MyHomePage> {
                         direction: Axis.horizontal,
                         itemCount: 5,
                         itemSize: 25.0,
-                        itemBuilder: (context, index) => Icon(
-                          Icons.star,
-                          color: Colors.amber,
-                        ),
+                        itemBuilder: (context, index) =>
+                            Icon(
+                              Icons.star,
+                              color: Colors.amber,
+                            ),
                         onRatingUpdate: (double value) {},
                       )
                     ],
@@ -611,6 +663,7 @@ class MyHomePageState extends State<MyHomePage> {
                         side: BorderSide(color: Colors.red)),
                     onPressed: () {
                       if (isUserLoggedIn) {
+
                         Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (context) {
@@ -618,6 +671,7 @@ class MyHomePageState extends State<MyHomePage> {
                             },
                           ),
                         );
+
                       } else {
                         goToLoginPage();
                       }
@@ -659,22 +713,23 @@ class MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  getLike(DocumentSnapshot document) {
-    if (document['like'] == null) {
-      return Text('0 Like',
-          style: TextStyle(
-            fontSize: 12.0,
-            fontWeight: FontWeight.w600,
-            fontFamily: 'Armata',
-          ));
-    } else {
-      return Text(document['like'].toString()+" Likes",
-          style: TextStyle(
-            fontSize: 12.0,
-            fontWeight: FontWeight.w600,
-            fontFamily: 'Armata',
-          ));
-    }
+  getLike(DocumentSnapshot ds) {
+
+    Firestore.instance
+        .collection('userInfoList')
+        .document(ds['uid'])
+        .collection("likedUserIdList")
+        .getDocuments()
+        .then((docs) {
+      print(docs.documents.length);
+    });
+
+    return Text('0 Like',
+        style: TextStyle(
+          fontSize: 12.0,
+          fontWeight: FontWeight.w600,
+          fontFamily: 'Armata',
+        ));
   }
 
   getFreeMinutes(DocumentSnapshot document) {
@@ -704,7 +759,7 @@ class MyHomePageState extends State<MyHomePage> {
       );
     } else {
       return Text(
-        "\$"+document['hourlyRate'].toString() + "/Hour",
+        "\$" + document['hourlyRate'].toString() + "/Hour",
         style: TextStyle(
             fontSize: 12.0, fontWeight: FontWeight.w600, fontFamily: 'Armata'),
       );
@@ -825,28 +880,20 @@ class MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  void addToFavorite(expertUid, myUid) {
+  void giveLike(DocumentSnapshot ds, String myUid) {
     CollectionReference cr = Firestore.instance
         .collection('userInfoList')
-        .document(myUid)
+        .document(ds['uid'])
         .collection("likedUserIdList");
-    cr.document(expertUid).get().then((doc) {
+
+    cr.document(myUid).get().then((doc) {
       if (doc.exists) {
-        cr.document(expertUid).delete();
+        cr.document(myUid).delete();
       } else {
-        cr.document(expertUid).setData({
-          'expertUid': expertUid,
+        cr.document(myUid).setData({
+          'uid': myUid,
         });
       }
-    });
-  }
-
-  void giveThumbUp(document) {
-    Firestore.instance
-        .collection('userInfoList')
-        .document(document)
-        .updateData(<String, dynamic>{
-      'like': FieldValue.increment(1),
     });
   }
 
@@ -858,7 +905,6 @@ class MyHomePageState extends State<MyHomePage> {
       print("onMessage: message = $message");
 
       showNotification(context, message);
-
     });
     fm.requestNotificationPermissions(
         const IosNotificationSettings(sound: true, badge: true, alert: true));
@@ -909,6 +955,85 @@ class MyHomePageState extends State<MyHomePage> {
         },
       ),
     );
+  }
+
+  Future<List<Map<String, dynamic>>> getLikedUserIdList(String uid) async {
+    List<Map<String, dynamic>> likedUserIdList = [];
+
+    final uiDocs = await Firestore.instance
+        .collection("userInfoList")
+        .getDocuments();
+
+    await Future.wait(uiDocs.documents.map((ui) async {
+      Map<String, dynamic> uiObj = ui.data;
+
+      final luDocs = await Firestore.instance
+          .collection('userInfoList')
+          .document(uiObj['uid'])
+          .collection('likedUserIdList')
+          .where('uid', isEqualTo: uid)
+          .getDocuments();
+
+      await Future.wait(luDocs.documents.map((lu) async {
+        likedUserIdList.add(uiObj);
+      }));
+
+    }));
+
+    return likedUserIdList;
+  }
+
+  showAlertDialog(BuildContext context, String msg) {
+    AlertDialog alert = AlertDialog(
+      content: ListTile(
+        leading: CircularProgressIndicator(),
+        title: Text("Loading"),
+        subtitle: Text(msg),
+      ),
+    );
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (BuildContext context) {
+        return alert;
+      },
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getAllChattedUserInfo(String uid) async {
+
+    List<Map<String, dynamic>> chattedUserIdList = [];
+    final mDocs = await Firestore.instance
+        .collection("messages")
+        .getDocuments();
+
+    await Future.wait(mDocs.documents.map((m) async {
+
+      String peerId;
+
+      String groupIdFirst = m.documentID.split("-").first;
+      String groupIdLast = m.documentID.split("-").last;
+
+      if(uid == groupIdFirst){
+
+        peerId = groupIdLast;
+
+      } else if(uid == groupIdLast){
+
+        peerId = groupIdFirst;
+
+      }
+
+      final uiDoc = await Firestore.instance
+          .collection('userInfoList')
+          .document(peerId).get();
+
+      chattedUserIdList.add(uiDoc.data);
+
+    }));
+
+    return chattedUserIdList;
+
   }
 
 }
