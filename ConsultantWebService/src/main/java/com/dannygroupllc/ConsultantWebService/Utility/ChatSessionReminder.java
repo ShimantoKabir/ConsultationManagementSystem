@@ -37,7 +37,7 @@ public class ChatSessionReminder {
             URI uri = new URI(baseUrl);
             ResponseEntity<String> result = restTemplate.exchange(uri, HttpMethod.GET, requestEntity, String.class);
 
-            System.out.println(getClass().getName()+".remind: "+gson.toJson(result.getBody()));
+            System.out.println(getClass().getName()+".remind: "+result.getBody());
 
         }catch (Exception e){
             e.printStackTrace();

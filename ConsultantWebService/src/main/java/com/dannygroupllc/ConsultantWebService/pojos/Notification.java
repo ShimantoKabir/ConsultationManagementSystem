@@ -1,7 +1,5 @@
 package com.dannygroupllc.ConsultantWebService.pojos;
 
-import java.util.Date;
-
 public class Notification {
 
     public String uid;
@@ -11,8 +9,17 @@ public class Notification {
     public Integer seenStatus;
     public String startTime;
     public String endTime;
+    public long timeStamp;
 
     public Notification() {}
+
+    public long getTimeStamp() {
+        return timeStamp;
+    }
+
+    public void setTimeStamp(long timeStamp) {
+        this.timeStamp = timeStamp;
+    }
 
     public String getStartTime() {
         return startTime;

@@ -189,6 +189,7 @@ class PlanInfoState extends State<PlanInfo> {
   showPaymentButtonOrChatButton(Plan p) {
 
     String buttonText = "Start Chat";
+
     // handle consultant
     if (userType == 2) {
       if (p.paymentTransId == null) {

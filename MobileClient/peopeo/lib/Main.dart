@@ -2,27 +2,26 @@ import 'dart:convert';
 
 import 'package:badges/badges.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_native_timezone/flutter_native_timezone.dart';
-import 'package:flutter_rating_bar/flutter_rating_bar.dart';
-import 'package:peopeo/ChattedUserViewer.dart';
-import 'package:peopeo/Const.dart';
-import 'package:peopeo/CustomerListViewer.dart';
-import 'package:peopeo/LikedUserViewer.dart';
-import 'package:peopeo/MySharedPreferences.dart';
-import 'package:peopeo/MyWebView.dart';
-import 'package:peopeo/NotificationViewer.dart';
-import 'package:peopeo/PlanInfo.dart';
-import 'package:peopeo/UserInfo.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_native_timezone/flutter_native_timezone.dart';
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:peopeo/ChattedUserViewer.dart';
+import 'package:peopeo/Const.dart';
 import 'package:peopeo/ConsultantProfile.dart';
+import 'package:peopeo/CustomerListViewer.dart';
 import 'package:peopeo/CustomerProfile.dart';
 import 'package:peopeo/ExpertSearch.dart';
 import 'package:peopeo/HttpResponse.dart';
+import 'package:peopeo/LikedUserViewer.dart';
 import 'package:peopeo/LoginPage.dart';
+import 'package:peopeo/MySharedPreferences.dart';
+import 'package:peopeo/NotificationViewer.dart';
+import 'package:peopeo/PlanInfo.dart';
+import 'package:peopeo/UserInfo.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 void main() => runApp(MyApp());
 
@@ -46,6 +45,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class MyHomePageState extends State<MyHomePage> {
+
   final FirebaseMessaging fm = FirebaseMessaging();
   bool isUserLoggedIn = false;
 
@@ -247,6 +247,7 @@ class MyHomePageState extends State<MyHomePage> {
 
                           showAlertDialog(
                               context, "Gathering user that you liked...");
+
                           MySharedPreferences.getStringValue("uid").then((uid) {
 
                             getLikedUserIdList(uid).then((res) async {
@@ -271,39 +272,24 @@ class MyHomePageState extends State<MyHomePage> {
                           showAlertDialog(
                               context, "Fetching customer list...");
 
-                          List<Map<String, dynamic>> customerList = [];
-
                           MySharedPreferences.getStringValue("uid").then((uid) {
 
-                            Firestore.instance
-                                .collection('userInfoList')
-                                .document(uid)
-                                .collection('likedUserIdList')
-                                .getDocuments()
-                                .then((cusDocs){
-
-                              cusDocs.documents.forEach((f) {
-
-                                customerList.add(f.data);
-
-                              });
+                            getLikedCustomerList(uid).then((res){
 
                               Navigator.of(context, rootNavigator: true).pop();
-                              print(customerList.length);
-
                               Navigator.of(context).push(
                                 MaterialPageRoute(
                                   builder: (context) {
                                     return CustomerListViewer(
                                         uid: uid,
-                                        customerList: customerList);
+                                        customerList: res);
                                   },
                                 ),
                               );
 
                             });
 
-                          });
+                            });
 
                         }
                       });
@@ -461,32 +447,25 @@ class MyHomePageState extends State<MyHomePage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: <Widget>[
-                  IconButton(
-                    icon: StreamBuilder(
-                        stream: Firestore.instance
-                            .collection('userInfoList')
-                            .document(uid)
-                            .collection("bookMarkUserIdList")
-                            .where('expertUid', isEqualTo: document['uid'])
-                            .snapshots(),
-                        builder: (context, snapshot) {
-                          if (snapshot.hasData) {
-                            if (snapshot.data.documents.length == 1) {
-                              return Icon(Icons.bookmark, color: Colors.red);
-                            } else {
-                              return Icon(Icons.bookmark, color: Colors.grey);
-                            }
+                  Row(
+                    children: <Widget>[
+                      IconButton(
+                        icon: Icon(Icons.lens, color: Colors.green),
+                        onPressed: () {
+                          if (isUserLoggedIn) {
+                            addToBookMark(document['uid'], uid);
                           } else {
-                            return Icon(Icons.bookmark, color: Colors.white10);
+                            goToLoginPage();
                           }
-                        }),
-                    onPressed: () {
-                      if (isUserLoggedIn) {
-                        addToBookMark(document['uid'], uid);
-                      } else {
-                        goToLoginPage();
-                      }
-                    },
+                        },
+                      ),
+                      Text("ONLINE",style: TextStyle(
+                        fontSize: 15.0,
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Armata',
+                      ))
+                    ],
                   ),
                   IconButton(
                     icon: Icon(Icons.share, color: Colors.grey),
@@ -941,7 +920,40 @@ class MyHomePageState extends State<MyHomePage> {
                     fontFamily: 'Armata',
                     fontWeight: FontWeight.normal),
               )
-            ]));
+            ]),
+            actions : <Widget>[
+              FlatButton(
+                  child: Text('Close',
+                      style: TextStyle(
+                          color: Colors.green,
+                          fontFamily: 'Armata',
+                          fontWeight: FontWeight.bold)),
+                  onPressed: () => Navigator.of(context).pop(false)),
+              FlatButton(
+                  child: Text('Details',
+                      style: TextStyle(
+                          color: Colors.green,
+                          fontFamily: 'Armata',
+                          fontWeight: FontWeight.bold)),
+                  onPressed: () {
+
+                    MySharedPreferences.getStringValue('uid')
+                    .then((uid){
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) {
+                            return NotificationViewer(uid: uid);
+                          },
+                        ),
+                      );
+
+                    });
+
+                  })
+            ]
+        );
       },
     );
   }
@@ -1033,6 +1045,30 @@ class MyHomePageState extends State<MyHomePage> {
     }));
 
     return chattedUserIdList;
+
+  }
+
+  Future<List<Map<String, dynamic>>> getLikedCustomerList(String uid) async {
+
+    List<Map<String, dynamic>> customerList = [];
+
+    final luDocs = await Firestore.instance
+        .collection('userInfoList')
+        .document(uid)
+        .collection('likedUserIdList')
+        .getDocuments();
+
+    await Future.wait(luDocs.documents.map((lu) async {
+
+      final uiDoc = await Firestore.instance
+          .collection('userInfoList')
+          .document(lu.data['uid']).get();
+
+      customerList.add(uiDoc.data);
+
+    }));
+
+    return customerList;
 
   }
 

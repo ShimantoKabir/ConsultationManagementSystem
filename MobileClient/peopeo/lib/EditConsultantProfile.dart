@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:badges/badges.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -116,19 +117,23 @@ class EditConsultantProfileState extends State<EditConsultantProfile> {
                           return Column(
                             children: <Widget>[
                               Center(
-                                child: Padding(
-                                    padding: EdgeInsets.all(10.0),
-                                    child: Container(
-                                      height: 150.0,
-                                      width: 150.0,
-                                      decoration: new BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        image: new DecorationImage(
-                                            fit: BoxFit.fill,
-                                            image: NetworkImage(snapshot.data
-                                                .documents[0]['photoUrl'])),
-                                      ),
-                                    )),
+                                child: Badge(
+                                  badgeContent: Icon(Icons.notifications, color: Colors.grey),
+                                  child: Padding(
+                                      padding: EdgeInsets.all(10.0),
+                                      child: Container(
+                                        height: 150.0,
+                                        width: 150.0,
+                                        decoration: new BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          image: new DecorationImage(
+                                              fit: BoxFit.fill,
+                                              image: NetworkImage(snapshot.data
+                                                  .documents[0]['photoUrl'])),
+                                        ),
+                                      )
+                                  ),
+                                ),
                               ),
                               Container(
                                 width: MediaQuery.of(context).size.width,

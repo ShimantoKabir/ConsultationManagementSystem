@@ -1452,4 +1452,5 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
           "Changed review and rating show date time = $reviewAndRatingShowDateTime");
     }
   }
+
 }

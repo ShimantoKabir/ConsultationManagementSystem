@@ -8,7 +8,6 @@ import com.google.firebase.cloud.FirestoreClient;
 import com.google.gson.Gson;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
-
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import javax.servlet.http.HttpServletRequest;
@@ -516,9 +515,9 @@ public class PlanDaoImp implements PlanDao {
         System.out.println(getClass().getName() + ".updateRating res = " + rating);
 
         FirestoreClient.getFirestore()
-            .collection("userInfoList")
-            .document(uid)
-            .update("rating", rating);
+                .collection("userInfoList")
+                .document(uid)
+                .update("rating", rating);
 
     }
 
@@ -622,16 +621,27 @@ public class PlanDaoImp implements PlanDao {
 
             String chatCancelSql = ""
                     + "SELECT "
+                    + "  t.start_time, "
+                    + "  t.end_time, "
+                    + "  t.st, "
+                    + "  t.is_free_min_available, "
+                    + "  t.is_payment_complete, "
+                    + "  t.cus_uid, "
+                    + "  t.con_uid, "
+                    + "  t.is_accept_by_con "
+                    + "FROM "
+                    + "(SELECT "
                     + "  CONVERT_TZ(start_time, 'UTC', time_zone) AS start_time, "
                     + "  CONVERT_TZ(end_time, 'UTC', time_zone) AS end_time, "
-                    + "  DATE_SUB(CONVERT_TZ(start_time, 'UTC', time_zone), INTERVAL 28 MINUTE) AS st, "
+                    + "  DATE_SUB(start_time, INTERVAL 28 MINUTE) AS st, "
                     + "  IF(free_minutes_for_new_customer IS NULL,'no','yes') AS is_free_min_available, "
                     + "  IF(payment_trans_id IS NULL,'no','yes') AS is_payment_complete, "
                     + "  cus_uid, "
-                    + "  con_uid "
+                    + "  con_uid, "
+                    + "  is_accept_by_con "
                     + "FROM "
-                    + "  plan "
-                    + "WHERE is_accept_by_con IS TRUE AND st BETWEEN NOW() "
+                    + "  plan) AS t "
+                    + "WHERE t.is_accept_by_con IS TRUE AND t.st BETWEEN NOW() "
                     + "  AND DATE_ADD(NOW(), INTERVAL 1 MINUTE)";
 
             Query chatCancelQry = entityManager.createNativeQuery(chatCancelSql);
@@ -673,19 +683,30 @@ public class PlanDaoImp implements PlanDao {
 
             }
 
+
             String reminderSql = ""
+                    + "SELECT "
+                    + "	t.start_time, "
+                    + "	t.end_time, "
+                    + "	t.st, "
+                    + "	t.is_free_min_available, "
+                    + "	t.is_payment_complete, "
+                    + "	t.cus_uid, "
+                    + "	t.con_uid, "
+                    + "	t.is_accept_by_con "
+                    + "FROM( "
                     + "SELECT "
                     + "  CONVERT_TZ(start_time, 'UTC', time_zone) AS start_time, "
                     + "  CONVERT_TZ(end_time, 'UTC', time_zone) AS end_time, "
-                    + "  DATE_SUB(CONVERT_TZ(start_time, 'UTC', time_zone), INTERVAL 1 HOUR) AS st, "
-                    + "  DATE_SUB(CONVERT_TZ(end_time, 'UTC', time_zone), INTERVAL 1 HOUR) AS et, "
+                    + "  DATE_SUB(start_time, INTERVAL 1 HOUR) AS st, "
                     + "  IF(free_minutes_for_new_customer IS NULL,'no','yes') AS is_free_min_available, "
                     + "  IF(payment_trans_id IS NULL,'no','yes') AS is_payment_complete, "
                     + "  cus_uid, "
-                    + "  con_uid "
+                    + "  con_uid, "
+                    + "  is_accept_by_con "
                     + "FROM "
-                    + "  plan "
-                    + "WHERE is_accept_by_con IS TRUE AND st BETWEEN NOW() "
+                    + "  plan) AS t "
+                    + "WHERE t.is_accept_by_con IS TRUE AND t.st BETWEEN NOW() "
                     + "  AND DATE_ADD(NOW(), INTERVAL 1 MINUTE)";
 
             Query reminderQry = entityManager.createNativeQuery(reminderSql);
@@ -696,10 +717,10 @@ public class PlanDaoImp implements PlanDao {
                 Plan p = new Plan();
                 p.setStartTime((Date) objects[0]);
                 p.setEndTime((Date) objects[1]);
-                String isFreeMinAvailable = (String) objects[4];
-                String isPaymentComplete = (String) objects[5];
-                p.setCusUid((String) objects[6]);
-                p.setConUid((String) objects[7]);
+                String isFreeMinAvailable = (String) objects[3];
+                String isPaymentComplete = (String) objects[4];
+                p.setCusUid((String) objects[5]);
+                p.setConUid((String) objects[6]);
 
                 System.out.println(getClass().getName() + ".remindPlanToUser: Plan" + gson.toJson(p));
 
@@ -739,13 +760,13 @@ public class PlanDaoImp implements PlanDao {
             }
 
             plan.setCode(200);
-            plan.setMsg("Reminder send successfully!");
+            plan.setMsg("Reminder triggered successfully!");
 
         } catch (Exception e) {
             e.printStackTrace();
             System.out.println(getClass().getName() + "remindPlanToUser: Exception = " + e.getMessage());
             plan.setCode(404);
-            plan.setMsg("Reminder send fail!");
+            plan.setMsg("Reminder triggered unsuccessful!");
         }
 
         return plan;
@@ -753,3 +774,4 @@ public class PlanDaoImp implements PlanDao {
     }
 
 }
+

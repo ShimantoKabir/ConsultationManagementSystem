@@ -1,19 +1,10 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:http/http.dart';
 import 'package:peopeo/CustomerProfile.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-import 'Const.dart';
-import 'ConsultantProfile.dart';
-import 'HttpResponse.dart';
 import 'MySharedPreferences.dart';
 
 class CustomerListViewer extends StatefulWidget {
@@ -276,7 +267,8 @@ class CustomerListViewerState extends State<CustomerListViewer> {
         'title' : "Invitation",
         'fcmRegistrationToken' : document['fcmRegistrationToken'],
         'uid' : document['uid'],
-        'seenStatus' : 0
+        'seenStatus' : 0,
+        'invitationSenderUid' : uid
       }).then((res){
 
         Navigator.of(context, rootNavigator: true).pop();
@@ -285,7 +277,7 @@ class CustomerListViewerState extends State<CustomerListViewer> {
       }).catchError((err){
 
         Navigator.of(context, rootNavigator: true).pop();
-        Fluttertoast.showToast(msg: "Something wend wrong!");
+        Fluttertoast.showToast(msg: "Something went wrong!");
 
       });
 

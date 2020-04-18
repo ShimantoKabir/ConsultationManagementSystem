@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:peopeo/ConsultantProfile.dart';
 
 class NotificationViewer extends StatefulWidget {
   final String uid;
@@ -62,7 +63,26 @@ class NotificationViewerState extends State<NotificationViewer> {
         subtitle: Wrap(
           children: <Widget>[
             Text(getStartTime(document)),
-            Text(getEndTime(document))
+            Text(getEndTime(document)),
+            Visibility(
+              visible: document['invitationSenderUid'] != null,
+              child: OutlineButton(
+                onPressed: () async {
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) {
+                        return ConsultantProfile(uid: uid);
+                      },
+                    ),
+                  );
+
+                },
+                child: Text("See My Profile".toUpperCase(),
+                    style: TextStyle(fontSize: 14)),
+              ),
+            )
           ],
         ),
         trailing: Icon(Icons.touch_app),
