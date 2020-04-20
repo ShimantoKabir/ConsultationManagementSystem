@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:peopeo/Const.dart';
@@ -116,4 +117,22 @@ Future<Response> createCustomerInBrainTree(FirebaseUser user) async {
       await post(url, headers: headers, body: json.encode(request));
   print(response.body);
   return response;
+}
+
+
+Future<void> logOut() async {
+
+  SharedPreferences preferences =
+      await SharedPreferences.getInstance();
+  preferences.getKeys();
+  for (String key in preferences.getKeys()) {
+    preferences.remove(key);
+  }
+
+  await GoogleSignIn().signOut();
+  await FacebookLogin().logOut();
+  await FirebaseAuth.instance.signOut();
+
+  exit(0);
+
 }

@@ -16,7 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:peopeo/SocialSignIn.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:peopeo/HttpResponse.dart';
@@ -34,6 +34,7 @@ class ConsultantProfile extends StatefulWidget {
 
 class ConsultantProfileState extends State<ConsultantProfile>
     with TickerProviderStateMixin {
+
   String uid;
   bool needToShowEditButton = false;
 
@@ -91,18 +92,46 @@ class ConsultantProfileState extends State<ConsultantProfile>
                     child: InkWell(
                         onTap: () async {
 
-                          SharedPreferences preferences =
-                              await SharedPreferences.getInstance();
-                          preferences.getKeys();
-                          for (String key in preferences.getKeys()) {
-                            preferences.remove(key);
-                          }
+                          showDialog(
+                            context: context,
+                            builder: (context) => new AlertDialog(
+                              title: new Text('Alert',
+                                  style: TextStyle(
+                                    fontSize: 18.0,
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'Armata',
+                                  )),
+                              content: new Text('Do you want to logout?',
+                                  style: TextStyle(
+                                    fontSize: 18.0,
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'Armata',
+                                  )),
+                              actions: <Widget>[
+                                FlatButton(
+                                    child: Text('No',
+                                        style: TextStyle(
+                                            color: Colors.black,
+                                            fontFamily: 'Armata',
+                                            fontWeight: FontWeight.bold)),
+                                    onPressed: () => Navigator.of(context).pop(false)),
+                                FlatButton(
+                                    child: Text('Yes',
+                                        style: TextStyle(
+                                            color: Colors.green,
+                                            fontFamily: 'Armata',
+                                            fontWeight: FontWeight.bold)),
+                                    onPressed: () {
 
-                          await GoogleSignIn().signOut();
-                          await FacebookLogin().logOut();
-                          await FirebaseAuth.instance.signOut();
+                                      logOut();
 
-                          exit(0);
+                                    })
+                              ],
+                            ),
+                          );
+
                         },
                         child: FaIcon(FontAwesomeIcons.signOutAlt))))
           ]),

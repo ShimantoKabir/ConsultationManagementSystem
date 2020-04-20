@@ -224,7 +224,7 @@ public class AuthDaoImp implements AuthDao {
                     if (isBookingAcceptanceTimePassed.equalsIgnoreCase("n")){
 
                         bp.setId(0);
-                        bp.setTopic("Before Break time!");
+                        bp.setTopic("--");
                         bp.setfStartTime((String) result[12]);
                         bp.setfEndTime((String) result[2]);
                         rPlanList.add(bp);
@@ -243,7 +243,7 @@ public class AuthDaoImp implements AuthDao {
                         rPlanList.add(np);
 
                         ap.setId(0);
-                        ap.setTopic("After break time!");
+                        ap.setTopic("--");
                         ap.setfStartTime((String) result[3]);
                         ap.setfEndTime((String) result[13]);
                         rPlanList.add(ap);
