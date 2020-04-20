@@ -206,16 +206,15 @@ class LikedUserViewerState extends State<LikedUserViewer> {
                           fontFamily: 'Armata',
                         ),
                       ),
-                      RatingBar(
-                        initialRating: getRating(document),
+                      RatingBarIndicator(
+                        rating: getRating(document),
                         direction: Axis.horizontal,
                         itemCount: 5,
                         itemSize: 25.0,
                         itemBuilder: (context, index) => Icon(
                           Icons.star,
                           color: Colors.amber,
-                        ),
-                        onRatingUpdate: (double value) {},
+                        )
                       )
                     ],
                   ),

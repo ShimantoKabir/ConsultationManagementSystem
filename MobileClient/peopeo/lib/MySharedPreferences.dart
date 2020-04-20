@@ -9,6 +9,11 @@ class MySharedPreferences{
     return preferences.getString(key);
   }
 
+  static Future<bool> setStringValue(String key,String val) async {
+    preferences = await SharedPreferences.getInstance();
+    return preferences.setString(key,val);
+  }
+
   static Future<int> getIntegerValue(String key) async {
     preferences = await SharedPreferences.getInstance();
     return preferences.getInt(key);

@@ -116,7 +116,15 @@ class LoginPageState extends State<LoginPage> {
                 .get()
                 .then((d) {
               fm.getToken().then((token) {
-                setUserCredential(val, d.data['userType'], token).then((val) {
+
+                var data = {
+                  'userType' : d.data['userType'],
+                  'token' : token,
+                  'displayName' : d.data['displayName'],
+                  'photoUrl' : d.data['photoUrl']
+                };
+
+                setUserCredential(val,data).then((val) {
                   Navigator.of(context).popUntil((route) => route.isFirst);
                   Navigator.pushReplacement(
                     context,
@@ -127,6 +135,7 @@ class LoginPageState extends State<LoginPage> {
                     ),
                   );
                 });
+
               }).catchError((err) {
                 Navigator.pop(context);
                 Fluttertoast.showToast(
@@ -189,7 +198,13 @@ class LoginPageState extends State<LoginPage> {
                 .get()
                 .then((d) {
               fm.getToken().then((token) {
-                setUserCredential(val, d.data['userType'], token).then((val) {
+
+                setUserCredential(val,{
+                  'userType' : d.data['userType'],
+                  'token' : token,
+                  'displayName' : d.data['displayName'],
+                  'photoUrl' : d.data['photoUrl']
+                }).then((val) {
                   Navigator.of(context).popUntil((route) => route.isFirst);
                   Navigator.pushReplacement(
                     context,
@@ -311,7 +326,11 @@ class LoginPageState extends State<LoginPage> {
   void processUserRegistration() {
     showAlertDialog(context, "Please wait user registration processing.");
     fm.getToken().then((token) {
-      setUserCredential(authResult, userType, token).then((val) {
+
+      setUserCredential(authResult,{
+        'userType' : userType,
+        'token' : token
+      }).then((val) {
         Navigator.of(context).popUntil((route) => route.isFirst);
 
         Navigator.pushReplacement(
@@ -330,5 +349,10 @@ class LoginPageState extends State<LoginPage> {
       Navigator.pop(context);
       Fluttertoast.showToast(msg: "Sorthing went wrong,Please try again!");
     });
+  }
+
+  void lol(Map<String, Object> data) {
+
+
   }
 }

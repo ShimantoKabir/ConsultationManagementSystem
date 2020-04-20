@@ -687,7 +687,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                           .updateData({'chattingWith': null});
                     }
 
-                    sendMsgContent("Customer payment unsuccessful!", 3);
+                    sendMsgContent("$displayName has ended the chat session.", 3);
                     isReviewAndRatingShowedUp = true;
                     controller.stop();
                     reviewAndRatingPopUp();

@@ -95,16 +95,15 @@ class CustomerListViewerState extends State<CustomerListViewer> {
                             fontFamily: 'Armata',
                           ),
                         ),
-                        RatingBar(
-                          initialRating: getRating(document),
+                        RatingBarIndicator(
+                          rating: getRating(document),
                           direction: Axis.horizontal,
                           itemCount: 5,
                           itemSize: 25.0,
                           itemBuilder: (context, index) => Icon(
                             Icons.star,
                             color: Colors.amber,
-                          ),
-                          onRatingUpdate: (double value) {},
+                          )
                         )
                       ],
                     ),
@@ -268,7 +267,8 @@ class CustomerListViewerState extends State<CustomerListViewer> {
         'fcmRegistrationToken' : document['fcmRegistrationToken'],
         'uid' : document['uid'],
         'seenStatus' : 0,
-        'invitationSenderUid' : uid
+        'invitationSenderUid' : uid,
+        'timeStamp' : DateTime.now().millisecondsSinceEpoch.toString()
       }).then((res){
 
         Navigator.of(context, rootNavigator: true).pop();

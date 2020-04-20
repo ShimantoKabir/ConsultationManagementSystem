@@ -33,10 +33,12 @@ class NotificationViewerState extends State<NotificationViewer> {
         body: StreamBuilder(
             stream: Firestore.instance
                 .collection('notificationList')
-                .where('uid', isEqualTo: uid)
+                .where('uid',isEqualTo: uid)
+                .limit(20)
                 .snapshots(),
             builder: (context, snapshot) {
               if (snapshot.hasData) {
+
                 return ListView.builder(
                   itemBuilder: (context, index) =>
                       buildItem(context, snapshot.data.documents[index]),
@@ -51,7 +53,6 @@ class NotificationViewerState extends State<NotificationViewer> {
   }
 
   buildItem(BuildContext context, document) {
-    print(document['uid']);
 
     return Card(
       color: document['seenStatus'] == 1 ? Colors.white : Colors.white30,

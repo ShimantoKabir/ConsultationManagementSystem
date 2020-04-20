@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:peopeo/MySharedPreferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
@@ -30,6 +31,7 @@ class EditConsultantProfileState extends State<EditConsultantProfile> {
   TextEditingController shortDesTECtl = TextEditingController();
   TextEditingController longDesTECtl = TextEditingController();
   TextEditingController phoneNumberTECtl = TextEditingController();
+  TextEditingController coronaExpTECtl = TextEditingController();
 
   String uid;
   String fileType;
@@ -77,6 +79,7 @@ class EditConsultantProfileState extends State<EditConsultantProfile> {
       phoneNumberTECtl.text = doc['phoneNumber'];
       shortDesTECtl.text = doc['shortDescription'];
       longDesTECtl.text = doc['longDescription'];
+      coronaExpTECtl.text = doc['coronavirusExperience'];
 
     });
   }
@@ -116,10 +119,9 @@ class EditConsultantProfileState extends State<EditConsultantProfile> {
                         if (snapshot.hasData) {
                           return Column(
                             children: <Widget>[
-                              Center(
-                                child: Badge(
-                                  badgeContent: Icon(Icons.notifications, color: Colors.grey),
-                                  child: Padding(
+                              Row(
+                                children: <Widget>[
+                                  Padding(
                                       padding: EdgeInsets.all(10.0),
                                       child: Container(
                                         height: 150.0,
@@ -131,9 +133,39 @@ class EditConsultantProfileState extends State<EditConsultantProfile> {
                                               image: NetworkImage(snapshot.data
                                                   .documents[0]['photoUrl'])),
                                         ),
-                                      )
-                                  ),
-                                ),
+                                      )),
+                                  InkWell(
+                                    onTap: () {
+
+                                      showAlertDialog(
+                                          context, "Image uploading please wait...!");
+
+                                      setState(() {
+                                        fileType = 'image';
+                                      });
+
+                                      String uuid = new Uuid().v1();
+
+                                      pickFile(context, uuid).then((imUrl) async {
+
+                                        Firestore.instance.collection("userInfoList")
+                                            .document(uid).updateData({
+                                          'photoUrl' : imUrl
+                                        }).then((im){
+
+                                          MySharedPreferences.setStringValue('photoUrl', imUrl).then((sp){
+                                            Navigator.of(context, rootNavigator: true).pop();
+                                          });
+
+                                        });
+
+                                      });
+
+                                    },
+                                    child: Icon(Icons.camera_alt),
+                                  )
+                                ],
+                                mainAxisAlignment: MainAxisAlignment.center,
                               ),
                               Container(
                                 width: MediaQuery.of(context).size.width,
@@ -319,6 +351,32 @@ class EditConsultantProfileState extends State<EditConsultantProfile> {
                               ),
                               Container(
                                 width: MediaQuery.of(context).size.width,
+                                margin:
+                                EdgeInsets.fromLTRB(10.0, 0.0, 0.0, 0.0),
+                                child: Text("Corona Virus Experience",
+                                    style: TextStyle(
+                                      fontSize: 15.0,
+                                      color: Colors.red,
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: 'Armata',
+                                    )),
+                              ),
+                              Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(10.0),
+                                  child: TextField(
+                                    maxLines: 8,
+                                    keyboardType: TextInputType.multiline,
+                                    decoration: InputDecoration(
+                                        contentPadding: EdgeInsets.fromLTRB(
+                                            15.0, 15.0, 15.0, 15.0),
+                                        border: OutlineInputBorder()),
+                                    controller: coronaExpTECtl,
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                width: MediaQuery.of(context).size.width,
                                 margin: EdgeInsets.all(10.0),
                                 child: RaisedButton(
                                   color: Colors.red,
@@ -352,22 +410,24 @@ class EditConsultantProfileState extends State<EditConsultantProfile> {
                                           .document(uid)
                                           .updateData({
                                         'displayName':
-                                            displayNameTECtl.text.toString(),
+                                            displayNameTECtl.text.trim(),
                                         'hourlyRate': int.tryParse(hourlyRate),
                                         'freeMinutesForNewCustomer':
                                             int.tryParse(
                                                 freeMinutesForNewCustomer),
-                                        'phoneNumber': phoneNumberTECtl.text,
+                                        'phoneNumber': phoneNumberTECtl.text.trim(),
                                         'shortDescription': (shortDesTECtl.text
-                                                .toString()
                                                 .isEmpty)
                                             ? null
-                                            : shortDesTECtl.text.toString(),
+                                            : shortDesTECtl.text.trim(),
                                         'longDescription': (longDesTECtl.text
-                                                .toString()
                                                 .isEmpty)
                                             ? null
-                                            : longDesTECtl.text.toString(),
+                                            : longDesTECtl.text.trim(),
+                                      'coronavirusExperience': (coronaExpTECtl.text
+                                          .isEmpty)
+                                      ? null
+                                          : coronaExpTECtl.text.trim(),
                                         'hashTag': getHashTag()
                                       }).then((val){
 

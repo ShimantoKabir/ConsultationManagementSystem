@@ -48,6 +48,7 @@ class MyHomePageState extends State<MyHomePage> {
 
   final FirebaseMessaging fm = FirebaseMessaging();
   bool isUserLoggedIn = false;
+  int i = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -240,18 +241,16 @@ class MyHomePageState extends State<MyHomePage> {
                   icon: Icon(Icons.favorite),
                   onPressed: () {
                     if (isUserLoggedIn) {
-
                       MySharedPreferences.getIntegerValue(
                           "userType").then((userType) {
-                        if (userType == 1) {
+                        print('user type = $userType');
 
+                        if (userType == 1) {
                           showAlertDialog(
                               context, "Gathering user that you liked...");
 
                           MySharedPreferences.getStringValue("uid").then((uid) {
-
                             getLikedUserIdList(uid).then((res) async {
-
                               Navigator.of(context, rootNavigator: true).pop();
 
                               Navigator.of(context).push(
@@ -263,18 +262,14 @@ class MyHomePageState extends State<MyHomePage> {
                                   },
                                 ),
                               );
-
                             });
                           });
-
                         } else {
-
                           showAlertDialog(
                               context, "Fetching customer list...");
 
                           MySharedPreferences.getStringValue("uid").then((uid) {
-
-                            getLikedCustomerList(uid).then((res){
+                            getLikedCustomerList(uid).then((res) {
 
                               Navigator.of(context, rootNavigator: true).pop();
                               Navigator.of(context).push(
@@ -288,12 +283,9 @@ class MyHomePageState extends State<MyHomePage> {
                               );
 
                             });
-
-                            });
-
+                          });
                         }
                       });
-
                     } else {
                       goToLoginPage();
                     }
@@ -302,30 +294,24 @@ class MyHomePageState extends State<MyHomePage> {
                   icon: Icon(Icons.history),
                   onPressed: () {
                     if (isUserLoggedIn) {
-
                       showAlertDialog(
                           context, "Gathering user that you chatted before.");
 
                       MySharedPreferences.getStringValue("uid").then((uid) {
+                        getAllChattedUserInfo(uid).then((chattedUserIdList) {
+                          Navigator.of(context, rootNavigator: true).pop();
 
-                         getAllChattedUserInfo(uid).then((chattedUserIdList){
-
-                           Navigator.of(context, rootNavigator: true).pop();
-
-                           Navigator.of(context).push(
-                             MaterialPageRoute(
-                               builder: (context) {
-                                 return ChattedUserViewer(
-                                     uid: uid,
-                                     chattedUserIdList: chattedUserIdList);
-                               },
-                             ),
-                           );
-
-                         });
-
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) {
+                                return ChattedUserViewer(
+                                    uid: uid,
+                                    chattedUserIdList: chattedUserIdList);
+                              },
+                            ),
+                          );
+                        });
                       });
-
                     } else {
                       goToLoginPage();
                     }
@@ -459,7 +445,7 @@ class MyHomePageState extends State<MyHomePage> {
                           }
                         },
                       ),
-                      Text("ONLINE",style: TextStyle(
+                      Text("ONLINE", style: TextStyle(
                         fontSize: 15.0,
                         color: Colors.green,
                         fontWeight: FontWeight.bold,
@@ -598,8 +584,8 @@ class MyHomePageState extends State<MyHomePage> {
                           fontFamily: 'Armata',
                         ),
                       ),
-                      RatingBar(
-                        initialRating: getRating(document),
+                      RatingBarIndicator(
+                        rating: getRating(document),
                         direction: Axis.horizontal,
                         itemCount: 5,
                         itemSize: 25.0,
@@ -608,7 +594,6 @@ class MyHomePageState extends State<MyHomePage> {
                               Icons.star,
                               color: Colors.amber,
                             ),
-                        onRatingUpdate: (double value) {},
                       )
                     ],
                   ),
@@ -621,6 +606,10 @@ class MyHomePageState extends State<MyHomePage> {
                     height: 10.0,
                   ),
                   getLongDescription(document),
+                  SizedBox(
+                    height: 10.0,
+                  ),
+                  getCoronaExp(document),
                   SizedBox(
                     height: 10.0,
                   )
@@ -642,7 +631,6 @@ class MyHomePageState extends State<MyHomePage> {
                         side: BorderSide(color: Colors.red)),
                     onPressed: () {
                       if (isUserLoggedIn) {
-
                         Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (context) {
@@ -650,7 +638,6 @@ class MyHomePageState extends State<MyHomePage> {
                             },
                           ),
                         );
-
                       } else {
                         goToLoginPage();
                       }
@@ -693,7 +680,6 @@ class MyHomePageState extends State<MyHomePage> {
   }
 
   getLike(DocumentSnapshot ds) {
-
     Firestore.instance
         .collection('userInfoList')
         .document(ds['uid'])
@@ -807,6 +793,27 @@ class MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  getCoronaExp(DocumentSnapshot document) {
+    if (document['coronavirusExperience'] == null) {
+      return Text("Corona virus experience not set yet",
+          style: TextStyle(
+            fontSize: 15.0,
+            color: Colors.red,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Armata',
+          ));
+    } else {
+      return Text("Corona virus experience [" +
+          document['coronavirusExperience'].toString() + "]",
+          style: TextStyle(
+            fontSize: 15.0,
+            color: Colors.red,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Armata',
+          ));
+    }
+  }
+
   double getRating(document) {
     if (document['rating'] == null) {
       return double.tryParse("0.0");
@@ -881,9 +888,11 @@ class MyHomePageState extends State<MyHomePage> {
     super.initState();
 
     fm.configure(onMessage: (Map<String, dynamic> message) async {
-      print("onMessage: message = $message");
-
-      showNotification(context, message);
+      if (i % 2 == 0) {
+        print("onMessage: message = $message");
+        showNotification(context, message);
+      }
+      i++;
     });
     fm.requestNotificationPermissions(
         const IosNotificationSettings(sound: true, badge: true, alert: true));
@@ -921,7 +930,7 @@ class MyHomePageState extends State<MyHomePage> {
                     fontWeight: FontWeight.normal),
               )
             ]),
-            actions : <Widget>[
+            actions: <Widget>[
               FlatButton(
                   child: Text('Close',
                       style: TextStyle(
@@ -936,9 +945,9 @@ class MyHomePageState extends State<MyHomePage> {
                           fontFamily: 'Armata',
                           fontWeight: FontWeight.bold)),
                   onPressed: () {
-
                     MySharedPreferences.getStringValue('uid')
-                    .then((uid){
+                        .then((uid) {
+                      Navigator.of(context).pop(false);
 
                       Navigator.push(
                         context,
@@ -948,9 +957,7 @@ class MyHomePageState extends State<MyHomePage> {
                           },
                         ),
                       );
-
                     });
-
                   })
             ]
         );
@@ -989,7 +996,6 @@ class MyHomePageState extends State<MyHomePage> {
       await Future.wait(luDocs.documents.map((lu) async {
         likedUserIdList.add(uiObj);
       }));
-
     }));
 
     return likedUserIdList;
@@ -1013,27 +1019,25 @@ class MyHomePageState extends State<MyHomePage> {
   }
 
   Future<List<Map<String, dynamic>>> getAllChattedUserInfo(String uid) async {
-
     List<Map<String, dynamic>> chattedUserIdList = [];
     final mDocs = await Firestore.instance
         .collection("messages")
         .getDocuments();
 
     await Future.wait(mDocs.documents.map((m) async {
-
       String peerId;
 
-      String groupIdFirst = m.documentID.split("-").first;
-      String groupIdLast = m.documentID.split("-").last;
+      String groupIdFirst = m.documentID
+          .split("-")
+          .first;
+      String groupIdLast = m.documentID
+          .split("-")
+          .last;
 
-      if(uid == groupIdFirst){
-
+      if (uid == groupIdFirst) {
         peerId = groupIdLast;
-
-      } else if(uid == groupIdLast){
-
+      } else if (uid == groupIdLast) {
         peerId = groupIdFirst;
-
       }
 
       final uiDoc = await Firestore.instance
@@ -1041,15 +1045,12 @@ class MyHomePageState extends State<MyHomePage> {
           .document(peerId).get();
 
       chattedUserIdList.add(uiDoc.data);
-
     }));
 
     return chattedUserIdList;
-
   }
 
   Future<List<Map<String, dynamic>>> getLikedCustomerList(String uid) async {
-
     List<Map<String, dynamic>> customerList = [];
 
     final luDocs = await Firestore.instance
@@ -1059,17 +1060,14 @@ class MyHomePageState extends State<MyHomePage> {
         .getDocuments();
 
     await Future.wait(luDocs.documents.map((lu) async {
-
       final uiDoc = await Firestore.instance
           .collection('userInfoList')
           .document(lu.data['uid']).get();
 
       customerList.add(uiDoc.data);
-
     }));
 
     return customerList;
-
   }
 
 }

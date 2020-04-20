@@ -38,37 +38,37 @@ Future<AuthResult> signInWithFacebook() async {
 }
 
 Future<Response> setUserCredential(
-    AuthResult authResult, int ut, String token) async {
+    AuthResult authResult,Map<String, dynamic> data) async {
   prefs = await SharedPreferences.getInstance();
   FirebaseUser user = authResult.user;
+
   await prefs.setString('uid', user.uid);
-  await prefs.setString('displayName', user.displayName);
-  await prefs.setString('photoUrl', user.photoUrl);
   await prefs.setString('email', user.email);
-  await prefs.setInt('userType', ut);
+  await prefs.setInt('userType', data['userType']);
 
-  List<String> userInfo = [
-    user.uid,
-    user.displayName,
-    user.photoUrl,
-    user.email,
-    ut.toString()
-  ];
-
-  await prefs.setStringList('userInfo', userInfo);
+  print('set user credential = $data');
 
   if (authResult.additionalUserInfo.isNewUser) {
-    return createUser(user, ut, token);
-  }
-  {
+
+    await prefs.setString('displayName', user.displayName);
+    await prefs.setString('photoUrl', user.photoUrl);
+
+    return createUser(user, data['userType'], data['token']);
+
+  }else{
+
+    await prefs.setString('displayName', data['displayName']);
+    await prefs.setString('photoUrl', data['photoUrl']);
+
     databaseReference
         .collection("userInfoList")
         .document(user.uid)
-        .updateData({"fcmRegistrationToken": token}).then((res) {
+        .updateData({"fcmRegistrationToken": data['token']}).then((res) {
       print('Fcm Registration token update successfully!');
     });
 
     return null;
+
   }
 }
 
@@ -95,7 +95,8 @@ Future<Response> createUser(FirebaseUser user, int ut, String token) async {
     'freeMinutesForNewCustomer': null,
     'fcmRegistrationToken': token,
     'rating': null,
-    'hashTag': hashTag
+    'hashTag': hashTag,
+    'coronavirusExperience' : null
   });
   return createCustomerInBrainTree(user);
 }

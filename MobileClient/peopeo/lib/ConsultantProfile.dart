@@ -1,7 +1,12 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_facebook_login/flutter_facebook_login.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:peopeo/Const.dart';
 import 'package:peopeo/EditConsultantProfile.dart';
 import 'package:peopeo/FullPhoto.dart';
@@ -11,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:peopeo/HttpResponse.dart';
@@ -38,7 +44,6 @@ class ConsultantProfileState extends State<ConsultantProfile>
 
   @override
   void initState() {
-
     tabList.add(Tab(icon: Icon(Icons.camera)));
     tabList.add(Tab(icon: Icon(Icons.video_library)));
     tabList.add(Tab(icon: Icon(Icons.comment)));
@@ -78,7 +83,29 @@ class ConsultantProfileState extends State<ConsultantProfile>
                   color: Colors.black,
                   fontFamily: 'Armata',
                   fontWeight: FontWeight.bold)),
-          centerTitle: true),
+          centerTitle: true,
+          actions: <Widget>[
+            Padding(
+                padding: EdgeInsets.fromLTRB(0.0, 0.0, 10.0, 0.0),
+                child: Center(
+                    child: InkWell(
+                        onTap: () async {
+
+                          SharedPreferences preferences =
+                              await SharedPreferences.getInstance();
+                          preferences.getKeys();
+                          for (String key in preferences.getKeys()) {
+                            preferences.remove(key);
+                          }
+
+                          await GoogleSignIn().signOut();
+                          await FacebookLogin().logOut();
+                          await FirebaseAuth.instance.signOut();
+
+                          exit(0);
+                        },
+                        child: FaIcon(FontAwesomeIcons.signOutAlt))))
+          ]),
       body: StreamBuilder(
           stream: Firestore.instance
               .collection('userInfoList')
@@ -204,7 +231,10 @@ class ConsultantProfileState extends State<ConsultantProfile>
                             Row(
                               children: <Widget>[
                                 Text(
-                                  "("+getRating(snapshot.data.documents[0]).toString()+")",
+                                  "(" +
+                                      getRating(snapshot.data.documents[0])
+                                          .toString() +
+                                      ")",
                                   textAlign: TextAlign.left,
                                   style: TextStyle(
                                     fontSize: 18.0,
@@ -213,17 +243,16 @@ class ConsultantProfileState extends State<ConsultantProfile>
                                     fontFamily: 'Armata',
                                   ),
                                 ),
-                                RatingBar(
-                                  initialRating: getRating(snapshot.data.documents[0]),
-                                  direction: Axis.horizontal,
-                                  itemCount: 5,
-                                  itemSize: 25.0,
-                                  itemBuilder: (context, index) => Icon(
-                                    Icons.star,
-                                    color: Colors.amber,
-                                  ),
-                                  onRatingUpdate: (double value) {},
-                                )
+                                RatingBarIndicator(
+                                    rating:
+                                        getRating(snapshot.data.documents[0]),
+                                    direction: Axis.horizontal,
+                                    itemCount: 5,
+                                    itemSize: 25.0,
+                                    itemBuilder: (context, index) => Icon(
+                                          Icons.star,
+                                          color: Colors.amber,
+                                        ))
                               ],
                             ),
                             SizedBox(
@@ -259,6 +288,18 @@ class ConsultantProfileState extends State<ConsultantProfile>
                               style: TextStyle(
                                 fontSize: 15.0,
                                 color: Colors.grey,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Armata',
+                              ),
+                            ),
+                            SizedBox(
+                              height: 10.0,
+                            ),
+                            Text(
+                              getCoronaExp(snapshot.data.documents[0]),
+                              style: TextStyle(
+                                fontSize: 15.0,
+                                color: Colors.red,
                                 fontWeight: FontWeight.bold,
                                 fontFamily: 'Armata',
                               ),
@@ -510,17 +551,14 @@ class ConsultantProfileState extends State<ConsultantProfile>
             );
           }
         },
-        child: Image.network(
-            imgUrl,
-            fit:BoxFit.cover
-        ));
+        child: Image.network(imgUrl, fit: BoxFit.cover));
   }
 
   getTotalLike(document) {
     if (document['like'] == null) {
       return "0 Like";
     } else {
-      return document['like'].toString() + " Like's";
+      return document['like'].toString() + " Likes";
     }
   }
 
@@ -607,5 +645,15 @@ class ConsultantProfileState extends State<ConsultantProfile>
     }
     print("Time zone = $timeZone");
     return timeZone;
+  }
+
+  String getCoronaExp(document) {
+    if (document['coronavirusExperience'] == null) {
+      return "Corona virus experience not set yet";
+    } else {
+      return "Corona virus experience [" +
+          document['coronavirusExperience'].toString() +
+          "]";
+    }
   }
 }

@@ -1,6 +1,13 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_facebook_login/flutter_facebook_login.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:peopeo/EditCustomerProfile.dart';
 import 'package:peopeo/HttpResponse.dart';
 import 'package:peopeo/Plan.dart';
@@ -12,6 +19,7 @@ import 'package:http/http.dart';
 import 'package:peopeo/Const.dart';
 import 'package:peopeo/FullPhoto.dart';
 import 'package:peopeo/VideoPlayerScreen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class CustomerProfile extends StatefulWidget {
   final String uid;
@@ -47,7 +55,6 @@ class CustomerProfileState extends State<CustomerProfile>
   }
 
   @override
-  // ignore: missing_return
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
@@ -60,7 +67,33 @@ class CustomerProfileState extends State<CustomerProfile>
                 color: Colors.black,
                 fontFamily: 'Armata',
                 fontWeight: FontWeight.bold),
-          )),
+          ),
+          actions: <Widget>[
+            Padding(
+              padding: EdgeInsets.fromLTRB(0.0, 0.0, 10.0, 0.0),
+              child: Center(
+                  child: InkWell(
+                      onTap: () async {
+
+                        SharedPreferences preferences = await SharedPreferences.getInstance();
+                        preferences.getKeys();
+                        for(String key in preferences.getKeys()) {
+                          preferences.remove(key);
+                        }
+
+                        await GoogleSignIn().signOut();
+                        await FacebookLogin().logOut();
+                        await FirebaseAuth.instance.signOut();
+
+                        exit(0);
+
+                      },
+                      child: FaIcon(FontAwesomeIcons.signOutAlt)
+                  )
+              )
+            )
+          ]
+      ),
       body: StreamBuilder(
           stream: Firestore.instance
               .collection('userInfoList')
@@ -166,6 +199,18 @@ class CustomerProfileState extends State<CustomerProfile>
                               style: TextStyle(
                                 fontSize: 15.0,
                                 color: Colors.grey,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Armata',
+                              ),
+                            ),
+                            SizedBox(
+                              height: 10.0,
+                            ),
+                            Text(
+                              getCoronaExp(snapshot.data.documents[0]),
+                              style: TextStyle(
+                                fontSize: 15.0,
+                                color: Colors.red,
                                 fontWeight: FontWeight.bold,
                                 fontFamily: 'Armata',
                               ),
@@ -444,4 +489,15 @@ class CustomerProfileState extends State<CustomerProfile>
           subtitle: Text("Review: " + document.review)),
     );
   }
+
+  String getCoronaExp(document) {
+
+    if (document['coronavirusExperience'] == null) {
+      return "Corona virus experience not set yet";
+    } else {
+      return "Corona virus experience ["+document['coronavirusExperience'].toString()+"]";
+    }
+
+  }
+
 }

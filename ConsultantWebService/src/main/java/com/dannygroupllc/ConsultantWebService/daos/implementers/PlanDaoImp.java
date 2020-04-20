@@ -664,7 +664,7 @@ public class PlanDaoImp implements PlanDao {
                     Notification nForCus = new Notification();
                     nForCus.setUid(p.getCusUid());
                     nForCus.setTitle("Chat Session Canceled");
-                    nForCus.setBody("You did not make payment. Chat session at "+sdf24Hour.format(p.getStartTime())+" is canceled");
+                    nForCus.setBody("You did not make payment. Chat session at "+sdf.format(p.getStartTime())+" is canceled");
                     nForCus.setStartTime(sdf.format(p.getStartTime()));
                     nForCus.setEndTime(sdf.format(p.getEndTime()));
 
@@ -673,7 +673,7 @@ public class PlanDaoImp implements PlanDao {
                     Notification nForCon = new Notification();
                     nForCon.setUid(p.getConUid());
                     nForCon.setTitle("Chat Session Canceled");
-                    nForCon.setBody("Customer did not make payment. Chat session at X:XX is canceled");
+                    nForCon.setBody("Customer did not make payment. Chat session at "+sdf.format(p.getStartTime())+" is canceled");
                     nForCon.setStartTime(sdf.format(p.getStartTime()));
                     nForCon.setEndTime(sdf.format(p.getEndTime()));
 
@@ -694,8 +694,8 @@ public class PlanDaoImp implements PlanDao {
                     + "	t.cus_uid, "
                     + "	t.con_uid, "
                     + "	t.is_accept_by_con "
-                    + "FROM( "
-                    + "SELECT "
+                    + "FROM "
+                    + "(SELECT "
                     + "  CONVERT_TZ(start_time, 'UTC', time_zone) AS start_time, "
                     + "  CONVERT_TZ(end_time, 'UTC', time_zone) AS end_time, "
                     + "  DATE_SUB(start_time, INTERVAL 1 HOUR) AS st, "

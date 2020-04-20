@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:peopeo/MySharedPreferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
@@ -29,6 +30,7 @@ class EditCustomerProfileState extends State<EditCustomerProfile> {
   TextEditingController shortDesTECtl = TextEditingController();
   TextEditingController longDesTECtl = TextEditingController();
   TextEditingController phoneNumberTECtl = TextEditingController();
+  TextEditingController coronaExpTECtl = TextEditingController();
 
   String uid;
   String fileType;
@@ -64,6 +66,7 @@ class EditCustomerProfileState extends State<EditCustomerProfile> {
       phoneNumberTECtl.text = doc['phoneNumber'];
       shortDesTECtl.text = doc['shortDescription'];
       longDesTECtl.text = doc['longDescription'];
+      coronaExpTECtl.text = doc['coronavirusExperience'];
 
     });
   }
@@ -103,20 +106,51 @@ class EditCustomerProfileState extends State<EditCustomerProfile> {
                         if (snapshot.hasData) {
                           return Column(
                             children: <Widget>[
-                              Center(
-                                child: Padding(
-                                    padding: EdgeInsets.all(10.0),
-                                    child: Container(
-                                      height: 150.0,
-                                      width: 150.0,
-                                      decoration: new BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        image: new DecorationImage(
-                                            fit: BoxFit.fill,
-                                            image: NetworkImage(snapshot.data
-                                                .documents[0]['photoUrl'])),
-                                      ),
-                                    )),
+                              Row(
+                                children: <Widget>[
+                                  Padding(
+                                      padding: EdgeInsets.all(10.0),
+                                      child: Container(
+                                        height: 150.0,
+                                        width: 150.0,
+                                        decoration: new BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          image: new DecorationImage(
+                                              fit: BoxFit.fill,
+                                              image: NetworkImage(snapshot.data
+                                                  .documents[0]['photoUrl'])),
+                                        ),
+                                      )),
+                                  InkWell(
+                                    onTap: () {
+
+                                      showAlertDialog(
+                                          context, "Image uploading please wait...!");
+
+                                      setState(() {
+                                        fileType = 'image';
+                                      });
+                                      
+                                      String uuid = new Uuid().v1();
+
+                                      pickFile(context, uuid).then((imUrl) async {
+
+                                        Firestore.instance.collection("userInfoList")
+                                        .document(uid).updateData({
+                                          'photoUrl' : imUrl
+                                        }).then((im){
+                                          MySharedPreferences.setStringValue('photoUrl', imUrl).then((sp){
+                                            Navigator.of(context, rootNavigator: true).pop();
+                                          });
+                                        });
+
+                                      });
+                                      
+                                    },
+                                    child: Icon(Icons.camera_alt),
+                                  )
+                                ],
+                                mainAxisAlignment: MainAxisAlignment.center,
                               ),
                               Container(
                                 width: MediaQuery.of(context).size.width,
@@ -220,6 +254,32 @@ class EditCustomerProfileState extends State<EditCustomerProfile> {
                               ),
                               Container(
                                 width: MediaQuery.of(context).size.width,
+                                margin:
+                                EdgeInsets.fromLTRB(10.0, 0.0, 0.0, 0.0),
+                                child: Text("Corona Virus Experience",
+                                    style: TextStyle(
+                                      fontSize: 15.0,
+                                      color: Colors.red,
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: 'Armata',
+                                    )),
+                              ),
+                              Center(
+                                child: Padding(
+                                  padding: EdgeInsets.all(10.0),
+                                  child: TextField(
+                                    maxLines: 8,
+                                    keyboardType: TextInputType.multiline,
+                                    decoration: InputDecoration(
+                                        contentPadding: EdgeInsets.fromLTRB(
+                                            15.0, 15.0, 15.0, 15.0),
+                                        border: OutlineInputBorder()),
+                                    controller: coronaExpTECtl,
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                width: MediaQuery.of(context).size.width,
                                 margin: EdgeInsets.all(10.0),
                                 child: RaisedButton(
                                   color: Colors.red,
@@ -248,15 +308,17 @@ class EditCustomerProfileState extends State<EditCustomerProfile> {
                                         displayNameTECtl.text.toString(),
                                         'phoneNumber': phoneNumberTECtl.text,
                                         'shortDescription': (shortDesTECtl.text
-                                            .toString()
                                             .isEmpty)
                                             ? null
-                                            : shortDesTECtl.text.toString(),
+                                            : shortDesTECtl.text,
                                         'longDescription': (longDesTECtl.text
-                                            .toString()
                                             .isEmpty)
                                             ? null
-                                            : longDesTECtl.text.toString(),
+                                            : longDesTECtl.text,
+                                        'coronavirusExperience': (coronaExpTECtl.text
+                                            .isEmpty)
+                                            ? null
+                                            : coronaExpTECtl.text,
                                         'hashTag': getHashTag()
                                       }).then((val){
 
