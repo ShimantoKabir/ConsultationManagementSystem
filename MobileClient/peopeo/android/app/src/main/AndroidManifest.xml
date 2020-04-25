@@ -23,11 +23,15 @@
                 <action android:name="FLUTTER_NOTIFICATION_CLICK" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
+
+            <!--TODO: Add this filter, if you want to support sharing text into your app-->
             <intent-filter>
-                <action android:name="com.dannygroupllc.cms.peopeo.open" />
+                <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+                <data android:mimeType="text/*" />
             </intent-filter>
+
         </activity>
 
         <meta-data

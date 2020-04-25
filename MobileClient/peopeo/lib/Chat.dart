@@ -49,6 +49,7 @@ class Chat extends StatefulWidget {
 }
 
 class ChatState extends State<Chat> with TickerProviderStateMixin {
+
   ChatState(
       {Key key,
       @required this.peerId,

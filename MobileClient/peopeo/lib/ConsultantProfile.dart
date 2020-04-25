@@ -2,26 +2,23 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter_facebook_login/flutter_facebook_login.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+import 'package:http/http.dart';
 import 'package:peopeo/Const.dart';
 import 'package:peopeo/EditConsultantProfile.dart';
 import 'package:peopeo/FullPhoto.dart';
-import 'package:peopeo/MySharedPreferences.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_rating_bar/flutter_rating_bar.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:http/http.dart';
-import 'package:peopeo/SocialSignIn.dart';
-import 'package:url_launcher/url_launcher.dart';
-
 import 'package:peopeo/HttpResponse.dart';
+import 'package:peopeo/MyFlutterWebView.dart';
+import 'package:peopeo/MySharedPreferences.dart';
 import 'package:peopeo/Plan.dart';
+import 'package:peopeo/SocialSignIn.dart';
 import 'package:peopeo/VideoPlayerScreen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ConsultantProfile extends StatefulWidget {
   final String uid;
@@ -179,16 +176,45 @@ class ConsultantProfileState extends State<ConsultantProfile>
                                       Column(
                                         children: <Widget>[
                                           IconButton(
-                                            icon: Icon(Icons.thumb_up),
+                                            icon: Icon(Icons.favorite),
                                             onPressed: () {},
                                           ),
-                                          Text(
-                                              getTotalLike(
-                                                  snapshot.data.documents[0]),
-                                              style: TextStyle(
-                                                  fontSize: 12.0,
-                                                  fontFamily: 'Armata',
-                                                  fontWeight: FontWeight.w600))
+                                          StreamBuilder(
+                                            stream: Firestore.instance
+                                                .collection('userInfoList')
+                                                .document(uid)
+                                                .collection("likedUserIdList")
+                                                .snapshots(),
+                                            builder: (context, snapshot) {
+                                              if (snapshot.hasData) {
+                                                if (snapshot.data.documents.length == 1) {
+                                                  return Text(
+                                                      snapshot.data.documents.length
+                                                          .toString() +
+                                                          " Likes",
+                                                      style: TextStyle(
+                                                        fontSize: 12.0,
+                                                        fontWeight: FontWeight.w600,
+                                                        fontFamily: 'Armata',
+                                                      ));
+                                                } else {
+                                                  return Text('0 Like',
+                                                      style: TextStyle(
+                                                        fontSize: 12.0,
+                                                        fontWeight: FontWeight.w600,
+                                                        fontFamily: 'Armata',
+                                                      ));
+                                                }
+                                              } else {
+                                                return Text('0 Like',
+                                                    style: TextStyle(
+                                                      fontSize: 12.0,
+                                                      fontWeight: FontWeight.w600,
+                                                      fontFamily: 'Armata',
+                                                    ));
+                                              }
+                                            },
+                                          )
                                         ],
                                       ),
                                       Column(
@@ -481,13 +507,17 @@ class ConsultantProfileState extends State<ConsultantProfile>
           uid +
           "&time-zone=" +
           tz;
-      print(calenderUrl);
 
-      if (await canLaunch(calenderUrl)) {
-        await launch(calenderUrl);
-      } else {
-        throw 'Could not launch $calenderUrl';
-      }
+      print("Calender url $calenderUrl");
+
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) {
+            return MyFlutterWebView(title: "Calender",url: calenderUrl);
+          },
+        ),
+      );
+
     } else {
       throw Exception('Failed to load browser');
     }

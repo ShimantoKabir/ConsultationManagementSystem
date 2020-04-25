@@ -23,11 +23,11 @@
 
         $(document).ready(function () {
 
-            let serverBaseUrl = "http://192.168.43.179:8080";
-            let webClientBaseUrl = "http://192.168.43.132/consultationmanagementsystem/webclient";
+            // let serverBaseUrl = "http://192.168.43.179:8080";
+            // let webClientBaseUrl = "http://192.168.43.132/consultationmanagementsystem/webclient";
 
-            // let serverBaseUrl = "http://3.20.119.226:8080";
-            // let webClientBaseUrl = "http://3.20.119.226/cms/index.html";
+            let serverBaseUrl = "http://3.20.119.226:8080";
+            let webClientBaseUrl = "http://3.20.119.226/cms/index.html";
 
             // alert configuration start
             $('#alertCloseBtn').click(function () {
@@ -299,16 +299,16 @@
                                 })
 
                             }
-                            // else if(minDiff < chatDurationMinLimit){
+                            else if(minDiff < chatDurationMinLimit){
 
-                            //     showAlert({
-                            //         msg: "Chat duration should be at least 20 minutes!",
-                            //         bodyIcon: 'fa fa-times-circle',
-                            //         ntsTaBtn: false,
-                            //         alertHeading: 'Warning',
-                            //     })
+                                showAlert({
+                                    msg: "Chat duration should be at least 20 minutes!",
+                                    bodyIcon: 'fa fa-times-circle',
+                                    ntsTaBtn: false,
+                                    alertHeading: 'Warning',
+                                })
 
-                            // } 
+                            } 
                             else {
 
                                 showAlert({
@@ -604,16 +604,6 @@
                 $('#eventPopUp').hide();
             });
 
-            // fab on click listener
-			$('#fab').click(function () {
-                
-				let link = document.createElement('a');
-				link.href = "intent:#Intent;action=com.dannygroupllc.cms.peopeo.open;category=android.intent.category.DEFAULT;category=android.intent.category.BROWSABLE;S.msg_from_browser=Launched%20from%20Browser;end";
-				document.body.appendChild(link);
-				link.click();   
-                
-            });
-
         });
 
     </script>
@@ -749,10 +739,5 @@
 	    </div>
 	</div>
 	<div id="calendar" style="margin: 10px"></div>
-	<div class="st-actionContainer right-bottom">
-		<div class="st-btn-container right-bottom">
-			<div class="st-button-main" id="fab" ><i class="fa fa-home"></i></div>
-		</div>
-	</div>
 </body>
 </html>

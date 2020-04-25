@@ -1,5 +1,7 @@
 package com.dannygroupllc.ConsultantWebService.pojos;
 
+import java.sql.Timestamp;
+
 public class UserInfo {
 
     public String displayName;
@@ -19,7 +21,71 @@ public class UserInfo {
     public String phone;
     public String customerId;
 
+    public String lastOnlineAt;
+    public Boolean isOnline;
+    public Integer rating;
+    public String timeZone;
+    public String chattingWith;
+    public String coronavirusExperience;
+    public String hashTag;
+
     public UserInfo() {}
+
+    public String getHashTag() {
+        return hashTag;
+    }
+
+    public void setHashTag(String hashTag) {
+        this.hashTag = hashTag;
+    }
+
+    public String getCoronavirusExperience() {
+        return coronavirusExperience;
+    }
+
+    public void setCoronavirusExperience(String coronavirusExperience) {
+        this.coronavirusExperience = coronavirusExperience;
+    }
+
+    public String getChattingWith() {
+        return chattingWith;
+    }
+
+    public void setChattingWith(String chattingWith) {
+        this.chattingWith = chattingWith;
+    }
+
+    public String getTimeZone() {
+        return timeZone;
+    }
+
+    public void setTimeZone(String timeZone) {
+        this.timeZone = timeZone;
+    }
+
+    public Integer getRating() {
+        return rating;
+    }
+
+    public void setRating(Integer rating) {
+        this.rating = rating;
+    }
+
+    public String getLastOnlineAt() {
+        return lastOnlineAt;
+    }
+
+    public void setLastOnlineAt(String lastOnlineAt) {
+        this.lastOnlineAt = lastOnlineAt;
+    }
+
+    public Boolean getOnline() {
+        return isOnline;
+    }
+
+    public void setOnline(Boolean online) {
+        isOnline = online;
+    }
 
     public String getDisplayName() {
         return displayName;

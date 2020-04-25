@@ -2,11 +2,13 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:peopeo/Const.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_facebook_login/flutter_facebook_login.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart';
+import 'package:peopeo/MySharedPreferences.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final FirebaseAuth auth = FirebaseAuth.instance;
@@ -40,6 +42,7 @@ Future<AuthResult> signInWithFacebook() async {
 
 Future<Response> setUserCredential(
     AuthResult authResult,Map<String, dynamic> data) async {
+
   prefs = await SharedPreferences.getInstance();
   FirebaseUser user = authResult.user;
 
@@ -54,12 +57,32 @@ Future<Response> setUserCredential(
     await prefs.setString('displayName', user.displayName);
     await prefs.setString('photoUrl', user.photoUrl);
 
+    var ui = {
+      'uid' : user.uid,
+      'email' : user.email,
+      'userType' : data['userType'],
+      'displayName' : user.displayName,
+      'photoUrl' : user.photoUrl
+    };
+
+    MySharedPreferences.setStringValue('userInfo',jsonEncode(ui));
+
     return createUser(user, data['userType'], data['token']);
 
   }else{
 
     await prefs.setString('displayName', data['displayName']);
     await prefs.setString('photoUrl', data['photoUrl']);
+
+    var ui = {
+      'uid' : user.uid,
+      'email' : user.email,
+      'userType' : data['userType'],
+      'displayName' : data['displayName'],
+      'photoUrl' : data['photoUrl']
+    };
+
+    MySharedPreferences.setStringValue('userInfo',jsonEncode(ui));
 
     databaseReference
         .collection("userInfoList")
@@ -71,6 +94,7 @@ Future<Response> setUserCredential(
     return null;
 
   }
+
 }
 
 Future<Response> createUser(FirebaseUser user, int ut, String token) async {
@@ -78,6 +102,8 @@ Future<Response> createUser(FirebaseUser user, int ut, String token) async {
   String hashTag = user.displayName;
   hashTag = (user.email != null) ?  hashTag + user.email : hashTag;
   hashTag = hashTag.replaceAll(' ', '');
+
+  String timeZone = await FlutterNativeTimezone.getLocalTimezone();
 
   await databaseReference
       .collection("userInfoList")
@@ -97,7 +123,10 @@ Future<Response> createUser(FirebaseUser user, int ut, String token) async {
     'fcmRegistrationToken': token,
     'rating': null,
     'hashTag': hashTag,
-    'coronavirusExperience' : null
+    'coronavirusExperience' : null,
+    'isOnline' : true,
+    'lastOnlineAt' : DateTime.now(),
+    'timeZone' : timeZone
   });
   return createCustomerInBrainTree(user);
 }

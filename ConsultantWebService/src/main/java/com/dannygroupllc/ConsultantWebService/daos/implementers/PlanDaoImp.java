@@ -4,8 +4,14 @@ import com.dannygroupllc.ConsultantWebService.Utility.NotificationSender;
 import com.dannygroupllc.ConsultantWebService.daos.interfaces.PlanDao;
 import com.dannygroupllc.ConsultantWebService.models.Plan;
 import com.dannygroupllc.ConsultantWebService.pojos.Notification;
+import com.dannygroupllc.ConsultantWebService.pojos.UserInfo;
+import com.google.api.core.ApiFuture;
+import com.google.cloud.firestore.*;
 import com.google.firebase.cloud.FirestoreClient;
 import com.google.gson.Gson;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.joda.time.Interval;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import javax.persistence.EntityManager;
@@ -747,7 +753,7 @@ public class PlanDaoImp implements PlanDao {
                 if (isFreeMinAvailable.equals("no") && isPaymentComplete.equals("no")) {
 
                     Notification nForPayment = new Notification();
-                    nForPayment.setUid(p.getConUid());
+                    nForPayment.setUid(p.getCusUid());
                     nForPayment.setTitle("Payment Reminder");
                     nForPayment.setBody("You didn't complete your payment for the chat session, which will start on "+sdf.format(p.getStartTime())+", Please complete your payment before 30 minute.");
                     nForPayment.setStartTime(sdf.format(p.getStartTime()));
@@ -758,6 +764,8 @@ public class PlanDaoImp implements PlanDao {
                 }
 
             }
+
+            updateOnlineStatus();
 
             plan.setCode(200);
             plan.setMsg("Reminder triggered successfully!");
@@ -770,6 +778,38 @@ public class PlanDaoImp implements PlanDao {
         }
 
         return plan;
+
+    }
+
+    private void updateOnlineStatus() {
+
+        try{
+
+            CollectionReference cr = FirestoreClient.getFirestore().collection("userInfoList");
+
+            ApiFuture<QuerySnapshot> future = cr.get();
+            List<QueryDocumentSnapshot> documents = future.get().getDocuments();
+            for (DocumentSnapshot document : documents) {
+                UserInfo ui = document.toObject(UserInfo.class);
+                Date lastOnlineAt = sdf.parse(ui.getLastOnlineAt());
+
+                Interval interval = new Interval(
+                        new DateTime(lastOnlineAt),
+                        new DateTime().withZone(DateTimeZone.forID(ui.getTimeZone()))
+                );
+
+                if(interval.toDuration().getStandardMinutes() > 2){
+                    DocumentReference dr = cr.document(document.getId());
+                    dr.update("isOnline",false);
+                }
+
+                System.out.println(getClass().getName()+".updateOnlineStatus interval = "+interval.toDuration().getStandardMinutes());
+
+            }
+
+        }catch(Exception e){
+            e.printStackTrace();
+        }
 
     }
 

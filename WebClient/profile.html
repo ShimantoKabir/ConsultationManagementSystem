@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Profile</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="css/grid.css"/>
+    <link rel="stylesheet" href="css/main.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Armata"/>
+
+    <script src="js/jquery.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.14.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.14.1/firebase-analytics.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.14.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.14.1/firebase-firestore.js"></script>
+    <script>
+      
+        $(document).ready(function () {
+
+
+            // let serverBaseUrl = "http://192.168.43.179:8080";
+            // let webClientBaseUrl = "http://192.168.43.132/consultationmanagementsystem/webclient";
+
+            let serverBaseUrl = "http://3.20.119.226:8080";
+            let webClientBaseUrl = "http://3.20.119.226/cms/index.html";
+
+            var firebaseConfig = {
+                apiKey: "AIzaSyCds45N0E52JbAH2JSiwyWCsqEwnOlxCP0",
+                authDomain: "consultant-e6956.firebaseapp.com",
+                databaseURL: "https://consultant-e6956.firebaseio.com",
+                projectId: "consultant-e6956",
+                storageBucket: "consultant-e6956.appspot.com",
+                messagingSenderId: "1008185790163",
+                appId: "1:1008185790163:web:8b0846089683685c654e26",
+                measurementId: "G-YQXJFTNYTQ"
+            };
+
+            var rating = 0;
+            var like = 0;
+            var hourlyRate = 0;
+            var freeMin = 0;
+            var shortDes = '';
+            var longDes = '';
+            var coronaExp = '';
+            let isUrlOk = true;
+            let uId = '';
+
+            let urlParameters = new URLSearchParams(window.location.search);
+
+            if (urlParameters.has('uid')) {
+
+                uId = urlParameters.get('uid');
+
+            } else {
+
+                isUrlOk = false;
+
+            }
+
+
+            if (isUrlOk) {
+
+
+                var consultant = firebase.initializeApp(firebaseConfig,"consultant");
+                console.log(consultant.name); 
+                var db = consultant.firestore();
+
+                var docRef = db.collection("userInfoList").doc(uId);
+
+                docRef.get().then(function(doc) {
+                    
+                    if (doc.exists) {
+
+                        rating = (doc.data().rating == null) ? 0 : doc.data().rating;
+                        like = (doc.data().like == null) ? 0 : doc.data().like;
+                        hourlyRate = (doc.data().hourlyRate == null) ? 0 : doc.data().hourlyRate;
+                        freeMin = (doc.data().freeMinutesForNewCustomer == null) ? 0 : doc.data().freeMinutesForNewCustomer;
+                        
+                        shortDes = (doc.data().shortDescription == null) ? 'Short description not set yet' : doc.data().shortDescription;
+
+                        longDes = (doc.data().longDescription == null) ? 'Long description not set yet' : doc.data().longDescription;
+
+                        coronaExp = (doc.data().coronavirusExperience == null) ? 'Corona virus experience not given yet' : doc.data().coronavirusExperience;
+
+                        $(".profile-pic").attr("src",doc.data().photoUrl);
+                        $("#totalLike").text(like);
+                        $("#hourlyRate").text(hourlyRate);
+                        $("#freeMin").text(freeMin);
+                        $("#displayName").text(doc.data().displayName);
+                        $("#rating").text(rating);
+                        $("#shortDes").text(shortDes);
+                        $("#longDes").text(longDes);
+                        $("#coronaExp").text(coronaExp);
+                        
+                        for (var i = 0; i < $(".rating-star").children().length; i++) {
+                            if (i <= rating) {
+                                $(".rating-star > i:nth-child("+i+")").css("color", "orange");
+                            }
+                        }
+
+                    } else {
+                        console.log("No such document!");
+                    }
+
+                    $('#share').click(function () {
+                        
+                        copyProfileLinkToClipBoard();
+
+                    });
+
+                    $('#openAppBtn').click(function () {
+                        
+                        triggerAppOpen();
+
+                    });
+
+
+                }).catch(function(error) {
+                    console.log("Error getting document:", error);
+                });     
+
+            }else{
+
+                window.location.replace(webClientBaseUrl)
+
+            }
+
+            function copyProfileLinkToClipBoard() {
+              const el = document.createElement('textarea');
+              el.value = webClientBaseUrl+"/profile.html?uid="+uId;
+              document.body.appendChild(el);
+              el.select();
+              document.execCommand('copy');
+              document.body.removeChild(el);
+              alert("Profile link copied to clipboard.");
+            }
+
+            var fallbackToStore = function() {
+              window.location.replace('https://play.google.com/store/apps/details?id=packgename');
+            };
+            var openApp = function() {
+              
+                let link = document.createElement('a');
+                link.href = "intent:#Intent;action=android.intent.action.SEND;category=android.intent.category.DEFAULT;category=android.intent.category.BROWSABLE;type=text/plain;S.android.intent.extra.TEXT="+uId+";end";
+                document.body.appendChild(link);
+                link.click();
+
+            };
+            var triggerAppOpen = function() {
+              openApp();
+              setTimeout(fallbackToStore, 700);
+            };
+
+        });
+
+    </script>
+
+</head>
+<body>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-sm-12">
+            <div class="my-div">
+                <div class="my-div-head">
+                    <div class="my-div-head-left" >
+                        <i class="fa fa-circle"></i>
+                    </div>
+                    <div class="my-div-head-right" >
+                        <i id="share" class="fa fa-share-alt"></i>
+                    </div>
+                </div>
+                <div class="my-div-body" >
+                    <div class="my-div-body-30" >
+                        <img class="profile-pic" src="https://www.w3schools.com/howto/img_avatar.png" alt="Avatar">
+                    </div>
+                    <div class="my-div-body-70" >
+                        <div class="lhf-area" >
+                            <div class="lh-area" >
+                                <div class="like-area" >
+                                    <i class="fa fa-heart"></i>
+                                    <p><span id="totalLike" >0</span> likes</p>
+                                </div>
+                                <div class="hourly-rate-area" >
+                                    <i class="fa fa-dollar"></i>
+                                    <p>$<span id="hourlyRate" >0</span>/Hour</p>
+                                </div>
+                            </div>
+                            <div class="free-min-area" >
+                                <p>[<span id="freeMin" >0</span> minutes free for new customer]</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="my-div-body" >
+                    <div class="my-div-body-100" >
+                        <div class="rating-bar" >
+                            <span>(<span id="rating" ></span>)</span>
+                            <span class="rating-star" >
+                                <i class="fa fa-star"></i>
+                                <i class="fa fa-star"></i>
+                                <i class="fa fa-star"></i>
+                                <i class="fa fa-star"></i>
+                                <i class="fa fa-star"></i>
+                            </span>
+                        </div>
+                            <h4 id="displayName" >Display Name</h4>
+                        <div class="dis-area" >
+                            <p id="shortDes" >loading.....</p>
+                            <p id="longDes" >loading.....</p>
+                            <p>Corona virus experience [<span id="coronaExp" >Loading...</span>]</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="my-div-foot justify-content-center" >
+                    <button id="openAppBtn" class="my-btn" >Open In Apps</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

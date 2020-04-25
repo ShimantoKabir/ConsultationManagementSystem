@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:badges/badges.dart';
@@ -8,6 +9,7 @@ import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart';
+import 'package:intl/intl.dart';
 import 'package:peopeo/ChattedUserViewer.dart';
 import 'package:peopeo/Const.dart';
 import 'package:peopeo/ConsultantProfile.dart';
@@ -17,25 +19,40 @@ import 'package:peopeo/ExpertSearch.dart';
 import 'package:peopeo/HttpResponse.dart';
 import 'package:peopeo/LikedUserViewer.dart';
 import 'package:peopeo/LoginPage.dart';
+import 'package:peopeo/MyFlutterWebView.dart';
 import 'package:peopeo/MySharedPreferences.dart';
 import 'package:peopeo/NotificationViewer.dart';
 import 'package:peopeo/PlanInfo.dart';
 import 'package:peopeo/UserInfo.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:receive_sharing_intent/receive_sharing_intent.dart';
+import 'package:share/share.dart';
 
 void main() => runApp(MyApp());
+bool isUserLoggedIn = false;
+var userInfo;
 
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Experts',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: MyHomePage(),
-    );
+        debugShowCheckedModeBanner: false,
+        title: 'Experts',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+        ),
+        home: FutureBuilder(
+          future: MySharedPreferences.getStringValue("userInfo"),
+          builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+            if (snapshot.hasData) {
+              isUserLoggedIn = true;
+              userInfo = jsonDecode(snapshot.data);
+              print("uid = ${userInfo['uid']}");
+            } else {
+              isUserLoggedIn = false;
+            }
+            return MyHomePage();
+          },
+        ));
   }
 }
 
@@ -44,11 +61,11 @@ class MyHomePage extends StatefulWidget {
   MyHomePageState createState() => MyHomePageState();
 }
 
-class MyHomePageState extends State<MyHomePage> {
+class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
 
   final FirebaseMessaging fm = FirebaseMessaging();
-  bool isUserLoggedIn = false;
   int i = 0;
+  DateFormat df = new DateFormat('dd-MM-yyyy hh:mm:ss a');
 
   @override
   Widget build(BuildContext context) {
@@ -58,73 +75,7 @@ class MyHomePageState extends State<MyHomePage> {
           centerTitle: true,
           leading: Padding(
             padding: EdgeInsets.all(10.0),
-            child: FutureBuilder(
-              future: MySharedPreferences.getStringValue("photoUrl"),
-              builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
-                if (snapshot.hasData) {
-                  isUserLoggedIn = true;
-                  return Container(
-                    height: 10.0,
-                    width: 10.0,
-                    child: InkWell(
-                      onTap: () {
-                        MySharedPreferences.getIntegerValue('userType')
-                            .then((ut) {
-                          MySharedPreferences.getStringValue('uid').then((uid) {
-                            if (ut == 1) {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) {
-                                    return CustomerProfile(uid: uid);
-                                  },
-                                ),
-                              );
-                            } else {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) {
-                                    return ConsultantProfile(uid: uid);
-                                  },
-                                ),
-                              );
-                            }
-                          });
-                        });
-                      },
-                    ),
-                    decoration: new BoxDecoration(
-                      shape: BoxShape.circle,
-                      image: new DecorationImage(
-                          fit: BoxFit.fill,
-                          image: new NetworkImage(snapshot.data)),
-                    ),
-                  );
-                } else {
-                  return Container(
-                    height: 5.0,
-                    width: 5.0,
-                    child: InkWell(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) {
-                              return LoginPage();
-                            },
-                          ),
-                        );
-                      },
-                    ),
-                    decoration: new BoxDecoration(
-                      image: new DecorationImage(
-                          fit: BoxFit.fill,
-                          image: new AssetImage(
-                              "assets/images/user_register.png")),
-                    ),
-                  );
-                }
-              },
-            ),
+            child: getProfilePic(),
           ),
           title: Text(
             "Experts",
@@ -136,70 +87,41 @@ class MyHomePageState extends State<MyHomePage> {
           actions: <Widget>[
             IconButton(
               icon: Badge(
-                badgeContent: FutureBuilder(
-                    future: MySharedPreferences.getStringValue("uid"),
-                    builder:
-                        (BuildContext context, AsyncSnapshot<String> snapshot) {
-                      if (snapshot.hasData) {
-                        return getTotalUnSeenNotification(snapshot.data);
-                      } else {
-                        return Text("0",
-                            style: TextStyle(
-                                fontSize: 12.0,
-                                color: Colors.white,
-                                fontFamily: 'Armata',
-                                fontWeight: FontWeight.w600));
-                      }
-                    }),
+                badgeContent: getTotalUnSeenNotification(),
                 child: Icon(Icons.notifications, color: Colors.grey),
               ),
-              onPressed: () {
+              onPressed: () async {
                 if (isUserLoggedIn) {
-                  MySharedPreferences.getStringValue("uid").then((val) {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) {
-                          return NotificationViewer(uid: val);
-                        },
-                      ),
-                    );
-                  });
+                  MaterialPageRoute(
+                    builder: (context) {
+                      return NotificationViewer(uid: userInfo['uid']);
+                    },
+                  );
                 } else {
                   goToLoginPage();
                 }
               },
             )
           ]),
-      body: FutureBuilder(
-        future: MySharedPreferences.getStringValue("uid"),
-        builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
-          String uid;
-          if (snapshot.hasData) {
-            uid = snapshot.data;
+      body: StreamBuilder(
+        stream: Firestore.instance
+            .collection('userInfoList')
+            .where('userType', isEqualTo: 2)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+              ),
+            );
+          } else {
+            return ListView.builder(
+              itemBuilder: (context, index) =>
+                  buildItem(context, snapshot.data.documents[index]),
+              itemCount: snapshot.data.documents.length,
+            );
           }
-          return Container(
-            child: StreamBuilder(
-              stream: Firestore.instance
-                  .collection('userInfoList')
-                  .where('userType', isEqualTo: 2)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return Center(
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
-                    ),
-                  );
-                } else {
-                  return ListView.builder(
-                    itemBuilder: (context, index) =>
-                        buildItem(context, snapshot.data.documents[index], uid),
-                    itemCount: snapshot.data.documents.length,
-                  );
-                }
-              },
-            ),
-          );
         },
       ),
       bottomNavigationBar: Container(
@@ -241,51 +163,37 @@ class MyHomePageState extends State<MyHomePage> {
                   icon: Icon(Icons.favorite),
                   onPressed: () {
                     if (isUserLoggedIn) {
-                      MySharedPreferences.getIntegerValue(
-                          "userType").then((userType) {
-                        print('user type = $userType');
+                      if (userInfo['userType'] == 1) {
 
-                        if (userType == 1) {
-                          showAlertDialog(
-                              context, "Gathering user that you liked...");
+                        showAlertDialog(
+                            context, "Gathering user that you liked...");
 
-                          MySharedPreferences.getStringValue("uid").then((uid) {
-                            getLikedUserIdList(uid).then((res) async {
-                              Navigator.of(context, rootNavigator: true).pop();
+                        getLikedUserIdList(userInfo['uid']).then((res) async {
+                          Navigator.of(context, rootNavigator: true).pop();
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) {
+                                return LikedUserViewer(
+                                    uid: userInfo['uid'], likedUserIdList: res);
+                              },
+                            ),
+                          );
+                        });
+                      } else {
+                        showAlertDialog(context, "Fetching customer list...");
 
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) {
-                                    return LikedUserViewer(
-                                        uid: uid,
-                                        likedUserIdList: res);
-                                  },
-                                ),
-                              );
-                            });
-                          });
-                        } else {
-                          showAlertDialog(
-                              context, "Fetching customer list...");
-
-                          MySharedPreferences.getStringValue("uid").then((uid) {
-                            getLikedCustomerList(uid).then((res) {
-
-                              Navigator.of(context, rootNavigator: true).pop();
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) {
-                                    return CustomerListViewer(
-                                        uid: uid,
-                                        customerList: res);
-                                  },
-                                ),
-                              );
-
-                            });
-                          });
-                        }
-                      });
+                        getLikedCustomerList(userInfo['uid']).then((res) {
+                          Navigator.of(context, rootNavigator: true).pop();
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) {
+                                return CustomerListViewer(
+                                    uid: userInfo['uid'], customerList: res);
+                              },
+                            ),
+                          );
+                        });
+                      }
                     } else {
                       goToLoginPage();
                     }
@@ -297,20 +205,18 @@ class MyHomePageState extends State<MyHomePage> {
                       showAlertDialog(
                           context, "Gathering user that you chatted before.");
 
-                      MySharedPreferences.getStringValue("uid").then((uid) {
-                        getAllChattedUserInfo(uid).then((chattedUserIdList) {
-                          Navigator.of(context, rootNavigator: true).pop();
-
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) {
-                                return ChattedUserViewer(
-                                    uid: uid,
-                                    chattedUserIdList: chattedUserIdList);
-                              },
-                            ),
-                          );
-                        });
+                      getAllChattedUserInfo(userInfo['uid'])
+                          .then((chattedUserIdList) {
+                        Navigator.of(context, rootNavigator: true).pop();
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) {
+                              return ChattedUserViewer(
+                                  uid: userInfo['uid'],
+                                  chattedUserIdList: chattedUserIdList);
+                            },
+                          ),
+                        );
                       });
                     } else {
                       goToLoginPage();
@@ -320,20 +226,15 @@ class MyHomePageState extends State<MyHomePage> {
                   icon: Icon(Icons.calendar_today),
                   onPressed: () {
                     if (isUserLoggedIn) {
-                      MySharedPreferences.getIntegerValue("userType")
-                          .then((ut) {
-                        MySharedPreferences.getStringValue("uid")
-                            .then((uid) async {
-                          print("User id : $uid");
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) {
-                                return PlanInfo(uid: uid, userType: ut);
-                              },
-                            ),
-                          );
-                        });
-                      });
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) {
+                            return PlanInfo(
+                                uid: userInfo['uid'],
+                                userType: userInfo['userType']);
+                          },
+                        ),
+                      );
                     } else {
                       goToLoginPage();
                     }
@@ -346,83 +247,74 @@ class MyHomePageState extends State<MyHomePage> {
   }
 
   void reloadAuth(DocumentSnapshot document, String tz) async {
-    MySharedPreferences.getIntegerValue("userType").then((ut) {
-      MySharedPreferences.getStringValue("uid").then((uid) async {
-        if (ut == 1) {
-          int hr = document['hourlyRate'];
-          int fm = 0;
-          String conId = document['uid'];
+    if (userInfo['userType'] == 1) {
+      int hr = document['hourlyRate'];
+      int fm = 0;
+      String conId = document['uid'];
 
-          if (document['freeMinutesForNewCustomer'] != null) {
-            fm = document['freeMinutesForNewCustomer'];
-          }
+      if (document['freeMinutesForNewCustomer'] != null) {
+        fm = document['freeMinutesForNewCustomer'];
+      }
 
-          if (hr == null) {
-            Fluttertoast.showToast(
-                msg: "This user didn't set hourly rate yet!");
-          } else {
-            String url = serverBaseUrl + '/auth/reload';
-            Map<String, String> headers = {"Content-type": "application/json"};
-            var request = {
-              'auth': {'uId': uid}
-            };
+      if (hr == null) {
+        Fluttertoast.showToast(msg: "This user didn't set hourly rate yet!");
+      } else {
+        String url = serverBaseUrl + '/auth/reload';
+        Map<String, String> headers = {"Content-type": "application/json"};
+        var request = {
+          'auth': {'uId': userInfo['uid']}
+        };
 
-            Response response =
+        Response response =
             await post(url, headers: headers, body: json.encode(request));
 
-            if (response.statusCode == 200) {
-              print(response.body.toString());
+        if (response.statusCode == 200) {
+          print(response.body.toString());
 
-              String aid =
-                  HttpResponse
-                      .fromJson(json.decode(response.body))
-                      .aid;
+          String aid = HttpResponse.fromJson(json.decode(response.body)).aid;
 
-              String calenderUrl = webClientBaseUrl +
-                  "/calendar.html?aid=" +
-                  aid +
-                  "&conid=" +
-                  conId +
-                  "&cusid=" +
-                  uid +
-                  "&hourly-rate=" +
-                  hr.toString() +
-                  "&free-minutes=" +
-                  fm.toString() +
-                  "&time-zone=" +
-                  tz;
+          String calenderUrl = webClientBaseUrl +
+              "/calendar.html?aid=" +
+              aid +
+              "&conid=" +
+              conId +
+              "&cusid=" +
+              userInfo['uid'] +
+              "&hourly-rate=" +
+              hr.toString() +
+              "&free-minutes=" +
+              fm.toString() +
+              "&time-zone=" +
+              tz;
 
-              print(calenderUrl);
+          print("calender url = $calenderUrl");
 
-              if (await canLaunch(calenderUrl)) {
-                await launch(calenderUrl);
-              } else {
-                throw 'Could not launch $calenderUrl';
-              }
-            } else {
-              throw Exception('Failed to load post');
-            }
-          }
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) {
+                return MyFlutterWebView(title: "Calender", url: calenderUrl);
+              },
+            ),
+          );
         } else {
-          Fluttertoast.showToast(
-              msg:
-              "Because of you are a consultant you can't see another consultant calander!");
+          throw Exception('Failed to load post');
         }
-      });
-    });
+      }
+    } else {
+      Fluttertoast.showToast(
+          msg:
+              "Because of you are a consultant you can't see another consultant calander!");
+    }
   }
 
-  Widget buildItem(BuildContext context, DocumentSnapshot document,
-      String uid) {
-    if (document['uid'] == uid) {
+  Widget buildItem(BuildContext context, DocumentSnapshot document) {
+    if (document['uid'] == userInfo['uid']) {
       return Container();
     } else {
       return Container(
         decoration: BoxDecoration(
             border: Border(
-                bottom: BorderSide(color: Theme
-                    .of(context)
-                    .dividerColor))),
+                bottom: BorderSide(color: Theme.of(context).dividerColor))),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -433,30 +325,15 @@ class MyHomePageState extends State<MyHomePage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: <Widget>[
-                  Row(
-                    children: <Widget>[
-                      IconButton(
-                        icon: Icon(Icons.lens, color: Colors.green),
-                        onPressed: () {
-                          if (isUserLoggedIn) {
-                            addToBookMark(document['uid'], uid);
-                          } else {
-                            goToLoginPage();
-                          }
-                        },
-                      ),
-                      Text("ONLINE", style: TextStyle(
-                        fontSize: 15.0,
-                        color: Colors.green,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Armata',
-                      ))
-                    ],
-                  ),
+                  Icon(Icons.lens, color: Colors.green),
                   IconButton(
                     icon: Icon(Icons.share, color: Colors.grey),
                     onPressed: () {
-
+                      Share.share(
+                          webClientBaseUrl +
+                              "/profile.html?uid=" +
+                              document['uid'],
+                          subject: "Profile");
                     },
                   ),
                 ],
@@ -492,15 +369,13 @@ class MyHomePageState extends State<MyHomePage> {
                                   icon: Icon(Icons.favorite),
                                   onPressed: () {
                                     if (isUserLoggedIn) {
-                                      MySharedPreferences.getIntegerValue(
-                                          "userType").then((userType) {
-                                        if (userType == 1) {
-                                          giveLike(document, uid);
-                                        } else {
-                                          Fluttertoast.showToast(
-                                              msg: "You can't like any expert, cause you are registered as expert!");
-                                        }
-                                      });
+                                      if (userInfo['userType'] == 1) {
+                                        giveLike(document, userInfo['uid']);
+                                      } else {
+                                        Fluttertoast.showToast(
+                                            msg:
+                                                "You can't like any expert, cause you are registered as expert!");
+                                      }
                                     } else {
                                       goToLoginPage();
                                     }
@@ -517,7 +392,7 @@ class MyHomePageState extends State<MyHomePage> {
                                       if (snapshot.data.documents.length == 1) {
                                         return Text(
                                             snapshot.data.documents.length
-                                                .toString() +
+                                                    .toString() +
                                                 " Likes",
                                             style: TextStyle(
                                               fontSize: 12.0,
@@ -589,11 +464,10 @@ class MyHomePageState extends State<MyHomePage> {
                         direction: Axis.horizontal,
                         itemCount: 5,
                         itemSize: 25.0,
-                        itemBuilder: (context, index) =>
-                            Icon(
-                              Icons.star,
-                              color: Colors.amber,
-                            ),
+                        itemBuilder: (context, index) => Icon(
+                          Icons.star,
+                          color: Colors.amber,
+                        ),
                       )
                     ],
                   ),
@@ -803,8 +677,10 @@ class MyHomePageState extends State<MyHomePage> {
             fontFamily: 'Armata',
           ));
     } else {
-      return Text("Corona virus experience [" +
-          document['coronavirusExperience'].toString() + "]",
+      return Text(
+          "Corona virus experience [" +
+              document['coronavirusExperience'].toString() +
+              "]",
           style: TextStyle(
             fontSize: 15.0,
             color: Colors.red,
@@ -822,31 +698,40 @@ class MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  getTotalUnSeenNotification(String uid) {
-    return FutureBuilder(
-      future: Firestore.instance
-          .collection('notificationList')
-          .where('uid', isEqualTo: uid)
-          .where('seenStatus', isEqualTo: 0)
-          .getDocuments(),
-      builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
-        if (snapshot.hasData) {
-          return Text(snapshot.data.documents.length.toString(),
-              style: TextStyle(
-                  fontSize: 12.0,
-                  color: Colors.white,
-                  fontFamily: 'Armata',
-                  fontWeight: FontWeight.w600));
-        } else {
-          return Text("0",
-              style: TextStyle(
-                  fontSize: 12.0,
-                  color: Colors.white,
-                  fontFamily: 'Armata',
-                  fontWeight: FontWeight.w600));
-        }
-      },
-    );
+  getTotalUnSeenNotification() {
+    if (userInfo == null) {
+      return Text("0",
+          style: TextStyle(
+              fontSize: 12.0,
+              color: Colors.white,
+              fontFamily: 'Armata',
+              fontWeight: FontWeight.w600));
+    } else {
+      return StreamBuilder(
+        stream: Firestore.instance
+            .collection('notificationList')
+            .where('uid', isEqualTo: userInfo['uid'])
+            .where('seenStatus', isEqualTo: 0)
+            .snapshots(),
+        builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+          if (snapshot.hasData) {
+            return Text(snapshot.data.documents.length.toString(),
+                style: TextStyle(
+                    fontSize: 12.0,
+                    color: Colors.white,
+                    fontFamily: 'Armata',
+                    fontWeight: FontWeight.w600));
+          } else {
+            return Text("0",
+                style: TextStyle(
+                    fontSize: 12.0,
+                    color: Colors.white,
+                    fontFamily: 'Armata',
+                    fontWeight: FontWeight.w600));
+          }
+        },
+      );
+    }
   }
 
   void addToBookMark(expertUid, String myUid) {
@@ -887,6 +772,7 @@ class MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
 
+    WidgetsBinding.instance.addObserver(this);
     fm.configure(onMessage: (Map<String, dynamic> message) async {
       if (i % 2 == 0) {
         print("onMessage: message = $message");
@@ -896,6 +782,40 @@ class MyHomePageState extends State<MyHomePage> {
     });
     fm.requestNotificationPermissions(
         const IosNotificationSettings(sound: true, badge: true, alert: true));
+
+    ReceiveSharingIntent.getInitialText().then((String uid) {
+      print("Shared text $uid");
+      if (uid != null) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) {
+              return ConsultantProfile(uid: uid);
+            },
+          ),
+        );
+      }
+    });
+
+    Timer.periodic(Duration(minutes: 1), (timer) {
+
+      if(isUserLoggedIn){
+
+        getTimeZone().then((tz){
+
+          print("Last online update , timezone = $tz");
+          Firestore.instance.collection("userInfoList")
+              .document(userInfo['uid'])
+              .updateData({
+                "lastOnlineAt": df.format(DateTime.now()),
+                "timeZone": tz
+              });
+
+        });
+
+      }
+
+    });
+
   }
 
   Future<String> getTimeZone() async {
@@ -945,22 +865,17 @@ class MyHomePageState extends State<MyHomePage> {
                           fontFamily: 'Armata',
                           fontWeight: FontWeight.bold)),
                   onPressed: () {
-                    MySharedPreferences.getStringValue('uid')
-                        .then((uid) {
-                      Navigator.of(context).pop(false);
-
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) {
-                            return NotificationViewer(uid: uid);
-                          },
-                        ),
-                      );
-                    });
+                    Navigator.of(context).pop(false);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) {
+                          return NotificationViewer(uid: userInfo['uid']);
+                        },
+                      ),
+                    );
                   })
-            ]
-        );
+            ]);
       },
     );
   }
@@ -977,11 +892,13 @@ class MyHomePageState extends State<MyHomePage> {
   }
 
   Future<List<Map<String, dynamic>>> getLikedUserIdList(String uid) async {
+
+    print('getLikedUserIdList uid = $uid');
+
     List<Map<String, dynamic>> likedUserIdList = [];
 
-    final uiDocs = await Firestore.instance
-        .collection("userInfoList")
-        .getDocuments();
+    final uiDocs =
+        await Firestore.instance.collection("userInfoList").getDocuments();
 
     await Future.wait(uiDocs.documents.map((ui) async {
       Map<String, dynamic> uiObj = ui.data;
@@ -994,8 +911,11 @@ class MyHomePageState extends State<MyHomePage> {
           .getDocuments();
 
       await Future.wait(luDocs.documents.map((lu) async {
+
+        print('lu id = ${lu['uid']}');
         likedUserIdList.add(uiObj);
       }));
+
     }));
 
     return likedUserIdList;
@@ -1020,19 +940,14 @@ class MyHomePageState extends State<MyHomePage> {
 
   Future<List<Map<String, dynamic>>> getAllChattedUserInfo(String uid) async {
     List<Map<String, dynamic>> chattedUserIdList = [];
-    final mDocs = await Firestore.instance
-        .collection("messages")
-        .getDocuments();
+    final mDocs =
+        await Firestore.instance.collection("messages").getDocuments();
 
     await Future.wait(mDocs.documents.map((m) async {
       String peerId;
 
-      String groupIdFirst = m.documentID
-          .split("-")
-          .first;
-      String groupIdLast = m.documentID
-          .split("-")
-          .last;
+      String groupIdFirst = m.documentID.split("-").first;
+      String groupIdLast = m.documentID.split("-").last;
 
       if (uid == groupIdFirst) {
         peerId = groupIdLast;
@@ -1040,14 +955,24 @@ class MyHomePageState extends State<MyHomePage> {
         peerId = groupIdFirst;
       }
 
-      final uiDoc = await Firestore.instance
-          .collection('userInfoList')
-          .document(peerId).get();
+      print("peer id = $peerId");
 
-      chattedUserIdList.add(uiDoc.data);
+      if(peerId != null){
+
+        final uiDoc = await Firestore.instance
+            .collection('userInfoList')
+            .document(peerId)
+            .get();
+
+        chattedUserIdList.add(uiDoc.data);
+
+      }
+
     }));
 
     return chattedUserIdList;
+
+
   }
 
   Future<List<Map<String, dynamic>>> getLikedCustomerList(String uid) async {
@@ -1062,7 +987,8 @@ class MyHomePageState extends State<MyHomePage> {
     await Future.wait(luDocs.documents.map((lu) async {
       final uiDoc = await Firestore.instance
           .collection('userInfoList')
-          .document(lu.data['uid']).get();
+          .document(lu.data['uid'])
+          .get();
 
       customerList.add(uiDoc.data);
     }));
@@ -1070,4 +996,65 @@ class MyHomePageState extends State<MyHomePage> {
     return customerList;
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    print("Life cycle state = $state");
+  }
+
+  getProfilePic() {
+    if (isUserLoggedIn) {
+      return Container(
+        height: 10.0,
+        width: 10.0,
+        child: InkWell(
+          onTap: () {
+            if (userInfo['userType'] == 1) {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) {
+                    return CustomerProfile(uid: userInfo['uid']);
+                  },
+                ),
+              );
+            } else {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) {
+                    return ConsultantProfile(uid: userInfo['uid']);
+                  },
+                ),
+              );
+            }
+          },
+        ),
+        decoration: new BoxDecoration(
+          shape: BoxShape.circle,
+          image: new DecorationImage(
+              fit: BoxFit.fill, image: new NetworkImage(userInfo['photoUrl'])),
+        ),
+      );
+    } else {
+      return Container(
+        height: 5.0,
+        width: 5.0,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) {
+                  return LoginPage();
+                },
+              ),
+            );
+          },
+        ),
+        decoration: new BoxDecoration(
+          image: new DecorationImage(
+              fit: BoxFit.fill,
+              image: new AssetImage("assets/images/user_register.png")),
+        ),
+      );
+    }
+  }
 }

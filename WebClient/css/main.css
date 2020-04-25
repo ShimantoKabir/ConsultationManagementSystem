@@ -28,7 +28,7 @@ body{
     justify-content: space-between;
     align-items: baseline;
     padding: 10px;
-    border-bottom: 1px solid rgba(60, 137, 66, 0.37);
+    border-bottom: 1px solid lightgray;
 }
 .my-div-head-left{
     display: flex;
@@ -80,7 +80,7 @@ body{
     justify-content: space-between;
     align-items: baseline;
     padding: 10px;
-    border-top: 1px solid rgba(60, 137, 66, 0.37);
+    border-top: 1px solid lightgray;
 }
 .my-div-foot-left{
     display: flex;
@@ -104,7 +104,7 @@ input[type=email],input[type=password],input[type=text],input[type=number],input
 }
 /*button style*/
 .my-btn {
-    background-color: #4CAF50;
+    background-color: red;
     color: white;
     padding: 5px 10px;
     text-align: center;
@@ -114,16 +114,16 @@ input[type=email],input[type=password],input[type=text],input[type=number],input
     font-size: 15px;
     cursor: pointer;
     border-radius: 3px;
-    border: 1px solid #4CAF50;
+    border: 1px solid red;
     box-shadow: 0 1px 1px 0 rgba(0,0,0,.2),0 3px 4px 0 rgba(0,0,0,.14),0 3px 3px -2px rgba(0,0,0,.12);
     -webkit-transition-duration: 0.4s;
     transition-duration: 0.4s;
 }
 .my-btn:hover{
     font-family: Armata;
-    border: 1px solid #4CAF50;
+    border: 1px solid red;
     background-color: transparent;
-    color: #4CAF50;
+    color: red;
 }
 .my-pg-btn{
     font-size: 10px;
@@ -261,4 +261,54 @@ th, td {
     font-size: 13px;
 }
 
-/*floating action button*/
+/*profile style*/
+.profile-pic{
+    border-radius: 50%;
+    width:100px
+}
+.lhf-area{
+    font-size: 12px;
+    margin-top: 10px;
+    margin-left: 10px;
+    display: flex;
+    flex-direction: column;
+}
+.lh-area{
+    padding-left: 20px;
+    padding-right: 20px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+.like-area{
+    text-align: center;
+}
+.like-area > i{
+    padding-bottom: 5px;
+}
+.hourly-rate-area{
+    text-align: center;   
+}
+.hourly-rate-area > i{
+    padding-bottom: 5px;
+}
+.free-min-area{
+    color: green;
+    margin-top: 10px;
+    text-align: center;      
+}
+.dis-area > p:nth-child(1){
+    color: gray;
+    font-size: 15px;
+    margin-top: 10px;
+}
+.dis-area > p:nth-child(2){
+    color: gray;
+    font-size: 15px;
+    margin-top: 10px;
+}
+.dis-area > p:nth-child(3){
+    color: red;
+    font-size: 15px;
+    margin-top: 10px;
+}
