@@ -462,8 +462,6 @@ class ChatHistoryState extends State<ChatHistory>
             Column(
               children: <Widget>[buildListMessage()],
             ),
-
-            // Loading
             buildLoading()
           ],
         ),
@@ -478,7 +476,7 @@ class ChatHistoryState extends State<ChatHistory>
           ? Container(
               child: Center(
                 child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(themeColor)),
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.red)),
               ),
               color: Colors.white.withOpacity(0.8),
             )
@@ -502,19 +500,36 @@ class ChatHistoryState extends State<ChatHistory>
                   .snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
-                  return CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(themeColor));
+                  return Center(
+                    child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.red)),
+                  );
                 } else {
+
                   listMessage = snapshot.data.documents;
 
-                  return ListView.builder(
-                    padding: EdgeInsets.all(10.0),
-                    itemBuilder: (context, index) =>
-                        buildItem(index, snapshot.data.documents[index]),
-                    itemCount: snapshot.data.documents.length,
-                    reverse: true,
-                    controller: listScrollController,
-                  );
+                  if(snapshot.data.documents.length>0){
+
+                    return ListView.builder(
+                      padding: EdgeInsets.all(10.0),
+                      itemBuilder: (context, index) =>
+                          buildItem(index, snapshot.data.documents[index]),
+                      itemCount: snapshot.data.documents.length,
+                      reverse: true,
+                      controller: listScrollController,
+                    );
+
+                  }else {
+
+                    return Center(
+                      child: Text("[No chat history found]",
+                          style: TextStyle(
+                              color: Colors.red,
+                              fontFamily: 'Armata',
+                              fontWeight: FontWeight.bold)),
+                    );
+
+                  }
                 }
               },
             ),

@@ -47,6 +47,16 @@ class MyApp extends StatelessWidget {
               isUserLoggedIn = true;
               userInfo = jsonDecode(snapshot.data);
               print("uid = ${userInfo['uid']}");
+
+              MySharedPreferences.getBooleanValue("isUploadRunning")
+                  .then((isUploadRunning) {
+                if (isUploadRunning) {
+                  Fluttertoast.showToast(
+                      msg:
+                          "Video/Image upload running, Please don't close the app!",
+                      toastLength: Toast.LENGTH_LONG);
+                }
+              });
             } else {
               isUserLoggedIn = false;
             }
@@ -92,10 +102,12 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
               ),
               onPressed: () async {
                 if (isUserLoggedIn) {
-                  MaterialPageRoute(
-                    builder: (context) {
-                      return NotificationViewer(uid: userInfo['uid']);
-                    },
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) {
+                        return NotificationViewer(uid: userInfo['uid']);
+                      },
+                    ),
                   );
                 } else {
                   goToLoginPage();
@@ -164,7 +176,6 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                   onPressed: () {
                     if (isUserLoggedIn) {
                       if (userInfo['userType'] == 1) {
-
                         showAlertDialog(
                             context, "Gathering user that you liked...");
 
@@ -174,7 +185,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                             MaterialPageRoute(
                               builder: (context) {
                                 return LikedUserViewer(
-                                    uid: userInfo['uid'], likedUserIdList: res);
+                                    uid: userInfo['uid'], likedUserIdList: res,userType: userInfo['uid']);
                               },
                             ),
                           );
@@ -303,12 +314,13 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     } else {
       Fluttertoast.showToast(
           msg:
-              "Because of you are a consultant you can't see another consultant calander!");
+              "Because of you are a expert you can't see another expert calander!");
     }
   }
 
   Widget buildItem(BuildContext context, DocumentSnapshot document) {
-    if (document['uid'] == userInfo['uid']) {
+    String uid = (userInfo == null) ? "empty" : userInfo['uid'];
+    if (document['uid'] == uid) {
       return Container();
     } else {
       return Container(
@@ -325,7 +337,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: <Widget>[
-                  Icon(Icons.lens, color: Colors.green),
+                  getOnlineStatus(document),
                   IconButton(
                     icon: Icon(Icons.share, color: Colors.grey),
                     onPressed: () {
@@ -796,25 +808,12 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       }
     });
 
+    updateOnlineStatus();
     Timer.periodic(Duration(minutes: 1), (timer) {
-
-      if(isUserLoggedIn){
-
-        getTimeZone().then((tz){
-
-          print("Last online update , timezone = $tz");
-          Firestore.instance.collection("userInfoList")
-              .document(userInfo['uid'])
-              .updateData({
-                "lastOnlineAt": df.format(DateTime.now()),
-                "timeZone": tz
-              });
-
-        });
-
-      }
-
+      updateOnlineStatus();
     });
+
+    MySharedPreferences.setBooleanValue("isUploadRunning",false);
 
   }
 
@@ -892,7 +891,6 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   }
 
   Future<List<Map<String, dynamic>>> getLikedUserIdList(String uid) async {
-
     print('getLikedUserIdList uid = $uid');
 
     List<Map<String, dynamic>> likedUserIdList = [];
@@ -911,11 +909,9 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           .getDocuments();
 
       await Future.wait(luDocs.documents.map((lu) async {
-
         print('lu id = ${lu['uid']}');
         likedUserIdList.add(uiObj);
       }));
-
     }));
 
     return likedUserIdList;
@@ -957,22 +953,17 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
 
       print("peer id = $peerId");
 
-      if(peerId != null){
-
+      if (peerId != null) {
         final uiDoc = await Firestore.instance
             .collection('userInfoList')
             .document(peerId)
             .get();
 
         chattedUserIdList.add(uiDoc.data);
-
       }
-
     }));
 
     return chattedUserIdList;
-
-
   }
 
   Future<List<Map<String, dynamic>>> getLikedCustomerList(String uid) async {
@@ -1030,7 +1021,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         decoration: new BoxDecoration(
           shape: BoxShape.circle,
           image: new DecorationImage(
-              fit: BoxFit.fill, image: new NetworkImage(userInfo['photoUrl'])),
+              fit: BoxFit.fill, image: NetworkImage(userInfo['photoUrl'])),
         ),
       );
     } else {
@@ -1052,9 +1043,33 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         decoration: new BoxDecoration(
           image: new DecorationImage(
               fit: BoxFit.fill,
-              image: new AssetImage("assets/images/user_register.png")),
+              image: AssetImage("assets/images/user_register.png")),
         ),
       );
+    }
+  }
+
+  getOnlineStatus(DocumentSnapshot document) {
+    if (document['isOnline']) {
+      return Icon(Icons.lens, color: Colors.green);
+    } else {
+      return Icon(Icons.lens, color: Colors.grey);
+    }
+  }
+
+  void updateOnlineStatus() {
+    if (isUserLoggedIn) {
+      getTimeZone().then((tz) {
+        print("Last online update , timezone = $tz");
+        Firestore.instance
+            .collection("userInfoList")
+            .document(userInfo['uid'])
+            .updateData({
+          "lastOnlineAt": df.format(DateTime.now()),
+          "timeZone": tz,
+          "isOnline": true,
+        });
+      });
     }
   }
 }

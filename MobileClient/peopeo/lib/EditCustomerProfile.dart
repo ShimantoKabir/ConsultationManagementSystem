@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -5,10 +6,12 @@ import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_video_compress/flutter_video_compress.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:peopeo/MySharedPreferences.dart';
+import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:uuid/uuid.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
@@ -43,12 +46,14 @@ class EditCustomerProfileState extends State<EditCustomerProfile> {
   // variable for convert
   // video url to image
   ImageFormat format = ImageFormat.JPEG;
-  int quality = 10;
-  int maxHeight = 250;
-  int maxWidth = 250;
+  int quality = 100;
+  int maxHeight = 500;
+  int maxWidth = 600;
   String tempDir;
   String filePath;
   String email;
+
+  final flutterVideoCompress = FlutterVideoCompress();
 
   @override
   void initState() {
@@ -371,6 +376,7 @@ class EditCustomerProfileState extends State<EditCustomerProfile> {
                       .collection('userInfoList')
                       .document(uid)
                       .collection("videoThumbnailUrlList")
+                      .orderBy('timeStamp', descending: true)
                       .snapshots(),
                   builder: (context, snapshot) {
                     if (!snapshot.hasData) {
@@ -426,7 +432,7 @@ class EditCustomerProfileState extends State<EditCustomerProfile> {
         setState(() {
           fileName = uuid + p.extension(file.path);
         });
-        futureFileUrl = uploadFile(file, fileName);
+        futureFileUrl = uploadFile(file, fileName,uuid);
       }
       if (fileType == 'audio') {
         file = await FilePicker.getFile(type: FileType.audio);
@@ -434,7 +440,7 @@ class EditCustomerProfileState extends State<EditCustomerProfile> {
         setState(() {
           fileName = uuid + p.extension(file.path);
         });
-        futureFileUrl = uploadFile(file, fileName);
+        futureFileUrl = uploadFile(file, fileName,uuid);
       }
       if (fileType == 'video') {
         file = await FilePicker.getFile(type: FileType.video);
@@ -442,7 +448,7 @@ class EditCustomerProfileState extends State<EditCustomerProfile> {
         setState(() {
           fileName = uuid + p.extension(file.path);
         });
-        futureFileUrl = uploadFile(file, fileName);
+        futureFileUrl = uploadFile(file, fileName,uuid);
       }
       if (fileType == 'pdf') {
         file = await FilePicker.getFile(
@@ -451,7 +457,7 @@ class EditCustomerProfileState extends State<EditCustomerProfile> {
         setState(() {
           fileName = uuid + p.extension(file.path);
         });
-        futureFileUrl = uploadFile(file, fileName);
+        futureFileUrl = uploadFile(file, fileName,uuid);
       }
       if (fileType == 'others') {
         file = await FilePicker.getFile(type: FileType.any);
@@ -459,7 +465,7 @@ class EditCustomerProfileState extends State<EditCustomerProfile> {
         setState(() {
           fileName = uuid + p.extension(file.path);
         });
-        futureFileUrl = uploadFile(file, fileName);
+        futureFileUrl = uploadFile(file, fileName,uuid);
       }
     } on Exception catch (e) {
       print(e.toString());
@@ -468,8 +474,11 @@ class EditCustomerProfileState extends State<EditCustomerProfile> {
     return futureFileUrl;
   }
 
-  Future<String> uploadFile(File file, String filename) async {
-    print(fileType);
+  Future<String> uploadFile(File file, String filename, String uuid) async {
+
+    MySharedPreferences.setBooleanValue("isUploadRunning", true);
+
+    print("file type = $fileType");
 
     StorageReference storageReference;
     if (fileType == 'image') {
@@ -491,9 +500,44 @@ class EditCustomerProfileState extends State<EditCustomerProfile> {
       storageReference =
           FirebaseStorage.instance.ref().child("others/$filename");
     }
+
     final StorageUploadTask uploadTask = storageReference.putFile(file);
+
+    StreamSubscription<StorageTaskEvent> streamSubscription;
+
+    if (fileType == 'video') {
+      file.length().then((val) {
+        print("file lenght = $val");
+
+        streamSubscription = uploadTask.events.listen((event) {
+          print('bytesTransferred = ${event.snapshot.bytesTransferred}');
+          DocumentReference dr = Firestore.instance
+              .collection('userInfoList')
+              .document(uid)
+              .collection("videoThumbnailUrlList")
+              .document(uuid);
+
+          double x = (event.snapshot.bytesTransferred / val) * 100;
+
+          dr.get().then((doc) {
+            if (doc.exists) {
+              dr.updateData({'progress': x.round()});
+              if (x.round() == 100) {
+                MySharedPreferences.setBooleanValue("isUploadRunning", false);
+              }
+            }
+          });
+        });
+      });
+    }
+
     final StorageTaskSnapshot downloadUrl = (await uploadTask.onComplete);
     final String url = (await downloadUrl.ref.getDownloadURL());
+
+    if (streamSubscription != null) {
+      streamSubscription.cancel();
+    }
+
     return url;
   }
 
@@ -516,103 +560,149 @@ class EditCustomerProfileState extends State<EditCustomerProfile> {
               borderRadius: new BorderRadius.circular(8.0),
               side: BorderSide(color: Colors.red)),
           onPressed: () {
+
+
             // upload video
-            if (ft == "vd") {
+            MySharedPreferences.getBooleanValue("isUploadRunning")
+                .then((isUploadRunning) {
+              print("on pressed => is upload running = $isUploadRunning");
 
-              showAlertDialog(context, "Video uploading please wait...!");
+              if (isUploadRunning) {
+                Fluttertoast.showToast(
+                    msg: "Video/Image upload running, please wait!");
+              } else {
+                if (ft == "vd") {
+                  CollectionReference cr = Firestore.instance
+                      .collection('userInfoList')
+                      .document(uid)
+                      .collection("videoThumbnailUrlList");
 
-              CollectionReference cr = Firestore.instance
-                  .collection('userInfoList')
-                  .document(uid)
-                  .collection("videoThumbnailUrlList");
+                  cr.getDocuments().then((im) {
+                    if (im.documents.length > 4) {
+                      Fluttertoast.showToast(
+                          msg: "Video uploading limit has been finished!");
+                    } else {
+                      String uuid = new Uuid().v1();
 
-              cr.getDocuments().then((im) {
-                if (im.documents.length > 4) {
-                  Fluttertoast.showToast(
-                      msg: "Video uploading limit has been finished!");
-                } else {
-                  String uuid = new Uuid().v1();
-                  // get video from device
-                  FilePicker.getFile(type: FileType.video).then((pickedFile) {
-                    // upload the video
-                    setState(() {
-                      fileType = 'video';
-                    });
+                      // step 1. pick video from device
+                      FilePicker.getFile(type: FileType.video)
+                          .then((pickedFile) {
+                        if (pickedFile != null) {
+                          String vdName = uuid + p.extension(pickedFile.path);
 
-                    String vdName = uuid + p.extension(pickedFile.path);
-
-                    uploadFile(pickedFile, vdName).then((vdUrl) {
-                      // get thumbnail img
-                      // form video url
-                      VideoThumbnail.thumbnailFile(
-                          video: vdUrl,
-                          thumbnailPath: tempDir,
-                          imageFormat: format,
-                          maxHeight: maxHeight,
-                          maxWidth: maxWidth,
-                          quality: quality)
-                          .then((thmImg) {
-                        setState(() {
-                          fileType = 'image';
-                        });
-
-                        File thmFile = new File(thmImg);
-                        String thmName = uuid + p.extension(thmFile.path);
-                        // upload thumbnail img
-                        uploadFile(File(thmImg), thmName).then((thmUrl) {
+                          // step 2. set data in fireStore
                           cr.document(uuid).setData({
                             'uuid': uuid,
                             'videoPath': "videos/" + vdName,
-                            'videoUrl': vdUrl,
-                            'thmUrl': thmUrl,
-                            'thmPath': "images/" + thmName,
+                            'videoUrl': null,
+                            'progress': null,
+                            'thmUrl': null,
+                            'thmPath': null,
+                            'timeStamp' : DateTime.now().millisecondsSinceEpoch
+                          }).then((data) {
+                            // step 3. extract thumbnail from video
+                            VideoThumbnail.thumbnailFile(
+                                video: pickedFile.path,
+                                thumbnailPath: tempDir,
+                                imageFormat: format,
+                                maxWidth: maxWidth,
+                                maxHeight: maxHeight,
+                                quality: quality)
+                                .then((thmImg) {
+                              setState(() {
+                                fileType = 'image';
+                              });
+
+                              File thmFile = new File(thmImg);
+                              String thmName = uuid + p.extension(thmFile.path);
+
+                              // step 4. upload thumbnail to storage
+                              uploadFile(File(thmImg), thmName, uuid)
+                                  .then((thmUrl) {
+                                // step 5. update doc by thm url and thm name
+                                cr.document(uuid).updateData({
+                                  'thmUrl': thmUrl,
+                                  'thmPath': "images/" + thmName,
+                                }).then((val) {
+                                  print("thm uploaded. video upload started");
+
+                                  // step 6. compress video
+                                  flutterVideoCompress
+                                      .compressVideo(pickedFile.path,
+                                      quality: VideoQuality.HighestQuality,
+                                      deleteOrigin: false)
+                                      .then((compressVideo) {
+                                    print(
+                                        "compressed file = ${compressVideo.path}");
+
+                                    setState(() {
+                                      fileType = 'video';
+                                    });
+
+                                    // step 6. upload video
+                                    uploadFile(compressVideo.file, vdName, uuid)
+                                        .then((vdUrl) {
+                                      // step 7. update doc by video url
+                                      cr.document(uuid).get().then((val) {
+                                        if (val.exists) {
+                                          cr
+                                              .document(uuid)
+                                              .updateData({'videoUrl': vdUrl});
+                                          print("Video upload successful");
+                                        }
+                                      });
+                                    });
+                                  });
+                                });
+                              });
+                            });
                           });
-                          print("Time to close loading");
-                          Navigator.of(context, rootNavigator: true).pop();
-                        });
+                        } else {
+                          Fluttertoast.showToast(
+                              msg: "No file has been selected!");
+                        }
+
+                        print(pickedFile);
                       });
-                    });
+                    }
                   });
-                }
-              });
 
-              // upload image
-            } else {
-
-              setState(() {
-                fileType = 'image';
-              });
-
-              CollectionReference cr = Firestore.instance
-                  .collection('userInfoList')
-                  .document(uid)
-                  .collection("imageUrlList");
-
-              cr.getDocuments().then((im) {
-                if (im.documents.length > 8) {
-                  Fluttertoast.showToast(
-                      msg:
-                      "Image uploading limit has been finished!");
+                  // upload image
                 } else {
+                  setState(() {
+                    fileType = 'image';
+                  });
 
-                  showAlertDialog(
-                      context, "Image uploading please wait...!");
+                  CollectionReference cr = Firestore.instance
+                      .collection('userInfoList')
+                      .document(uid)
+                      .collection("imageUrlList");
 
-                  String uuid = new Uuid().v1();
+                  cr.getDocuments().then((im) {
+                    if (im.documents.length > 8) {
+                      Fluttertoast.showToast(
+                          msg: "Image uploading limit has been finished!");
+                    } else {
+                      showAlertDialog(
+                          context, "Image uploading please wait...!");
 
-                  pickFile(context, uuid).then((imUrl) {
-                    cr.document(uuid).setData({
-                      'uuid': uuid,
-                      'path': "images/" + fileName,
-                      'imageUrl': imUrl,
-                    });
-                    print("Time to close loading");
-                    Navigator.of(context, rootNavigator: true).pop();
+                      String uuid = new Uuid().v1();
+
+                      pickFile(context, uuid).then((imUrl) {
+                        cr.document(uuid).setData({
+                          'uuid': uuid,
+                          'path': "images/" + fileName,
+                          'imageUrl': imUrl,
+                        });
+                        print("Time to close loading");
+                        Navigator.of(context, rootNavigator: true).pop();
+                      });
+                    }
                   });
                 }
-              });
+              }
+            });
 
-            }
           },
         ),
       );
@@ -630,65 +720,119 @@ class EditCustomerProfileState extends State<EditCustomerProfile> {
       }
 
       return Card(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Image.network(imgUrl, fit: BoxFit.cover),
-            ButtonBar(
-              buttonHeight: 10.0,
-              children: <Widget>[
-                FlatButton(
-                  child: Icon(Icons.delete),
-                  onPressed: () {
-
-                    showAlertDialog(context, alertMsg);
-
-                    if (ft == "vd") {
-                      FirebaseStorage.instance
-                          .ref()
-                          .child(document['videoPath'])
-                          .delete()
-                          .then((v) {
-                        FirebaseStorage.instance
-                            .ref()
-                            .child(document['thmPath'])
-                            .delete()
-                            .then((t) {
-                          Firestore.instance
-                              .collection('userInfoList')
-                              .document(uid)
-                              .collection(collectionName)
-                              .document(document['uuid'])
-                              .delete()
-                              .then((du) {
-                            Navigator.of(context, rootNavigator: true).pop();
-                          });
-                        });
-                      });
-                    } else {
-                      FirebaseStorage.instance
-                          .ref()
-                          .child(document['path'])
-                          .delete()
-                          .then((df) {
-                        Firestore.instance
-                            .collection('userInfoList')
-                            .document(uid)
-                            .collection(collectionName)
-                            .document(document['uuid'])
-                            .delete()
-                            .then((du) {
-                          Navigator.of(context, rootNavigator: true).pop();
-                        });
-                      });
-                    }
-
-                  },
-                )
-              ],
-            ),
-          ],
-        ),
+        child: Column(children: <Widget>[
+          Container(
+            margin: EdgeInsets.fromLTRB(0.0, 10.0, 0.0, 10.0),
+            child: Center(
+                child: Visibility(
+                  visible: ft == "vd" && document['videoUrl'] == null,
+                  child: showImageUploadLoader(document),
+                )),
+            height: 300,
+            width: MediaQuery.of(context).size.width - 20.0,
+            decoration: BoxDecoration(
+                image: DecorationImage(
+                    image: getThmImg(imgUrl), fit: BoxFit.cover)),
+          ),
+          Container(
+              decoration: BoxDecoration(
+                border: Border(
+                    top: BorderSide(
+                      color: Colors.grey,
+                      width: 0.5,
+                    )),
+              ),
+              child: ButtonBar(
+                alignment: MainAxisAlignment.spaceBetween,
+                children: <Widget>[
+                  Center(
+                      child: InkWell(
+                        child: Icon(Icons.touch_app, color: Colors.black),
+                        onTap: () {},
+                      )),
+                  Center(
+                      child: InkWell(
+                        child: Icon(Icons.delete, color: Colors.black),
+                        onTap: () {
+                          showAlertDialog(context, alertMsg);
+                          if (ft == "vd") {
+                            FirebaseStorage.instance
+                                .ref()
+                                .child(document['videoPath'])
+                                .getDownloadURL()
+                                .then((url) {
+                              print("url = $url");
+                              FirebaseStorage.instance
+                                  .ref()
+                                  .child(document['videoPath'])
+                                  .delete()
+                                  .then((v) {
+                                FirebaseStorage.instance
+                                    .ref()
+                                    .child(document['thmPath'])
+                                    .delete()
+                                    .then((t) {
+                                  Firestore.instance
+                                      .collection('userInfoList')
+                                      .document(uid)
+                                      .collection(collectionName)
+                                      .document(document['uuid'])
+                                      .delete()
+                                      .then((du) {
+                                    Navigator.of(context, rootNavigator: true)
+                                        .pop();
+                                  });
+                                });
+                              });
+                            }, onError: (err) {
+                              Firestore.instance
+                                  .collection('userInfoList')
+                                  .document(uid)
+                                  .collection(collectionName)
+                                  .document(document['uuid'])
+                                  .delete()
+                                  .then((du) {
+                                Navigator.of(context, rootNavigator: true).pop();
+                              });
+                            });
+                          } else {
+                            FirebaseStorage.instance
+                                .ref()
+                                .child(document['path'])
+                                .getDownloadURL()
+                                .then((url) {
+                              FirebaseStorage.instance
+                                  .ref()
+                                  .child(document['path'])
+                                  .delete()
+                                  .then((df) {
+                                Firestore.instance
+                                    .collection('userInfoList')
+                                    .document(uid)
+                                    .collection(collectionName)
+                                    .document(document['uuid'])
+                                    .delete()
+                                    .then((du) {
+                                  Navigator.of(context, rootNavigator: true).pop();
+                                });
+                              });
+                            }, onError: (err) {
+                              Firestore.instance
+                                  .collection('userInfoList')
+                                  .document(uid)
+                                  .collection(collectionName)
+                                  .document(document['uuid'])
+                                  .delete()
+                                  .then((du) {
+                                Navigator.of(context, rootNavigator: true).pop();
+                              });
+                            });
+                          }
+                        },
+                      ))
+                ],
+              ))
+        ])
       );
     }
   }
@@ -723,6 +867,58 @@ class EditCustomerProfileState extends State<EditCustomerProfile> {
     hashTag = hashTag + displayNameTECtl.text.toString() + email;
     hashTag = hashTag.replaceAll(' ', '');
     return hashTag;
+  }
+
+  String getProgress(document) {
+    if (document['progress'] == null) {
+      return "0%";
+    } else {
+      return document['progress'].toString() + "%";
+    }
+  }
+
+  getPercent(document) {
+    if (document['progress'] == null) {
+      print("progress = ${document['progress']}");
+
+      return 0.0;
+    } else {
+      return document['progress'] / 100;
+    }
+  }
+
+  getThmImg(String imgUrl) {
+
+    if (imgUrl == null) {
+
+      return AssetImage("assets/images/vid_tmp_img.jpg");
+
+    }else {
+
+      print("image url = $imgUrl");
+      return NetworkImage(imgUrl);
+
+    }
+
+  }
+
+  showImageUploadLoader(document) {
+
+    if(document['progress'] == null){
+
+      return CircularProgressIndicator();
+
+    }else {
+      return CircularPercentIndicator(
+        radius: 50.0,
+        lineWidth: 5.0,
+        percent: getPercent(document),
+        center: new Text(getProgress(document),
+            style: TextStyle(color: Colors.white)),
+        progressColor: Colors.green,
+      );
+    }
+
   }
 
 }

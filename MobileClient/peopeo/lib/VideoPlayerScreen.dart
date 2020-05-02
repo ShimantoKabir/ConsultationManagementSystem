@@ -38,7 +38,45 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Video Player'),
+        iconTheme: IconThemeData(color: Colors.black),
+        backgroundColor: Colors.white,
+        title: new Text(
+            'Video',
+            style: TextStyle(
+                color: Colors.black,
+                fontFamily: 'Armata',
+                fontWeight: FontWeight.bold)
+        ),
+        centerTitle: true,
+        actions: <Widget>[
+          Padding(
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(5.0, 0.0, 5.0, 0.0),
+              margin: const EdgeInsets.all(10.0),
+              decoration: BoxDecoration(
+                  border: Border.all(color: Colors.black),
+                  borderRadius: BorderRadius.all(Radius.circular(5.0) //
+                  )),
+              child: Center(
+                child: InkWell(
+                  child: Icon(
+                    controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
+                  ),
+                  onTap: (){
+                    setState(() {
+                      if (controller.value.isPlaying) {
+                        controller.pause();
+                      } else {
+                        controller.play();
+                      }
+                    });
+                  },
+                )
+              ),
+            ),
+            padding: EdgeInsets.all(5.0),
+          )
+        ],
       ),
       body: Center(
         child: FutureBuilder(
@@ -54,21 +92,7 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen> {
             }
           },
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          setState(() {
-            if (controller.value.isPlaying) {
-              controller.pause();
-            } else {
-              controller.play();
-            }
-          });
-        },
-        child: Icon(
-          controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
-        ),
-      ),
+      )
     );
   }
 }

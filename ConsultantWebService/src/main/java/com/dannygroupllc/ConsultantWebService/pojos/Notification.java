@@ -9,15 +9,15 @@ public class Notification {
     public Integer seenStatus;
     public String startTime;
     public String endTime;
-    public String timeStamp;
+    public Long timeStamp;
 
     public Notification() {}
 
-    public String getTimeStamp() {
+    public Long getTimeStamp() {
         return timeStamp;
     }
 
-    public void setTimeStamp(String timeStamp) {
+    public void setTimeStamp(Long timeStamp) {
         this.timeStamp = timeStamp;
     }
 

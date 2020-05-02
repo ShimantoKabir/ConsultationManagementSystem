@@ -18,7 +18,6 @@ import 'package:peopeo/MySharedPreferences.dart';
 import 'package:peopeo/Plan.dart';
 import 'package:peopeo/SocialSignIn.dart';
 import 'package:peopeo/VideoPlayerScreen.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class ConsultantProfile extends StatefulWidget {
   final String uid;
@@ -27,6 +26,7 @@ class ConsultantProfile extends StatefulWidget {
 
   @override
   ConsultantProfileState createState() => new ConsultantProfileState(uid: uid);
+
 }
 
 class ConsultantProfileState extends State<ConsultantProfile>
@@ -42,6 +42,7 @@ class ConsultantProfileState extends State<ConsultantProfile>
 
   @override
   void initState() {
+
     tabList.add(Tab(icon: Icon(Icons.camera)));
     tabList.add(Tab(icon: Icon(Icons.video_library)));
     tabList.add(Tab(icon: Icon(Icons.comment)));
@@ -88,7 +89,6 @@ class ConsultantProfileState extends State<ConsultantProfile>
                 child: Center(
                     child: InkWell(
                         onTap: () async {
-
                           showDialog(
                             context: context,
                             builder: (context) => new AlertDialog(
@@ -113,7 +113,8 @@ class ConsultantProfileState extends State<ConsultantProfile>
                                             color: Colors.black,
                                             fontFamily: 'Armata',
                                             fontWeight: FontWeight.bold)),
-                                    onPressed: () => Navigator.of(context).pop(false)),
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(false)),
                                 FlatButton(
                                     child: Text('Yes',
                                         style: TextStyle(
@@ -121,14 +122,11 @@ class ConsultantProfileState extends State<ConsultantProfile>
                                             fontFamily: 'Armata',
                                             fontWeight: FontWeight.bold)),
                                     onPressed: () {
-
                                       logOut();
-
                                     })
                               ],
                             ),
                           );
-
                         },
                         child: FaIcon(FontAwesomeIcons.signOutAlt))))
           ]),
@@ -154,16 +152,30 @@ class ConsultantProfileState extends State<ConsultantProfile>
                         padding: const EdgeInsets.all(5.0),
                         child: Row(
                           children: <Widget>[
-                            Container(
-                              height: 100.0,
-                              width: 100.0,
-                              decoration: new BoxDecoration(
-                                shape: BoxShape.circle,
-                                image: new DecorationImage(
-                                    fit: BoxFit.fill,
-                                    image: new NetworkImage(snapshot
-                                        .data.documents[0]['photoUrl'])),
+                            InkWell(
+                              child: Container(
+                                height: 100.0,
+                                width: 100.0,
+                                decoration: new BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  image: new DecorationImage(
+                                      fit: BoxFit.cover,
+                                      image: new NetworkImage(snapshot
+                                          .data.documents[0]['photoUrl'])),
+                                ),
                               ),
+                              onTap: (){
+
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) {
+                                      return FullPhoto(url: snapshot.data
+                                          .documents[0]['photoUrl']);
+                                    },
+                                  ),
+                                );
+
+                              },
                             ),
                             Expanded(
                               child: Column(
@@ -187,21 +199,26 @@ class ConsultantProfileState extends State<ConsultantProfile>
                                                 .snapshots(),
                                             builder: (context, snapshot) {
                                               if (snapshot.hasData) {
-                                                if (snapshot.data.documents.length == 1) {
+                                                if (snapshot.data.documents
+                                                        .length ==
+                                                    1) {
                                                   return Text(
-                                                      snapshot.data.documents.length
-                                                          .toString() +
+                                                      snapshot.data.documents
+                                                              .length
+                                                              .toString() +
                                                           " Likes",
                                                       style: TextStyle(
                                                         fontSize: 12.0,
-                                                        fontWeight: FontWeight.w600,
+                                                        fontWeight:
+                                                            FontWeight.w600,
                                                         fontFamily: 'Armata',
                                                       ));
                                                 } else {
                                                   return Text('0 Like',
                                                       style: TextStyle(
                                                         fontSize: 12.0,
-                                                        fontWeight: FontWeight.w600,
+                                                        fontWeight:
+                                                            FontWeight.w600,
                                                         fontFamily: 'Armata',
                                                       ));
                                                 }
@@ -209,7 +226,8 @@ class ConsultantProfileState extends State<ConsultantProfile>
                                                 return Text('0 Like',
                                                     style: TextStyle(
                                                       fontSize: 12.0,
-                                                      fontWeight: FontWeight.w600,
+                                                      fontWeight:
+                                                          FontWeight.w600,
                                                       fontFamily: 'Armata',
                                                     ));
                                               }
@@ -256,12 +274,26 @@ class ConsultantProfileState extends State<ConsultantProfile>
                                               new BorderRadius.circular(8.0),
                                           side: BorderSide(color: Colors.red)),
                                       onPressed: () async {
-                                        getTimeZone().then((tz) {
-                                          reloadAuth(uid, tz);
-                                        }).catchError((er) {
-                                          print("Time zone error $er");
-                                          Fluttertoast.showToast(
-                                              msg: "Can't fetch time zone!");
+                                        MySharedPreferences.getIntegerValue(
+                                                "userType")
+                                            .then((userType) {
+                                          print("user type = $userType");
+
+                                          if (userType == 2) {
+                                            Fluttertoast.showToast(
+                                                msg:
+                                                    "Because of you are a expert you can't see another expert calander!");
+                                          } else {
+                                            getTimeZone().then((tz) {
+                                              reloadAuth(uid, tz);
+                                            }).catchError((er) {
+                                              print("Time zone error $er");
+                                              Fluttertoast.showToast(
+                                                  msg:
+                                                      "Can't fetch time zone!");
+                                            });
+                                          }
+                                          ;
                                         });
                                       },
                                       color: Colors.red,
@@ -513,11 +545,10 @@ class ConsultantProfileState extends State<ConsultantProfile>
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (context) {
-            return MyFlutterWebView(title: "Calender",url: calenderUrl);
+            return MyFlutterWebView(title: "Calender", url: calenderUrl);
           },
         ),
       );
-
     } else {
       throw Exception('Failed to load browser');
     }
@@ -548,7 +579,9 @@ class ConsultantProfileState extends State<ConsultantProfile>
               Padding(
                 padding: EdgeInsets.all(15.0),
                 child: Center(
-                  child: Text(msgName),
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                  ),
                 ),
               )
             ],
@@ -610,7 +643,15 @@ class ConsultantProfileState extends State<ConsultantProfile>
             );
           }
         },
-        child: Image.network(imgUrl, fit: BoxFit.cover));
+        child: Container(
+          child: Center(child: Icon(Icons.touch_app, color: Colors.white)),
+          decoration: BoxDecoration(
+              image: DecorationImage(
+                  image: (imgUrl == null)
+                      ? AssetImage("assets/images/vid_tmp_img.jpg")
+                      : NetworkImage(imgUrl),
+                  fit: BoxFit.cover)),
+        ));
   }
 
   getTotalLike(document) {

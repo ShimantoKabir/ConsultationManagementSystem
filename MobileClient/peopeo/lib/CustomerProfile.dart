@@ -448,9 +448,14 @@ class CustomerProfileState extends State<CustomerProfile>
             );
           }
         },
-        child: Image.network(
-            imgUrl,
-            fit:BoxFit.cover
+        child: Container(
+          child: Center(child: Icon(Icons.touch_app,color: Colors.white)),
+          decoration: BoxDecoration(
+              image: DecorationImage(
+                  image: (imgUrl == null) ? AssetImage("assets/images/vid_tmp_img.jpg") : NetworkImage(imgUrl),
+                  fit: BoxFit.cover
+              )
+          ),
         ));
   }
 

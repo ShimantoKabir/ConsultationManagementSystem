@@ -5,6 +5,8 @@ class HttpResponse {
   final String msg;
   final String aid;
   final String uid;
+  final String conUid;
+  final String cusUid;
   final String clientToken;
   final List<Plan> planList;
 
@@ -13,6 +15,8 @@ class HttpResponse {
       this.msg,
       this.aid,
       this.uid,
+      this.conUid,
+      this.cusUid,
       this.clientToken,
       this.planList});
 
@@ -26,6 +30,8 @@ class HttpResponse {
         msg: json['msg'],
         aid: json['aid'],
         uid: json['uid'],
+        conUid: json['conUid'],
+        cusUid: json['cusUid'],
         clientToken: json['clientToken'],
         planList: planList);
   }

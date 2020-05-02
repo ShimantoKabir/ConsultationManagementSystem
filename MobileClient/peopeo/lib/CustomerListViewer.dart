@@ -33,7 +33,7 @@ class CustomerListViewerState extends State<CustomerListViewer> {
       appBar: new AppBar(
         iconTheme: IconThemeData(color: Colors.black),
         backgroundColor: Colors.white,
-        title: new Text('Customers',
+        title: new Text('Like',
             style: TextStyle(
                 color: Colors.black,
                 fontFamily: 'Armata',
@@ -41,11 +41,7 @@ class CustomerListViewerState extends State<CustomerListViewer> {
         centerTitle: true,
       ),
       body: Container(
-        child: ListView.builder(
-          itemBuilder: (context, index) =>
-              buildItem(context, customerList[index], uid),
-          itemCount: customerList.length,
-        ),
+        child: showCustomerList(),
       ),
     );
   }
@@ -268,7 +264,7 @@ class CustomerListViewerState extends State<CustomerListViewer> {
         'uid' : document['uid'],
         'seenStatus' : 0,
         'invitationSenderUid' : uid,
-        'timeStamp' : DateTime.now().millisecondsSinceEpoch.toString()
+        'timeStamp' : DateTime.now().millisecondsSinceEpoch
       }).then((res){
 
         Navigator.of(context, rootNavigator: true).pop();
@@ -300,6 +296,30 @@ class CustomerListViewerState extends State<CustomerListViewer> {
         return alert;
       },
     );
+  }
+
+  showCustomerList() {
+
+    if(customerList.length>0){
+
+      return ListView.builder(
+        itemBuilder: (context, index) =>
+            buildItem(context, customerList[index], uid),
+        itemCount: customerList.length,
+      );
+
+    }else {
+
+      return Center(
+        child: Text("[No customer like you yet]",
+            style: TextStyle(
+                color: Colors.red,
+                fontFamily: 'Armata',
+                fontWeight: FontWeight.bold)),
+      );
+
+    }
+
   }
 
 }

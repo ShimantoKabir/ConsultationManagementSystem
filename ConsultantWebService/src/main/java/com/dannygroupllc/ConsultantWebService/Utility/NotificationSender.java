@@ -32,7 +32,7 @@ public class NotificationSender {
                 notification.setBody(n.getBody());
                 notification.setStartTime(n.getStartTime());
                 notification.setEndTime(n.getEndTime());
-                notification.setTimeStamp(Long.toString(System.currentTimeMillis()));
+                notification.setTimeStamp(System.currentTimeMillis());
 
                 db.collection("notificationList").add(notification);
 

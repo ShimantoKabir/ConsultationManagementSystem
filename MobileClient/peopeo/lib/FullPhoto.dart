@@ -11,13 +11,13 @@ class FullPhoto extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return new Scaffold(
-      appBar: new AppBar(
+      appBar: AppBar(
         iconTheme: IconThemeData(color: Colors.black),
         backgroundColor: Colors.white,
         title: new Text(
-          'Image Viewer',
+          'Picture',
             style: TextStyle(
-                color: Colors.white,
+                color: Colors.black,
                 fontFamily: 'Armata',
                 fontWeight: FontWeight.bold)
         ),

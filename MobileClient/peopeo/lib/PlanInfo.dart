@@ -99,6 +99,7 @@ class PlanInfoState extends State<PlanInfo> {
                                     fontFamily: 'Armata',
                                     fontSize: 15.0,
                                     fontWeight: FontWeight.bold)),
+                            getPeerDisplayName(snapshot.data[index]),
                             Text(
                                 "Start Time " + st.substring(11,st.length),
                                 style: TextStyle(
@@ -462,6 +463,34 @@ class PlanInfoState extends State<PlanInfo> {
     } else {
       throw Exception('Failed to load post');
     }
+  }
+
+  getPeerDisplayName(Plan data) {
+
+    String uid;
+    String head;
+
+    if(userType == 1){
+      uid = data.conUid;
+      head = "Expert";
+    }else {
+      uid = data.cusUid;
+      head = "Customer";
+    }
+
+    print("Peer id $uid");
+
+    return FutureBuilder(
+      future: Firestore.instance.collection("userInfoList").document(uid).get(),
+      builder: (BuildContext context, AsyncSnapshot<DocumentSnapshot> snapshot) {
+        if(snapshot.hasData){
+          return Text("$head [${snapshot.data.data['displayName']}]");
+        }else {
+          return Text("$head [Not found]");
+        }
+      }
+    );
+
   }
 
 }

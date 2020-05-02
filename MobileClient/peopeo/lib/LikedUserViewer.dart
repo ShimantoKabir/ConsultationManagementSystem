@@ -18,21 +18,23 @@ import 'MySharedPreferences.dart';
 class LikedUserViewer extends StatefulWidget {
   final List<Map<String, dynamic>> likedUserIdList;
   final String uid;
+  final int userType;
 
-  LikedUserViewer({Key key, @required this.uid, @required this.likedUserIdList})
+  LikedUserViewer({Key key, @required this.uid, @required this.likedUserIdList, @required this.userType})
       : super(key: key);
 
   @override
   LikedUserViewerState createState() =>
-      new LikedUserViewerState(uid: uid, likedUserIdList: likedUserIdList);
+      new LikedUserViewerState(uid: uid, likedUserIdList: likedUserIdList,userType : userType);
 }
 
 class LikedUserViewerState extends State<LikedUserViewer> {
   LikedUserViewerState(
-      {Key key, @required this.uid, @required this.likedUserIdList});
+      {Key key, @required this.uid, @required this.likedUserIdList, @required this.userType});
 
   List<Map<String, dynamic>> likedUserIdList;
   String uid;
+  int userType;
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +43,7 @@ class LikedUserViewerState extends State<LikedUserViewer> {
       appBar: new AppBar(
         iconTheme: IconThemeData(color: Colors.black),
         backgroundColor: Colors.white,
-        title: new Text('like',
+        title: new Text('Like',
             style: TextStyle(
                 color: Colors.black,
                 fontFamily: 'Armata',
@@ -49,12 +51,8 @@ class LikedUserViewerState extends State<LikedUserViewer> {
         centerTitle: true,
       ),
       body: Container(
-        child: ListView.builder(
-          itemBuilder: (context, index) =>
-              buildItem(context, likedUserIdList[index], uid),
-          itemCount: likedUserIdList.length,
-        ),
-      ),
+        child: showLikedUser(),
+      )
     );
   }
 
@@ -86,8 +84,6 @@ class LikedUserViewerState extends State<LikedUserViewer> {
                   IconButton(
                     icon: Icon(Icons.message, color: Colors.red),
                     onPressed: () {
-
-
 
                     },
                   )
@@ -467,6 +463,30 @@ class LikedUserViewerState extends State<LikedUserViewer> {
             fontFamily: 'Armata',
           ));
     }
+  }
+
+  showLikedUser() {
+
+    if(likedUserIdList.length > 0){
+
+      return ListView.builder(
+        itemBuilder: (context, index) =>
+            buildItem(context, likedUserIdList[index], uid),
+        itemCount: likedUserIdList.length,
+      );
+
+    }else {
+
+      return Center(
+        child: Text("[You didn't like any expert yet]",
+            style: TextStyle(
+                color: Colors.red,
+                fontFamily: 'Armata',
+                fontWeight: FontWeight.bold)),
+      );
+
+    }
+
   }
 
 }

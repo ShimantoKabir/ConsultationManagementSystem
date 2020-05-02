@@ -5,7 +5,9 @@ import 'package:peopeo/ConsultantProfile.dart';
 
 class NotificationViewer extends StatefulWidget {
   final String uid;
+
   NotificationViewer({Key key, @required this.uid}) : super(key: key);
+
   @override
   NotificationViewerState createState() =>
       new NotificationViewerState(uid: uid);
@@ -33,27 +35,67 @@ class NotificationViewerState extends State<NotificationViewer> {
         body: StreamBuilder(
             stream: Firestore.instance
                 .collection('notificationList')
-                .where('uid',isEqualTo: uid)
+                .where('uid', isEqualTo: uid)
                 .limit(20)
                 .snapshots(),
-            builder: (context, snapshot) {
+            builder:
+                (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
               if (snapshot.hasData) {
 
-                return ListView.builder(
-                  itemBuilder: (context, index) =>
-                      buildItem(context, snapshot.data.documents[index]),
-                  itemCount: snapshot.data.documents.length,
-                );
+                List<Map<String, dynamic>> nList = [];
+
+                snapshot.data.documents.forEach((f) {
+                  nList.add({
+                    'title' : f['title'],
+                    'fcmRegistrationToken' : f['fcmRegistrationToken'],
+                    'uid' : f['uid'],
+                    'body' : f['body'],
+                    'invitationSenderUid' : f['invitationSenderUid'],
+                    'seenStatus' : f['seenStatus'],
+                    'timeStamp' : f['timeStamp'],
+                    'docId' : f.documentID
+                  });
+                });
+
+                Comparator<Map<String, dynamic>> x =
+                    (b, a) => a['timeStamp'].compareTo(b['timeStamp']);
+
+                nList.sort(x);
+
+                nList.forEach((f) {
+                  print("timeStamp = ${f['timeStamp']}, title = ${f['title']}");
+                });
+
+                if(nList.length > 0){
+                  return ListView.builder(
+                    itemBuilder: (context, index) =>
+                        buildItem(context, nList[index]),
+                    itemCount: nList.length,
+                  );
+                }else {
+
+                  return Center(
+                    child: Text("[No message found]",
+                        style: TextStyle(
+                        color: Colors.red,
+                        fontFamily: 'Armata',
+                        fontWeight: FontWeight.bold)),
+                  );
+
+                }
+
+
               } else {
                 return Center(
-                  child: Text("No Notification found!"),
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                  ),
                 );
               }
             }));
   }
 
   buildItem(BuildContext context, document) {
-
     return Card(
       color: document['seenStatus'] == 1 ? Colors.white : Colors.white30,
       child: ListTile(
@@ -69,7 +111,6 @@ class NotificationViewerState extends State<NotificationViewer> {
               visible: document['invitationSenderUid'] != null,
               child: OutlineButton(
                 onPressed: () async {
-
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -78,7 +119,6 @@ class NotificationViewerState extends State<NotificationViewer> {
                       },
                     ),
                   );
-
                 },
                 child: Text("See My Profile".toUpperCase(),
                     style: TextStyle(fontSize: 14)),
@@ -91,7 +131,7 @@ class NotificationViewerState extends State<NotificationViewer> {
         onTap: () {
           Firestore.instance
               .collection('notificationList')
-              .document(document.documentID)
+              .document(document['docId'])
               .updateData({"seenStatus": 1});
         },
       ),
@@ -99,21 +139,18 @@ class NotificationViewerState extends State<NotificationViewer> {
   }
 
   String getStartTime(document) {
-
-    if(document['startTime'] == null){
+    if (document['startTime'] == null) {
       return document['body'];
-    }else {
+    } else {
       return document['startTime'];
     }
   }
 
   String getEndTime(document) {
-
-    if(document['endTime'] == null){
+    if (document['endTime'] == null) {
       return "";
-    }else {
+    } else {
       return document['endTime'];
     }
-
   }
 }

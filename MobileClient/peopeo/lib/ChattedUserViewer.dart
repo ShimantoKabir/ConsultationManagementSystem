@@ -35,11 +35,7 @@ class ChattedUserViewerState extends State<ChattedUserViewer>{
         centerTitle: true,
       ),
       body: Container(
-        child: ListView.builder(
-          itemBuilder: (context, index) =>
-              buildItem(context, chattedUserIdList[index]),
-          itemCount: chattedUserIdList.length,
-        ),
+        child: showChattedUserList(),
       ),
     );
   }
@@ -105,6 +101,30 @@ class ChattedUserViewerState extends State<ChattedUserViewer>{
             fontFamily: 'Armata',
           ));
     }
+  }
+
+  showChattedUserList() {
+
+    if(chattedUserIdList.length > 0){
+
+      return ListView.builder(
+        itemBuilder: (context, index) =>
+            buildItem(context, chattedUserIdList[index]),
+        itemCount: chattedUserIdList.length,
+      );
+
+    }else {
+
+      return Center(
+        child: Text("[You did't chat any one yet]",
+            style: TextStyle(
+                color: Colors.red,
+                fontFamily: 'Armata',
+                fontWeight: FontWeight.bold)),
+      );
+
+    }
+
   }
 
 }
