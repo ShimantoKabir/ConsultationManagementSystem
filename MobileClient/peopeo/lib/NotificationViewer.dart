@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:peopeo/ConsultantProfile.dart';
 
 class NotificationViewer extends StatefulWidget {
@@ -41,19 +42,18 @@ class NotificationViewerState extends State<NotificationViewer> {
             builder:
                 (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
               if (snapshot.hasData) {
-
                 List<Map<String, dynamic>> nList = [];
 
                 snapshot.data.documents.forEach((f) {
                   nList.add({
-                    'title' : f['title'],
-                    'fcmRegistrationToken' : f['fcmRegistrationToken'],
-                    'uid' : f['uid'],
-                    'body' : f['body'],
-                    'invitationSenderUid' : f['invitationSenderUid'],
-                    'seenStatus' : f['seenStatus'],
-                    'timeStamp' : f['timeStamp'],
-                    'docId' : f.documentID
+                    'title': f['title'],
+                    'fcmRegistrationToken': f['fcmRegistrationToken'],
+                    'uid': f['uid'],
+                    'body': f['body'],
+                    'invitationSenderUid': f['invitationSenderUid'],
+                    'seenStatus': f['seenStatus'],
+                    'timeStamp': f['timeStamp'],
+                    'docId': f.documentID
                   });
                 });
 
@@ -66,25 +66,21 @@ class NotificationViewerState extends State<NotificationViewer> {
                   print("timeStamp = ${f['timeStamp']}, title = ${f['title']}");
                 });
 
-                if(nList.length > 0){
+                if (nList.length > 0) {
                   return ListView.builder(
                     itemBuilder: (context, index) =>
                         buildItem(context, nList[index]),
                     itemCount: nList.length,
                   );
-                }else {
-
+                } else {
                   return Center(
                     child: Text("[No message found]",
                         style: TextStyle(
-                        color: Colors.red,
-                        fontFamily: 'Armata',
-                        fontWeight: FontWeight.bold)),
+                            color: Colors.red,
+                            fontFamily: 'Armata',
+                            fontWeight: FontWeight.bold)),
                   );
-
                 }
-
-
               } else {
                 return Center(
                   child: CircularProgressIndicator(
@@ -115,7 +111,8 @@ class NotificationViewerState extends State<NotificationViewer> {
                     context,
                     MaterialPageRoute(
                       builder: (context) {
-                        return ConsultantProfile(uid: uid);
+                        return ConsultantProfile(
+                            uid: document['invitationSenderUid']);
                       },
                     ),
                   );
@@ -126,7 +123,61 @@ class NotificationViewerState extends State<NotificationViewer> {
             )
           ],
         ),
-        trailing: Icon(Icons.touch_app),
+        trailing: InkWell(
+          child: Icon(Icons.delete),
+          onTap: () {
+            showDialog(
+              context: context,
+              builder: (context) => new AlertDialog(
+                title: new Text('Alert',
+                    style: TextStyle(
+                      fontSize: 18.0,
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Armata',
+                    )),
+                content: new Text('Do you want to delete?',
+                    style: TextStyle(
+                      fontSize: 18.0,
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Armata',
+                    )),
+                actions: <Widget>[
+                  FlatButton(
+                      child: Text('No',
+                          style: TextStyle(
+                              color: Colors.black,
+                              fontFamily: 'Armata',
+                              fontWeight: FontWeight.bold)),
+                      onPressed: () => Navigator.of(context).pop(false)),
+                  FlatButton(
+                      child: Text('Yes',
+                          style: TextStyle(
+                              color: Colors.green,
+                              fontFamily: 'Armata',
+                              fontWeight: FontWeight.bold)),
+                      onPressed: () {
+                        Navigator.of(context).pop(false);
+                        Firestore.instance
+                            .collection('notificationList')
+                            .document(document['docId'])
+                            .delete()
+                            .then((res) {
+                          Fluttertoast.showToast(
+                              msg: "Delete successful!",
+                              toastLength: Toast.LENGTH_LONG);
+                        }).catchError((err) {
+                          Fluttertoast.showToast(
+                              msg: "Delete unsuccessful!",
+                              toastLength: Toast.LENGTH_LONG);
+                        });
+                      })
+                ],
+              ),
+            );
+          },
+        ),
         isThreeLine: true,
         onTap: () {
           Firestore.instance

@@ -406,6 +406,7 @@ class ChatHistoryState extends State<ChatHistory>
   }
 
   Future<bool> onBackPress() {
+
     return showDialog(
           context: context,
           builder: (context) => new AlertDialog(

@@ -70,7 +70,29 @@ public class Plan {
     @Transient
     public Date allowedEndTime;
 
+    @Transient
+    public Boolean isChatDurationOk;
+
+    @Transient
+    public Integer chatDurationMinLimit;
+
     public Plan() {}
+
+    public Integer getChatDurationMinLimit() {
+        return chatDurationMinLimit;
+    }
+
+    public void setChatDurationMinLimit(Integer chatDurationMinLimit) {
+        this.chatDurationMinLimit = chatDurationMinLimit;
+    }
+
+    public Boolean getChatDurationOk() {
+        return isChatDurationOk;
+    }
+
+    public void setChatDurationOk(Boolean chatDurationOk) {
+        isChatDurationOk = chatDurationOk;
+    }
 
     public Boolean getAreCusConHaveChatted() {
         return areCusConHaveChatted;

@@ -25,8 +25,18 @@ public class Calendar {
     public Integer code;
     @Transient
     public String msg;
+    @Transient
+    public String currentDateTime;
 
     public Calendar() {}
+
+    public String getCurrentDateTime() {
+        return currentDateTime;
+    }
+
+    public void setCurrentDateTime(String currentDateTime) {
+        this.currentDateTime = currentDateTime;
+    }
 
     public Plan getPlan() {
         return plan;

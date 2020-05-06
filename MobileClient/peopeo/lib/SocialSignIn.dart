@@ -54,6 +54,7 @@ Future<Response> setUserCredential(
 
   if (authResult.additionalUserInfo.isNewUser) {
 
+    print("new user");
     await prefs.setString('displayName', user.displayName);
     await prefs.setString('photoUrl', user.photoUrl);
 
@@ -71,6 +72,7 @@ Future<Response> setUserCredential(
 
   }else{
 
+    print("old user");
     await prefs.setString('displayName', data['displayName']);
     await prefs.setString('photoUrl', data['photoUrl']);
 
@@ -149,7 +151,7 @@ Future<Response> createCustomerInBrainTree(FirebaseUser user) async {
 }
 
 
-Future<void> logOut() async {
+Future<bool> logOut() async {
 
   SharedPreferences preferences =
       await SharedPreferences.getInstance();
@@ -162,6 +164,6 @@ Future<void> logOut() async {
   await FacebookLogin().logOut();
   await FirebaseAuth.instance.signOut();
 
-  exit(0);
+  return Future.value(true);
 
 }

@@ -15,6 +15,9 @@ import javax.persistence.Query;
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigInteger;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
@@ -42,8 +45,10 @@ public class CalendarDaoImp implements CalendarDao {
 
         try {
 
-            Date curDateTime = new Date();
-            System.out.println(getClass().getName()+".createEvent curDateTime"+curDateTime);
+
+            Date curDateTime = sdf.parse(c.getCurrentDateTime());
+            System.out.println(getClass().getName()+".createEvent cur date time = "+curDateTime);
+            System.out.println(getClass().getName()+".createEvent start time = "+c.getPlan().getStartTime());
 
             // if current date time before plan start time
             if (curDateTime.before(c.getPlan().getStartTime())) {
@@ -86,6 +91,8 @@ public class CalendarDaoImp implements CalendarDao {
                 // check is the event need to create for customer or consultant
                 Plan p = c.getPlan();
 
+                System.out.println(getClass().getName()+".createEvent: is chat duration ok ="+p.getChatDurationOk()+", chat duration limit ="+p.getChatDurationMinLimit());
+
                 // consultant creating his plan
                 if (p.getCusUid() == null) {
 
@@ -124,114 +131,125 @@ public class CalendarDaoImp implements CalendarDao {
 
                     if (curDateTime.before(c.getPlan().getStartTime())) {
 
-                        // check if this customer have an plan with this consultant before
-                        String havingPlanBeforeSql = "SELECT \n" +
-                                "   id \n" +
-                                "FROM\n" +
-                                "  plan \n" +
-                                "WHERE con_uid = :conUid \n" +
-                                "  AND cus_uid = :cusUid \n"+
-                                "  AND are_cus_con_have_chatted IS FALSE";
+                        if(c.getPlan().getChatDurationOk()){
 
-                        Query havingPlanBeforeQry = entityManager.createNativeQuery(havingPlanBeforeSql);
-                        havingPlanBeforeQry.setParameter("conUid", p.getConUid());
-                        havingPlanBeforeQry.setParameter("cusUid", p.getCusUid());
-                        List<Object[]> results = havingPlanBeforeQry.getResultList();
+                            // check if this customer have an plan with this consultant before
+                            String havingPlanBeforeSql = "SELECT \n" +
+                                    "   id \n" +
+                                    "FROM\n" +
+                                    "  plan \n" +
+                                    "WHERE con_uid = :conUid \n" +
+                                    "  AND cus_uid = :cusUid \n"+
+                                    "  AND are_cus_con_have_chatted IS TRUE";
 
-                        System.out.println(getClass().getName()+".createEvent free min res: "+results.size());
-                        Integer freeMinutesForNewCustomer = (results.size() == 0) ? p.getFreeMinutesForNewCustomer() : null;
+                            Query havingPlanBeforeQry = entityManager.createNativeQuery(havingPlanBeforeSql);
+                            havingPlanBeforeQry.setParameter("conUid", p.getConUid());
+                            havingPlanBeforeQry.setParameter("cusUid", p.getCusUid());
+                            List<Object[]> results = havingPlanBeforeQry.getResultList();
 
-                        // check event over lap
-                        Plan planOverLapCheckingData = new Plan();
-                        planOverLapCheckingData.setStartTime(p.getStartTime());
-                        planOverLapCheckingData.setEndTime(p.getEndTime());
-                        planOverLapCheckingData.setConUid(c.getConUid());
-                        planOverLapCheckingData.setCusUid(p.getCusUid());
+                            System.out.println(getClass().getName()+".createEvent free min res: "+results.size());
+                            Integer freeMinutesForNewCustomer = (results.size() >= 1) ? null : p.getFreeMinutesForNewCustomer();
 
-                        Response cusOverLapRes = checkCusPlanOverLap(planOverLapCheckingData);
+                            // check event over lap
+                            Plan planOverLapCheckingData = new Plan();
+                            planOverLapCheckingData.setStartTime(p.getStartTime());
+                            planOverLapCheckingData.setEndTime(p.getEndTime());
+                            planOverLapCheckingData.setConUid(c.getConUid());
+                            planOverLapCheckingData.setCusUid(p.getCusUid());
 
-                        System.out.println(getClass().getName() + ".createEvent cusOverLapRes "
-                                + gson.toJson(cusOverLapRes));
+                            Response cusOverLapRes = checkCusPlanOverLap(planOverLapCheckingData);
 
-                        if (cusOverLapRes.getCode() == 404) {
+                            System.out.println(getClass().getName() + ".createEvent cusOverLapRes "
+                                    + gson.toJson(cusOverLapRes));
 
-                            calendarRes.setCode(404);
+                            if (cusOverLapRes.getCode() == 404) {
 
-                            String msg = "Warning!";
-                            Plan sop = cusOverLapRes.getStartTimeOverLapPlan();
-                            Plan eop = cusOverLapRes.getEndTimeOverLapPlan();
-                            String sopMsg = "";
-                            String eopMsg = "";
+                                calendarRes.setCode(404);
 
-                            if (sop != null){
+                                String msg = "Warning!";
+                                Plan sop = cusOverLapRes.getStartTimeOverLapPlan();
+                                Plan eop = cusOverLapRes.getEndTimeOverLapPlan();
+                                String sopMsg = "";
+                                String eopMsg = "";
 
-                                sopMsg = " Your start time ["+sdf.format(planOverLapCheckingData.getStartTime())+
-                                         "] is conflicting with another schedule with another customer on ["+
-                                         sdf.format(sop.getStartTime())+" to "+sdf.format(sop.getEndTime())+"].";
+                                if (sop != null){
+
+                                    sopMsg = " Your start time ["+sdf.format(planOverLapCheckingData.getStartTime())+
+                                            "] is conflicting with another schedule with another customer on ["+
+                                            sdf.format(sop.getStartTime())+" to "+sdf.format(sop.getEndTime())+"].";
+
+                                }
+
+                                if (eop != null){
+
+                                    eopMsg = " Your end time ["+sdf.format(planOverLapCheckingData.getEndTime())+
+                                            "] is conflicting with another schedule with another customer on ["+
+                                            sdf.format(eop.getStartTime())+" to "+sdf.format(eop.getEndTime())+"].";
+
+                                }
+
+                                calendarRes.setMsg(msg+" "+sopMsg+" "+eopMsg);
+
+                            }else {
+
+                                if (calendarList.size() == 0) {
+
+                                    Calendar calendar = new Calendar();
+                                    calendar.setConUid(c.getConUid());
+                                    calendar.setoId(calOid);
+                                    calendar.setCalendarDate(c.getCalendarDate());
+                                    calendar.setIp(httpServletRequest.getRemoteAddr());
+                                    calendar.setModifiedBy(p.getCusUid());
+                                    entityManager.persist(calendar);
+
+                                }
+
+                                Plan plan = new Plan();
+                                plan.setCalenderOid(calOid);
+                                plan.setConUid(c.getConUid());
+                                plan.setCusUid(p.getCusUid());
+                                plan.setEndTime(p.getEndTime());
+                                plan.setIp(httpServletRequest.getRemoteAddr());
+                                plan.setModifiedBy(p.getCusUid());
+                                plan.setStartTime(p.getStartTime());
+                                plan.setFreeMinutesForNewCustomer(freeMinutesForNewCustomer);
+                                plan.setAcceptByCon(false);
+                                plan.setHourlyRate(p.getHourlyRate());
+                                plan.setTopic(p.getTopic());
+                                plan.setAreCusConHaveChatted(false);
+                                plan.setTimeZone(p.getTimeZone());
+                                entityManager.persist(plan);
+
+                                Notification notification = new Notification();
+                                notification.setUid(c.getConUid());
+                                notification.setTitle("Booking Request");
+
+                                notification.setBody("Topic: " + p.getTopic()+", Start Time: "+
+                                        sdf.format(p.getStartTime())+", End Time: "+
+                                        sdf.format(p.getEndTime()));
+
+                                notification.setStartTime(sdf.format(p.getStartTime()));
+                                notification.setEndTime(sdf.format(p.getEndTime()));
+                                NotificationSender.send(notification);
+
+                                calendarRes.setCode(200);
+                                calendarRes.setMsg("Event created successfully!");
 
                             }
-
-                            if (eop != null){
-
-                                eopMsg = " Your end time ["+sdf.format(planOverLapCheckingData.getEndTime())+
-                                         "] is conflicting with another schedule with another customer on ["+
-                                         sdf.format(eop.getStartTime())+" to "+sdf.format(eop.getEndTime())+"].";
-
-                            }
-
-                            calendarRes.setMsg(msg+" "+sopMsg+" "+eopMsg);
 
                         }else {
 
-                            if (calendarList.size() == 0) {
-
-                                Calendar calendar = new Calendar();
-                                calendar.setConUid(c.getConUid());
-                                calendar.setoId(calOid);
-                                calendar.setCalendarDate(c.getCalendarDate());
-                                calendar.setIp(httpServletRequest.getRemoteAddr());
-                                calendar.setModifiedBy(p.getCusUid());
-                                entityManager.persist(calendar);
-
-                            }
-
-                            Plan plan = new Plan();
-                            plan.setCalenderOid(calOid);
-                            plan.setConUid(c.getConUid());
-                            plan.setCusUid(p.getCusUid());
-                            plan.setEndTime(p.getEndTime());
-                            plan.setIp(httpServletRequest.getRemoteAddr());
-                            plan.setModifiedBy(p.getCusUid());
-                            plan.setStartTime(p.getStartTime());
-                            plan.setFreeMinutesForNewCustomer(freeMinutesForNewCustomer);
-                            plan.setAcceptByCon(false);
-                            plan.setHourlyRate(p.getHourlyRate());
-                            plan.setTopic(p.getTopic());
-                            plan.setAreCusConHaveChatted(false);
-                            plan.setTimeZone(p.getTimeZone());
-                            entityManager.persist(plan);
-
-                            Notification notification = new Notification();
-                            notification.setUid(c.getConUid());
-                            notification.setTitle("Booking Request");
-
-                            notification.setBody("Topic: " + p.getTopic()+", Start Time: "+
-                                    sdf.format(p.getStartTime())+", End Time: "+
-                                    sdf.format(p.getEndTime()));
-
-                            notification.setStartTime(sdf.format(p.getStartTime()));
-                            notification.setEndTime(sdf.format(p.getEndTime()));
-                            NotificationSender.send(notification);
-
-                            calendarRes.setCode(200);
-                            calendarRes.setMsg("Event created successfully!");
+                            calendarRes.setCode(404);
+                            calendarRes.setMsg("Chat duration should be at least "+p.getChatDurationMinLimit()+" minutes!");
 
                         }
 
                     }else {
 
+
                         calendarRes.setCode(404);
                         calendarRes.setMsg("You can create an event after "+sdf.format(curDateTime));
+
 
                     }
 

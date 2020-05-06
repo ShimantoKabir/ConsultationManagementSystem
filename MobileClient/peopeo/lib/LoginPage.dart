@@ -130,7 +130,7 @@ class LoginPageState extends State<LoginPage> {
                     context,
                     MaterialPageRoute(
                       builder: (context) {
-                        return MyHomePage();
+                        return MyApp();
                       },
                     ),
                   );
@@ -139,17 +139,17 @@ class LoginPageState extends State<LoginPage> {
               }).catchError((err) {
                 Navigator.pop(context);
                 Fluttertoast.showToast(
-                    msg: "Sorthing went wrong,Please try again!");
+                    msg: "Something went wrong, please try again!");
               });
             }).catchError((err) {
               Fluttertoast.showToast(
-                  msg: "Sorthing went wrong,Please try again!");
+                  msg: "Something went wrong, please try again!");
             });
           }
         }).catchError((err) {
           print(err);
           Navigator.pop(context);
-          Fluttertoast.showToast(msg: "Sorthing went wrong,Please try again!");
+          Fluttertoast.showToast(msg: "Something went wrong, please try again!");
         });
       },
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -210,7 +210,7 @@ class LoginPageState extends State<LoginPage> {
                     context,
                     MaterialPageRoute(
                       builder: (context) {
-                        return MyHomePage();
+                        return MyApp();
                       },
                     ),
                   );
@@ -218,16 +218,16 @@ class LoginPageState extends State<LoginPage> {
               }).catchError((err) {
                 Navigator.pop(context);
                 Fluttertoast.showToast(
-                    msg: "Sorthing went wrong,Please try again!");
+                    msg: "Something went wrong, please try again!");
               });
             }).catchError((err) {
               Navigator.pop(context);
               Fluttertoast.showToast(
-                  msg: "Sorthing went wrong,Please try again!");
+                  msg: "Something went wrong, please try again!");
             });
           }
         }).catchError((err) {
-          Fluttertoast.showToast(msg: "Sorthing went wrong,Please try again!");
+          Fluttertoast.showToast(msg: "Something went wrong, please try again!");
         });
       },
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -337,22 +337,18 @@ class LoginPageState extends State<LoginPage> {
           context,
           MaterialPageRoute(
             builder: (context) {
-              return MyHomePage();
+              return MyApp();
             },
           ),
         );
       }).catchError((err) {
         Navigator.pop(context);
-        Fluttertoast.showToast(msg: "Sorthing went wrong,Please try again!");
+        Fluttertoast.showToast(msg: "Something went wrong, please try again!");
       });
     }).catchError((err) {
       Navigator.pop(context);
-      Fluttertoast.showToast(msg: "Sorthing went wrong,Please try again!");
+      Fluttertoast.showToast(msg: "Something went wrong, please try again!");
     });
   }
 
-  void lol(Map<String, Object> data) {
-
-
-  }
 }

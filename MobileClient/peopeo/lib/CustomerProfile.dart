@@ -2,14 +2,12 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_facebook_login/flutter_facebook_login.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:peopeo/EditCustomerProfile.dart';
 import 'package:peopeo/HttpResponse.dart';
+import 'package:peopeo/LoginPage.dart';
+import 'package:peopeo/Main.dart';
+import 'package:peopeo/MySharedPreferences.dart';
 import 'package:peopeo/Plan.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -20,7 +18,6 @@ import 'package:peopeo/Const.dart';
 import 'package:peopeo/FullPhoto.dart';
 import 'package:peopeo/SocialSignIn.dart';
 import 'package:peopeo/VideoPlayerScreen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class CustomerProfile extends StatefulWidget {
   final String uid;
@@ -34,6 +31,7 @@ class CustomerProfile extends StatefulWidget {
 class CustomerProfileState extends State<CustomerProfile>
     with TickerProviderStateMixin {
   String uid;
+  bool needToShowEditButton = false;
 
   CustomerProfileState({Key key, @required this.uid});
 
@@ -46,7 +44,26 @@ class CustomerProfileState extends State<CustomerProfile>
     tabList.add(Tab(icon: Icon(Icons.video_library)));
     tabList.add(Tab(icon: Icon(Icons.comment)));
     tabController = new TabController(length: tabList.length, vsync: this);
+
+    MySharedPreferences.getStringValue("uid").then((myUid) {
+      if (myUid == uid) {
+        setState(() {
+          needToShowEditButton = true;
+        });
+      } else {
+        setState(() {
+          needToShowEditButton = false;
+        });
+      }
+    });
+
     super.initState();
+  }
+
+  void redirectLoginPage() {
+    Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => LoginPage()),
+        (Route<dynamic> route) => false);
   }
 
   @override
@@ -71,58 +88,56 @@ class CustomerProfileState extends State<CustomerProfile>
           ),
           actions: <Widget>[
             Padding(
-              padding: EdgeInsets.fromLTRB(0.0, 0.0, 10.0, 0.0),
-              child: Center(
-                  child: InkWell(
-                      onTap: () async {
-
-                        showDialog(
-                          context: context,
-                          builder: (context) => new AlertDialog(
-                            title: new Text('Alert',
-                                style: TextStyle(
-                                  fontSize: 18.0,
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: 'Armata',
-                                )),
-                            content: new Text('Do you want to logout?',
-                                style: TextStyle(
-                                  fontSize: 18.0,
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: 'Armata',
-                                )),
-                            actions: <Widget>[
-                              FlatButton(
-                                  child: Text('No',
-                                      style: TextStyle(
-                                          color: Colors.black,
-                                          fontFamily: 'Armata',
-                                          fontWeight: FontWeight.bold)),
-                                  onPressed: () => Navigator.of(context).pop(false)),
-                              FlatButton(
-                                  child: Text('Yes',
-                                      style: TextStyle(
-                                          color: Colors.green,
-                                          fontFamily: 'Armata',
-                                          fontWeight: FontWeight.bold)),
-                                  onPressed: () {
-
-                                    logOut();
-
-                                  })
-                            ],
-                          ),
-                        );
-
-                      },
-                      child: FaIcon(FontAwesomeIcons.signOutAlt)
-                  )
-              )
-            )
-          ]
-      ),
+                padding: EdgeInsets.fromLTRB(0.0, 0.0, 10.0, 0.0),
+                child: Center(
+                    child: InkWell(
+                        onTap: () async {
+                          showDialog(
+                            context: context,
+                            builder: (context) => new AlertDialog(
+                              title: new Text('Alert',
+                                  style: TextStyle(
+                                    fontSize: 18.0,
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'Armata',
+                                  )),
+                              content: new Text('Do you want to logout?',
+                                  style: TextStyle(
+                                    fontSize: 18.0,
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'Armata',
+                                  )),
+                              actions: <Widget>[
+                                FlatButton(
+                                    child: Text('No',
+                                        style: TextStyle(
+                                            color: Colors.black,
+                                            fontFamily: 'Armata',
+                                            fontWeight: FontWeight.bold)),
+                                    onPressed: () =>
+                                        Navigator.of(context).pop(false)),
+                                FlatButton(
+                                    child: Text('Yes',
+                                        style: TextStyle(
+                                            color: Colors.green,
+                                            fontFamily: 'Armata',
+                                            fontWeight: FontWeight.bold)),
+                                    onPressed: () {
+                                      logOut().then((isDataCleared) {
+                                        if (isDataCleared) {
+                                          Navigator.of(context).pop(false);
+                                          redirectLoginPage();
+                                        }
+                                      });
+                                    })
+                              ],
+                            ),
+                          );
+                        },
+                        child: FaIcon(FontAwesomeIcons.signOutAlt))))
+          ]),
       body: StreamBuilder(
           stream: Firestore.instance
               .collection('userInfoList')
@@ -173,18 +188,16 @@ class CustomerProfileState extends State<CustomerProfile>
                                       fontFamily: 'Armata',
                                     ),
                                   ),
-                                  RatingBar(
-                                    initialRating: getRating(
-                                        snapshot.data.documents[0]),
-                                    direction: Axis.horizontal,
-                                    itemCount: 5,
-                                    itemSize: 25.0,
-                                    itemBuilder: (context, index) => Icon(
-                                      Icons.star,
-                                      color: Colors.amber,
-                                    ),
-                                    onRatingUpdate: (double value) {},
-                                  )
+                                  RatingBarIndicator(
+                                      rating:
+                                          getRating(snapshot.data.documents[0]),
+                                      direction: Axis.horizontal,
+                                      itemCount: 5,
+                                      itemSize: 25.0,
+                                      itemBuilder: (context, index) => Icon(
+                                            Icons.star,
+                                            color: Colors.amber,
+                                          ))
                                 ],
                               ),
                             )
@@ -310,22 +323,28 @@ class CustomerProfileState extends State<CustomerProfile>
                 ],
               );
             } else {
-              return Text('No user info found');
+              return Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                ),
+              );
             }
           }),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) {
-                return EditCustomerProfile(uid: uid);
-              },
-            ),
-          );
-        },
-        child: Icon(Icons.edit),
-        backgroundColor: Colors.redAccent,
-      ),
+      floatingActionButton: Visibility(
+          visible: needToShowEditButton,
+          child: FloatingActionButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) {
+                    return EditCustomerProfile(uid: uid);
+                  },
+                ),
+              );
+            },
+            child: Icon(Icons.edit),
+            backgroundColor: Colors.redAccent,
+          )),
     );
   }
 
@@ -386,7 +405,9 @@ class CustomerProfileState extends State<CustomerProfile>
               Padding(
                 padding: EdgeInsets.all(15.0),
                 child: Center(
-                  child: Text(msgName),
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                  ),
                 ),
               )
             ],
@@ -449,13 +470,13 @@ class CustomerProfileState extends State<CustomerProfile>
           }
         },
         child: Container(
-          child: Center(child: Icon(Icons.touch_app,color: Colors.white)),
+          child: Center(child: Icon(Icons.touch_app, color: Colors.white)),
           decoration: BoxDecoration(
               image: DecorationImage(
-                  image: (imgUrl == null) ? AssetImage("assets/images/vid_tmp_img.jpg") : NetworkImage(imgUrl),
-                  fit: BoxFit.cover
-              )
-          ),
+                  image: (imgUrl == null)
+                      ? AssetImage("assets/images/vid_tmp_img.jpg")
+                      : NetworkImage(imgUrl),
+                  fit: BoxFit.cover)),
         ));
   }
 
@@ -509,29 +530,26 @@ class CustomerProfileState extends State<CustomerProfile>
   buildItem(BuildContext context, document, DocumentSnapshot documentSnapshot) {
     return Card(
       child: ListTile(
-          title: RatingBar(
-            initialRating: double.tryParse(document.rating.toString()),
-            direction: Axis.horizontal,
-            itemCount: 5,
-            itemSize: 25.0,
-            itemBuilder: (context, index) => Icon(
-              Icons.star,
-              color: Colors.amber,
-            ),
-            onRatingUpdate: (double value) {},
-          ),
+          title: RatingBarIndicator(
+              rating: double.tryParse(document.rating.toString()),
+              direction: Axis.horizontal,
+              itemCount: 5,
+              itemSize: 25.0,
+              itemBuilder: (context, index) => Icon(
+                    Icons.star,
+                    color: Colors.amber,
+                  )),
           subtitle: Text("Review: " + document.review)),
     );
   }
 
   String getCoronaExp(document) {
-
     if (document['coronavirusExperience'] == null) {
       return "Corona virus experience not set yet";
     } else {
-      return "Corona virus experience ["+document['coronavirusExperience'].toString()+"]";
+      return "Corona virus experience [" +
+          document['coronavirusExperience'].toString() +
+          "]";
     }
-
   }
-
 }

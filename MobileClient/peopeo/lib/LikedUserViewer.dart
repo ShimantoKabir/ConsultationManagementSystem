@@ -8,6 +8,7 @@ import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart';
+import 'package:share/share.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'Const.dart';
@@ -75,18 +76,17 @@ class LikedUserViewerState extends State<LikedUserViewer> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: <Widget>[
+                  getOnlineStatus(document),
                   IconButton(
-                    icon: Icon(Icons.share, color: Colors.red),
+                    icon: Icon(Icons.share, color: Colors.grey),
                     onPressed: () {
-
+                      Share.share(
+                          webClientBaseUrl +
+                              "/profile.html?uid=" +
+                              document['uid'],
+                          subject: "Profile");
                     },
                   ),
-                  IconButton(
-                    icon: Icon(Icons.message, color: Colors.red),
-                    onPressed: () {
-
-                    },
-                  )
                 ],
               ),
             ),
@@ -281,6 +281,16 @@ class LikedUserViewerState extends State<LikedUserViewer> {
           ],
         ),
       );
+    }
+  }
+
+  getOnlineStatus(Map<String, dynamic> document) {
+    if (document['isOnline'] == null) {
+      return Icon(Icons.lens, color: Colors.green);
+    } else if(document['isOnline']) {
+      return Icon(Icons.lens, color: Colors.green);
+    }else {
+      return Icon(Icons.lens, color: Colors.grey);
     }
   }
 

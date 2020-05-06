@@ -47,15 +47,21 @@ class MyApp extends StatelessWidget {
               isUserLoggedIn = true;
               userInfo = jsonDecode(snapshot.data);
               print("uid = ${userInfo['uid']}");
+              print("photoUrl = ${userInfo['photoUrl']}");
 
               MySharedPreferences.getBooleanValue("isUploadRunning")
                   .then((isUploadRunning) {
-                if (isUploadRunning) {
-                  Fluttertoast.showToast(
-                      msg:
-                          "Video/Image upload running, Please don't close the app!",
-                      toastLength: Toast.LENGTH_LONG);
-                }
+
+                    if(isUploadRunning == null){
+
+                      print("nothing is uploading!");
+
+                    }else if (isUploadRunning) {
+                      Fluttertoast.showToast(
+                          msg:
+                              "Video/Image upload running, Please don't close the app!",
+                          toastLength: Toast.LENGTH_LONG);
+                    }
               });
             } else {
               isUserLoggedIn = false;
@@ -185,7 +191,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                             MaterialPageRoute(
                               builder: (context) {
                                 return LikedUserViewer(
-                                    uid: userInfo['uid'], likedUserIdList: res,userType: userInfo['uid']);
+                                    uid: userInfo['uid'], likedUserIdList: res,userType: userInfo['userType']);
                               },
                             ),
                           );
@@ -303,7 +309,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) {
-                return MyFlutterWebView(title: "Calender", url: calenderUrl);
+                return MyFlutterWebView(title: "Calendar of ["+document['displayName']+"]", url: calenderUrl);
               },
             ),
           );
@@ -365,7 +371,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                     decoration: new BoxDecoration(
                       shape: BoxShape.circle,
                       image: new DecorationImage(
-                          fit: BoxFit.fill,
+                          fit: BoxFit.cover,
                           image: new NetworkImage(document['photoUrl'])),
                     ),
                   ),
@@ -401,7 +407,8 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                       .snapshots(),
                                   builder: (context, snapshot) {
                                     if (snapshot.hasData) {
-                                      if (snapshot.data.documents.length == 1) {
+                                      print("total like = ${snapshot.data.documents.length}");
+                                      if (snapshot.data.documents.length > 0) {
                                         return Text(
                                             snapshot.data.documents.length
                                                     .toString() +
@@ -1050,9 +1057,11 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   }
 
   getOnlineStatus(DocumentSnapshot document) {
-    if (document['isOnline']) {
+    if (document['isOnline'] == null) {
       return Icon(Icons.lens, color: Colors.green);
-    } else {
+    } else if(document['isOnline']) {
+      return Icon(Icons.lens, color: Colors.green);
+    }else {
       return Icon(Icons.lens, color: Colors.grey);
     }
   }

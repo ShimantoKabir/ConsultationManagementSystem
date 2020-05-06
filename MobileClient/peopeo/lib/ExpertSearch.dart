@@ -73,19 +73,7 @@ class ExpertSearch extends SearchDelegate<String> {
           );
         },
         trailing: Icon(Icons.arrow_right),
-        title: RichText(
-          text: TextSpan(
-              text:
-                  suggestionList[index].displayName.substring(0, query.length),
-              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-              children: [
-                TextSpan(
-                    text: suggestionList[index]
-                        .displayName
-                        .substring(query.length),
-                    style: TextStyle(color: Colors.grey)),
-              ]),
-        ),
+        title: Text(suggestionList[index].displayName),
       ),
       itemCount: suggestionList.length,
     );

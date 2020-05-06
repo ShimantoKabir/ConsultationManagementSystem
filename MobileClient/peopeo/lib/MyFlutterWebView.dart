@@ -49,6 +49,7 @@ class MyFlutterWebViewState extends State<MyFlutterWebView> {
             iconTheme: IconThemeData(color: Colors.black),
             backgroundColor: Colors.white,
             title: Text(title,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                     color: Colors.black,
                     fontFamily: 'Armata',

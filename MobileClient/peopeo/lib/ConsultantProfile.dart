@@ -13,6 +13,8 @@ import 'package:peopeo/Const.dart';
 import 'package:peopeo/EditConsultantProfile.dart';
 import 'package:peopeo/FullPhoto.dart';
 import 'package:peopeo/HttpResponse.dart';
+import 'package:peopeo/LoginPage.dart';
+import 'package:peopeo/Main.dart';
 import 'package:peopeo/MyFlutterWebView.dart';
 import 'package:peopeo/MySharedPreferences.dart';
 import 'package:peopeo/Plan.dart';
@@ -26,12 +28,10 @@ class ConsultantProfile extends StatefulWidget {
 
   @override
   ConsultantProfileState createState() => new ConsultantProfileState(uid: uid);
-
 }
 
 class ConsultantProfileState extends State<ConsultantProfile>
     with TickerProviderStateMixin {
-
   String uid;
   bool needToShowEditButton = false;
 
@@ -42,7 +42,6 @@ class ConsultantProfileState extends State<ConsultantProfile>
 
   @override
   void initState() {
-
     tabList.add(Tab(icon: Icon(Icons.camera)));
     tabList.add(Tab(icon: Icon(Icons.video_library)));
     tabList.add(Tab(icon: Icon(Icons.comment)));
@@ -122,7 +121,12 @@ class ConsultantProfileState extends State<ConsultantProfile>
                                             fontFamily: 'Armata',
                                             fontWeight: FontWeight.bold)),
                                     onPressed: () {
-                                      logOut();
+                                      logOut().then((isDataCleared) {
+                                        if (isDataCleared) {
+                                          Navigator.of(context).pop(false);
+                                          redirectLoginPage();
+                                        }
+                                      });
                                     })
                               ],
                             ),
@@ -164,17 +168,16 @@ class ConsultantProfileState extends State<ConsultantProfile>
                                           .data.documents[0]['photoUrl'])),
                                 ),
                               ),
-                              onTap: (){
-
+                              onTap: () {
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
                                     builder: (context) {
-                                      return FullPhoto(url: snapshot.data
-                                          .documents[0]['photoUrl']);
+                                      return FullPhoto(
+                                          url: snapshot.data.documents[0]
+                                              ['photoUrl']);
                                     },
                                   ),
                                 );
-
                               },
                             ),
                             Expanded(
@@ -274,26 +277,42 @@ class ConsultantProfileState extends State<ConsultantProfile>
                                               new BorderRadius.circular(8.0),
                                           side: BorderSide(color: Colors.red)),
                                       onPressed: () async {
-                                        MySharedPreferences.getIntegerValue(
-                                                "userType")
-                                            .then((userType) {
-                                          print("user type = $userType");
+                                        MySharedPreferences.getStringValue(
+                                                "userInfo")
+                                            .then((ui) {
 
-                                          if (userType == 2) {
-                                            Fluttertoast.showToast(
-                                                msg:
-                                                    "Because of you are a expert you can't see another expert calander!");
-                                          } else {
+                                          var userInfo = jsonDecode(ui);
+
+                                          print("spUid = ${userInfo['uid']}, uid $uid, user type ${userInfo['userType']}");
+
+                                          if (uid == userInfo['uid']) {
+
                                             getTimeZone().then((tz) {
-                                              reloadAuth(uid, tz);
+                                              reloadAuth(uid, tz,snapshot.data.documents[0]);
                                             }).catchError((er) {
                                               print("Time zone error $er");
                                               Fluttertoast.showToast(
                                                   msg:
-                                                      "Can't fetch time zone!");
+                                                  "Can't fetch time zone!");
                                             });
+
+                                          }else if(userInfo['userType'] == 1){
+
+                                            getTimeZone().then((tz) {
+                                              reloadAuth(uid, tz,snapshot.data.documents[0]);
+                                            }).catchError((er) {
+                                              print("Time zone error $er");
+                                              Fluttertoast.showToast(
+                                                  msg:
+                                                  "Can't fetch time zone!");
+                                            });
+
+                                          }else {
+
+                                            Fluttertoast.showToast(msg:"You don't have permission to see calender!");
+
                                           }
-                                          ;
+
                                         });
                                       },
                                       color: Colors.red,
@@ -457,7 +476,11 @@ class ConsultantProfileState extends State<ConsultantProfile>
                 ],
               );
             } else {
-              return Text('No user info found!');
+              return Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                ),
+              );
             }
           }),
       floatingActionButton: Visibility(
@@ -521,7 +544,7 @@ class ConsultantProfileState extends State<ConsultantProfile>
     }
   }
 
-  void reloadAuth(String uid, String tz) async {
+  void reloadAuth(String uid, String tz, document) async {
     String reqUrl = serverBaseUrl + '/auth/reload';
     Map<String, String> headers = {"Content-type": "application/json"};
     var request = {
@@ -545,7 +568,7 @@ class ConsultantProfileState extends State<ConsultantProfile>
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (context) {
-            return MyFlutterWebView(title: "Calender", url: calenderUrl);
+            return MyFlutterWebView(title: "Calendar of ["+document['displayName']+"]", url: calenderUrl);
           },
         ),
       );
@@ -720,17 +743,15 @@ class ConsultantProfileState extends State<ConsultantProfile>
   buildItem(BuildContext context, document, DocumentSnapshot documentSnapshot) {
     return Card(
       child: ListTile(
-          title: RatingBar(
-            initialRating: double.tryParse(document.rating.toString()),
-            direction: Axis.horizontal,
-            itemCount: 5,
-            itemSize: 25.0,
-            itemBuilder: (context, index) => Icon(
-              Icons.star,
-              color: Colors.amber,
-            ),
-            onRatingUpdate: (double value) {},
-          ),
+          title: RatingBarIndicator(
+              rating: double.tryParse(document.rating.toString()),
+              direction: Axis.horizontal,
+              itemCount: 5,
+              itemSize: 25.0,
+              itemBuilder: (context, index) => Icon(
+                    Icons.star,
+                    color: Colors.amber,
+                  )),
           subtitle: Text("Review: " + document.review)),
     );
   }
@@ -755,5 +776,11 @@ class ConsultantProfileState extends State<ConsultantProfile>
           document['coronavirusExperience'].toString() +
           "]";
     }
+  }
+
+  void redirectLoginPage() {
+    Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => LoginPage()),
+        (Route<dynamic> route) => false);
   }
 }

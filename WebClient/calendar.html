@@ -236,6 +236,7 @@
                     selectHelper: true,
                     select: function (start, end, allDay) {
 
+                        $('#topic').prop('readonly', false);
                         $('#acceptRequestId').hide();
                         $('#eventDeleteBtn').hide();
                         $('#acceptRequestAction').hide();
@@ -298,18 +299,7 @@
                                     alertHeading: 'Warning',
                                 })
 
-                            }
-                            else if(minDiff < chatDurationMinLimit){
-
-                                showAlert({
-                                    msg: "Chat duration should be at least 20 minutes!",
-                                    bodyIcon: 'fa fa-times-circle',
-                                    ntsTaBtn: false,
-                                    alertHeading: 'Warning',
-                                })
-
-                            } 
-                            else {
+                            }else {
 
                                 showAlert({
                                     msg: "Please wait....!",
@@ -318,10 +308,15 @@
                                     alertHeading: 'Loading',
                                 });
 
+                                let isChatDurationOk = chatDurationMinLimit <= minDiff;
+                                let d = new Date();
+                                let currentDateTime = d.getDate()+"-"+(d.getMonth()+1)+"-"+d.getFullYear()+" "+d.toLocaleTimeString();
+
                                 let planData = {
                                     calendar: {
                                         calendarDate: new Date(fromDate),
                                         conUid: conId,
+                                        currentDateTime : currentDateTime,
                                         plan: {
                                             startTime: new Date(fd + " " + ft),
                                             endTime: new Date(td + " " + tt),
@@ -330,7 +325,9 @@
                                             conUid: conId,
                                             freeMinutesForNewCustomer: freeMinutesForNewCustomer,
                                             hourlyRate: hourlyRate,
-                                            timeZone : timeZone
+                                            timeZone : timeZone,
+                                            isChatDurationOk : isChatDurationOk,
+                                            chatDurationMinLimit : chatDurationMinLimit
                                         }
                                     }
                                 };
@@ -381,6 +378,7 @@
 
                         $('#eventBookBtn').hide();
                         $('#freeMinutesForNewCustomer').hide();
+                        $('#topic').prop('readonly', true);
 
                         let fromDate = $.fullCalendar.formatDate(event.start, "Y-MM-DD");
                         let fromTime = $.fullCalendar.formatDate(event.start, "HH:mm:ss");
@@ -524,11 +522,17 @@
                         }
 
                         $("#eventDeleteBtn").unbind("click").bind("click", function (e) {
-                            eventDelete(event);
+                            let c = confirm("Would you like to delete the schedule?")
+                            if(c){
+                                eventDelete(event);
+                            }
                         });
 
                         $("#requestCancel").unbind("click").bind("click", function (e) {
-                            eventDelete(event);
+                            let c = confirm("Would you like to cancle the schedule?")
+                            if(c){
+                                eventDelete(event);
+                            }
                         });
 
                         $("#requestAccept").unbind("click").bind("click", function (e) {
@@ -675,7 +679,7 @@
 	                                    <b>Topic</b>
 	                                </td>
 	                                <td>
-	                                    <textarea id="topic"></textarea>
+	                                    <textarea id="topic" ></textarea>
 	                                </td>
 	                            </tr>
 	                            <tr>
