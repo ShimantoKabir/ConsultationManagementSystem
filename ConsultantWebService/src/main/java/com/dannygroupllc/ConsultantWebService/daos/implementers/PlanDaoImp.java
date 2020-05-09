@@ -802,17 +802,17 @@ public class PlanDaoImp implements PlanDao {
 
                 System.out.println(getClass().getName()+".updateOnlineStatus: lastOnlineDateTime = "+lastOnlineDateTime+", curDateTime = "+curDateTime);
 
-                Interval interval = new Interval(
-                        new DateTime(lastOnlineAt).withZone(DateTimeZone.forID(ui.getTimeZone())),
-                        new DateTime().withZone(DateTimeZone.forID(ui.getTimeZone()))
-                );
+//                Interval interval = new Interval(
+//                        new DateTime(lastOnlineAt).withZone(DateTimeZone.forID(ui.getTimeZone())),
+//                        new DateTime().withZone(DateTimeZone.forID(ui.getTimeZone()))
+//                );
+//
+//                if(interval.toDuration().getStandardMinutes() > 2){
+//                    DocumentReference dr = cr.document(document.getId());
+//                    dr.update("isOnline",false);
+//                }
 
-                if(interval.toDuration().getStandardMinutes() > 2){
-                    DocumentReference dr = cr.document(document.getId());
-                    dr.update("isOnline",false);
-                }
-
-                System.out.println(getClass().getName()+".updateOnlineStatus interval = "+interval.toDuration().getStandardMinutes());
+                // System.out.println(getClass().getName()+".updateOnlineStatus interval = "+interval.toDuration().getStandardMinutes());
 
             }
 
