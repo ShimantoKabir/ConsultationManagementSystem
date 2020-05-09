@@ -24,6 +24,8 @@ public class PaymentGatewayPro {
 
         Response response = new Response();
 
+        System.out.println(getClass().getName()+".getClientToken Customer Id = "+request.getCustomerId());
+
         BraintreeGateway gateway = new BraintreeGateway(Environment.SANDBOX, merchantID, publicKey, privateKey);
 
         ClientTokenRequest clientTokenRequest = new ClientTokenRequest().customerId(request.getCustomerId());

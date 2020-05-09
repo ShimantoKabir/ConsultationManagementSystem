@@ -204,7 +204,7 @@ public class AuthDaoImp implements AuthDao {
                         "    ) AS CHAR) AS time_diff \n" +
                         "  FROM\n" +
                         "    plan \n" +
-                        "  WHERE DATE(start_time) >= CURDATE() \n" +
+                        "  WHERE CONVERT_TZ(start_time,'UTC',time_zone) >= CONVERT_TZ(NOW(),'UTC',time_zone) \n" +
                         "    AND con_uid = :conUid) AS p ";
 
 

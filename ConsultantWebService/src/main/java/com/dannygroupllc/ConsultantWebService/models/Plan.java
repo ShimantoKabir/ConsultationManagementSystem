@@ -30,8 +30,6 @@ public class Plan {
     public String timeZone;
     public String ip;
     public String modifiedBy;
-    @CreationTimestamp
-    @Temporal(TemporalType.TIMESTAMP)
     public Date createdDate;
 
     @Transient

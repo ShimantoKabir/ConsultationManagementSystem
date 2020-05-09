@@ -7,6 +7,7 @@ import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
 import com.google.firebase.cloud.FirestoreClient;
+import com.google.gson.Gson;
 
 public class NotificationSender {
 
@@ -34,6 +35,7 @@ public class NotificationSender {
                 notification.setEndTime(n.getEndTime());
                 notification.setTimeStamp(System.currentTimeMillis());
 
+                System.out.println("Notification = "+new Gson().toJson(notification));
                 db.collection("notificationList").add(notification);
 
             } else {

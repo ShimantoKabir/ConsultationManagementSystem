@@ -109,8 +109,8 @@ public class PlanDaoImp implements PlanDao {
                     "    *,\n" +
                     "    CAST(\n" +
                     "      TIMEDIFF(\n" +
-                    "        DATE_ADD(created_date, INTERVAL 1 DAY),\n" +
-                    "        NOW()\n" +
+                    "        DATE_ADD(CONVERT_TZ(created_date,'UTC',time_zone), INTERVAL 1 DAY),\n" +
+                    "        CONVERT_TZ(NOW(),'UTC',time_zone)\n" +
                     "      ) AS CHAR\n" +
                     "    ) AS time_diff \n" +
                     "  FROM\n" +
@@ -167,7 +167,7 @@ public class PlanDaoImp implements PlanDao {
 
                 planRes.setCode(404);
                 planRes.setMsg(np.getHourDiff() + " Hour & " + np.getMinuteDiff()
-                        + " minute passed away, Sorry sir/mam you can't accept the request cause!");
+                        + " minute passed away, Sorry sir/mam you can't accept the request!");
 
                 System.out.println(getClass().getName() + ".changeAcceptStatus " + planRes.getMsg());
 
@@ -219,7 +219,7 @@ public class PlanDaoImp implements PlanDao {
                         "FROM\n" +
                         "  plan AS p\n" +
                         "WHERE con_uid = :conUid AND cus_uid IS NOT NULL\n" +
-                        "  AND DATE(start_time) >= CURDATE()" +
+                        "  AND DATE(CONVERT_TZ(start_time,'UTC',time_zone)) >= DATE(CONVERT_TZ(NOW(),'UTC',time_zone))" +
                         "  AND is_accept_by_con IS TRUE";
 
                 // plan for customer
@@ -244,7 +244,7 @@ public class PlanDaoImp implements PlanDao {
                         "FROM\n" +
                         "  plan AS p \n" +
                         "WHERE cus_uid = :cusUid \n" +
-                        "  AND DATE(start_time) >= CURDATE()" +
+                        "  AND DATE(CONVERT_TZ(start_time,'UTC',time_zone)) >= DATE(CONVERT_TZ(NOW(),'UTC',time_zone))" +
                         "  AND is_accept_by_con IS TRUE";
 
             }
@@ -290,10 +290,9 @@ public class PlanDaoImp implements PlanDao {
 
                 }
 
-
             }
 
-            System.out.println(getClass().getName() + ".getAllPlanByUser: planList ====== !");
+            System.out.println(getClass().getName() + ".getAllPlanByUser: plan List = "+planList.size());
 
             return planList;
 
@@ -339,7 +338,7 @@ public class PlanDaoImp implements PlanDao {
             String planListSql;
 
             // consultant
-            if (p.getUserType() == 2) {
+            if (p.getUserType() == 1) {
 
                 planListSql = ""
                         + "SELECT "
@@ -348,7 +347,8 @@ public class PlanDaoImp implements PlanDao {
                         + "  DATE_FORMAT(p.end_time, '%Y-%m-%d %T') AS f_end_time "
                         + "FROM "
                         + "  plan AS p "
-                        + "WHERE con_uid = :conUid "
+                        + "WHERE cus_uid = :cusUid "
+                        + "  AND are_cus_con_have_chatted IS TRUE "
                         + "  AND DATE(p.end_time) < NOW() ";
 
                 // customer
@@ -361,7 +361,8 @@ public class PlanDaoImp implements PlanDao {
                         + "  DATE_FORMAT(p.end_time, '%Y-%m-%d %T') AS f_end_time "
                         + "FROM "
                         + "  plan AS p "
-                        + "WHERE cus_uid = :cusUid "
+                        + "WHERE con_uid = :conUid "
+                        + "  AND are_cus_con_have_chatted IS TRUE "
                         + "  AND DATE(p.end_time) < NOW() ";
 
             }
@@ -370,10 +371,10 @@ public class PlanDaoImp implements PlanDao {
 
             Query planListQry = entityManager.createNativeQuery(planListSql);
 
-            if (p.getUserType() == 2) {
-                planListQry.setParameter("conUid", p.getConUid());
-            } else {
+            if (p.getUserType() == 1) {
                 planListQry.setParameter("cusUid", p.getCusUid());
+            } else {
+                planListQry.setParameter("conUid", p.getConUid());
             }
 
             List<Object[]> results = planListQry.getResultList();
@@ -406,11 +407,14 @@ public class PlanDaoImp implements PlanDao {
 
         Plan planRes = new Plan();
 
+        System.out.println(getClass().getName()+".saveReviewAndRating plan = "+gson.toJson(plan));
+
         try {
 
             String sql;
 
-            if (plan.getCusUid() == null) {
+            // customer
+            if (plan.getUserType() == 1) {
 
                 sql = "UPDATE \n" +
                         "  plan \n" +
@@ -419,6 +423,7 @@ public class PlanDaoImp implements PlanDao {
                         "  con_rating = :conRating \n" +
                         "WHERE id = :id ";
 
+                // consultant
             } else {
 
                 sql = "UPDATE \n" +
@@ -432,7 +437,7 @@ public class PlanDaoImp implements PlanDao {
 
             Query planCasQry = entityManager.createNativeQuery(sql);
 
-            if (plan.getCusUid() == null) {
+            if (plan.getUserType() == 1) {
 
                 planCasQry.setParameter("conReview", plan.getConReview());
                 planCasQry.setParameter("conRating", plan.getConRating());
@@ -448,13 +453,12 @@ public class PlanDaoImp implements PlanDao {
             planCasQry.executeUpdate();
 
 
-            // update rating in fireBase database
-            // consultant
-            if (plan.getCusUid() == null) {
+            // if customer give review and rating
+            // then update expert rating in FireBase
+            if (plan.getUserType() == 1) {
 
                 updateRating(plan.getConUid(), 2);
 
-                // customer
             } else {
 
                 updateRating(plan.getCusUid(), 1);

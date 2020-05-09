@@ -56,6 +56,8 @@ public class PlanCtl {
 
         Response response = new Response();
 
+        System.out.println(getClass().getName()+".saveReviewAndRatingCtl plan = "+gson.toJson(request.getPlan()));
+
         Plan plan = planService.saveReviewAndRating(httpServletRequest,request.getPlan());
         response.setMsg(plan.getMsg());
         response.setCode(plan.getCode());

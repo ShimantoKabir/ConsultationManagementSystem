@@ -15,9 +15,6 @@ import javax.persistence.Query;
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigInteger;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
@@ -44,7 +41,6 @@ public class CalendarDaoImp implements CalendarDao {
         Calendar calendarRes = new Calendar();
 
         try {
-
 
             Date curDateTime = sdf.parse(c.getCurrentDateTime());
             System.out.println(getClass().getName()+".createEvent cur date time = "+curDateTime);
@@ -117,6 +113,7 @@ public class CalendarDaoImp implements CalendarDao {
                     plan.setStartTime(p.getStartTime());
                     plan.setTopic(p.getTopic());
                     plan.setTimeZone(p.getTimeZone());
+                    plan.setCreatedDate(sdf.parse(c.getCurrentDateTime()));
                     entityManager.persist(plan);
 
                     calendarRes.setCode(200);
@@ -127,7 +124,7 @@ public class CalendarDaoImp implements CalendarDao {
                 } else {
 
                     // COMMENT OUT BEFORE APP GOES LIVE
-                    curDateTime = DateUtils.addHours(curDateTime,1);
+                    // curDateTime = DateUtils.addHours(curDateTime,1);
 
                     if (curDateTime.before(c.getPlan().getStartTime())) {
 
@@ -218,6 +215,7 @@ public class CalendarDaoImp implements CalendarDao {
                                 plan.setTopic(p.getTopic());
                                 plan.setAreCusConHaveChatted(false);
                                 plan.setTimeZone(p.getTimeZone());
+                                plan.setCreatedDate(sdf.parse(c.getCurrentDateTime()));
                                 entityManager.persist(plan);
 
                                 Notification notification = new Notification();
