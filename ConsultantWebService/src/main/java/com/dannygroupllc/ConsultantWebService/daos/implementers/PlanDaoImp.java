@@ -219,7 +219,7 @@ public class PlanDaoImp implements PlanDao {
                         "FROM\n" +
                         "  plan AS p\n" +
                         "WHERE con_uid = :conUid AND cus_uid IS NOT NULL\n" +
-                        "  AND DATE(CONVERT_TZ(start_time,'UTC',time_zone)) >= DATE(CONVERT_TZ(NOW(),'UTC',time_zone))" +
+                        "  AND DATE(CONVERT_TZ(end_time,'UTC',time_zone)) >= DATE(CONVERT_TZ(NOW(),'UTC',time_zone))" +
                         "  AND is_accept_by_con IS TRUE";
 
                 // plan for customer
@@ -244,7 +244,7 @@ public class PlanDaoImp implements PlanDao {
                         "FROM\n" +
                         "  plan AS p \n" +
                         "WHERE cus_uid = :cusUid \n" +
-                        "  AND DATE(CONVERT_TZ(start_time,'UTC',time_zone)) >= DATE(CONVERT_TZ(NOW(),'UTC',time_zone))" +
+                        "  AND DATE(CONVERT_TZ(end_time,'UTC',time_zone)) >= DATE(CONVERT_TZ(NOW(),'UTC',time_zone))" +
                         "  AND is_accept_by_con IS TRUE";
 
             }
