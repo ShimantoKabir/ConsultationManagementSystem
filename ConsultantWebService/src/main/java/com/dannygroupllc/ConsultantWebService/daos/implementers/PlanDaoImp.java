@@ -23,6 +23,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
 @Repository
 public class PlanDaoImp implements PlanDao {
@@ -795,24 +797,22 @@ public class PlanDaoImp implements PlanDao {
             List<QueryDocumentSnapshot> documents = future.get().getDocuments();
             for (DocumentSnapshot document : documents) {
                 UserInfo ui = document.toObject(UserInfo.class);
+                sdf.setTimeZone(TimeZone.getTimeZone(ui.getTimeZone()));
+
                 Date lastOnlineAt = sdf.parse(ui.getLastOnlineAt());
+                Date  curDate = sdf.parse(sdf.format(new Date()));
 
-                DateTime lastOnlineDateTime =  new DateTime(lastOnlineAt).toDateTimeISO();
-                DateTime curDateTime = new DateTime().withZone(DateTimeZone.forID(ui.getTimeZone())).toDateTimeISO();
+                System.out.println(getClass().getName()+".updateOnlineStatus: curDate = "+curDate+" lastOnlineAt = "+lastOnlineAt);
 
-                System.out.println(getClass().getName()+".updateOnlineStatus: lastOnlineDateTime = "+lastOnlineDateTime+", curDateTime = "+curDateTime);
+                long duration  = curDate.getTime() - lastOnlineAt.getTime();
+                long diffInMinutes = TimeUnit.MILLISECONDS.toMinutes(duration);
 
-                Interval interval = new Interval(
-                        lastOnlineDateTime,
-                        curDateTime
-                );
-
-                if(interval.toDuration().getStandardMinutes() > 2){
+                if(diffInMinutes > 2){
                     DocumentReference dr = cr.document(document.getId());
                     dr.update("isOnline",false);
                 }
 
-                System.out.println(getClass().getName()+".updateOnlineStatus interval = "+interval.toDuration().getStandardMinutes());
+                System.out.println(getClass().getName()+".updateOnlineStatus interval = "+diffInMinutes);
 
             }
 
