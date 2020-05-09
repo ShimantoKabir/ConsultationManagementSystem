@@ -798,13 +798,13 @@ public class PlanDaoImp implements PlanDao {
                 Date lastOnlineAt = sdf.parse(ui.getLastOnlineAt());
 
                 DateTime lastOnlineDateTime =  new DateTime(lastOnlineAt).toDateTime();
-                DateTime curDateTime = new DateTime().withZone(DateTimeZone.forID(ui.getTimeZone()));
+                DateTime curDateTime = new DateTime().withZone(DateTimeZone.forID(ui.getTimeZone())).toDateTimeISO();
 
                 System.out.println(getClass().getName()+".updateOnlineStatus: lastOnlineDateTime = "+lastOnlineDateTime+", curDateTime = "+curDateTime);
 
                 Interval interval = new Interval(
-                        new DateTime(lastOnlineAt).toDateTime(),
-                        new DateTime().withZone(DateTimeZone.forID(ui.getTimeZone()))
+                        lastOnlineDateTime,
+                        curDateTime
                 );
 
                 if(interval.toDuration().getStandardMinutes() > 2){
