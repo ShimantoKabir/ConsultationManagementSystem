@@ -797,7 +797,7 @@ public class PlanDaoImp implements PlanDao {
                 UserInfo ui = document.toObject(UserInfo.class);
                 Date lastOnlineAt = sdf.parse(ui.getLastOnlineAt());
 
-                DateTime lastOnlineDateTime =  new DateTime(lastOnlineAt).toDateTime();
+                DateTime lastOnlineDateTime =  new DateTime(lastOnlineAt).toDateTimeISO();
                 DateTime curDateTime = new DateTime().withZone(DateTimeZone.forID(ui.getTimeZone())).toDateTimeISO();
 
                 System.out.println(getClass().getName()+".updateOnlineStatus: lastOnlineDateTime = "+lastOnlineDateTime+", curDateTime = "+curDateTime);
