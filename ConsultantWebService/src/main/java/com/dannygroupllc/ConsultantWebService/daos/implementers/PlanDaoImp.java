@@ -798,7 +798,7 @@ public class PlanDaoImp implements PlanDao {
                 Date lastOnlineAt = sdf.parse(ui.getLastOnlineAt());
 
                 Interval interval = new Interval(
-                        new DateTime(lastOnlineAt),
+                        new DateTime(lastOnlineAt).withZone(DateTimeZone.forID(ui.getTimeZone())),
                         new DateTime().withZone(DateTimeZone.forID(ui.getTimeZone()))
                 );
 
