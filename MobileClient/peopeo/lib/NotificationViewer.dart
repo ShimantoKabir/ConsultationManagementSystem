@@ -37,7 +37,6 @@ class NotificationViewerState extends State<NotificationViewer> {
             stream: Firestore.instance
                 .collection('notificationList')
                 .where('uid', isEqualTo: uid)
-                .limit(20)
                 .snapshots(),
             builder:
                 (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {

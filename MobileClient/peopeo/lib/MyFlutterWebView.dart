@@ -70,7 +70,9 @@ class MyFlutterWebViewState extends State<MyFlutterWebView> {
         initialChild: Container(
           color: Colors.white,
           child: const Center(
-            child: Text('Please wait...'),
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+            )
           ),
         ));
   }

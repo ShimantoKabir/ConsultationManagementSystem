@@ -236,142 +236,157 @@
                     selectHelper: true,
                     select: function (start, end, allDay) {
 
-                        $('#topic').prop('readonly', false);
-                        $('#acceptRequestId').hide();
-                        $('#eventDeleteBtn').hide();
-                        $('#acceptRequestAction').hide();
-                        $('#timeLeftToAcceptRequest').hide();
-                        $('#requestAcceptStatus').hide();
-                        $('#freeMinutesForNewCustomer').hide();
+                        var view = $('#calendar').fullCalendar('getView');
+                        
+                        if(view.name == "month"){
 
-                        $('#topic').val(null);
-                        $('#eventPopUp').show();
-                        $('#eventBookBtn').show();
+                            showAlert({
+                                msg: "Use [WEEK] or [DAY] view to create a schedule!",
+                                bodyIcon: 'fa fa-times-circle',
+                                ntsTaBtn: false,
+                                alertHeading: 'Warning',
+                            })
 
-                        let fromDate = $.fullCalendar.formatDate(start, "Y-MM-DD");
-                        let fromTime = start._i[3].toString().padStart(2, '0')+":"
-                            +start._i[4].toString().padStart(2, '0')+":"
-                            +start._i[5].toString().padStart(2, '0');
-                        let toDate = $.fullCalendar.formatDate(end, "Y-MM-DD");
-                        let toTime = end._i[3].toString().padStart(2, '0')+":"
-                            +end._i[4].toString().padStart(2, '0')+":"
-                            +end._i[5].toString().padStart(2, '0');
+                        }else {
 
-                        $('#fromDate').val(fromDate);
-                        $('#fromTime').val(fromTime);
-                        $('#toDate').val(toDate);
-                        $('#toTime').val(toTime);
+                            $('#topic').prop('readonly', false);
+                            $('#acceptRequestId').hide();
+                            $('#eventDeleteBtn').hide();
+                            $('#acceptRequestAction').hide();
+                            $('#timeLeftToAcceptRequest').hide();
+                            $('#requestAcceptStatus').hide();
+                            $('#freeMinutesForNewCustomer').hide();
 
-                        $("#eventBookBtn").unbind("click").bind("click", function (e) {
+                            $('#topic').val(null);
+                            $('#eventPopUp').show();
+                            $('#eventBookBtn').show();
 
-                            let fd = $('#fromDate').val();
-                            let ft = $('#fromTime').val();
-                            let td = $('#toDate').val();
-                            let tt = $('#toTime').val();
-                            let tp = $('#topic').val();
+                            let fromDate = $.fullCalendar.formatDate(start, "Y-MM-DD");
+                            let fromTime = start._i[3].toString().padStart(2, '0')+":"
+                                +start._i[4].toString().padStart(2, '0')+":"
+                                +start._i[5].toString().padStart(2, '0');
+                            let toDate = $.fullCalendar.formatDate(end, "Y-MM-DD");
+                            let toTime = end._i[3].toString().padStart(2, '0')+":"
+                                +end._i[4].toString().padStart(2, '0')+":"
+                                +end._i[5].toString().padStart(2, '0');
 
-                            let minDiff = getMinDiff(fd+" "+ft,td+" "+tt);
+                            $('#fromDate').val(fromDate);
+                            $('#fromTime').val(fromTime);
+                            $('#toDate').val(toDate);
+                            $('#toTime').val(toTime);
 
-                            if(!ft){
+                            $("#eventBookBtn").unbind("click").bind("click", function (e) {
 
-                                showAlert({
-                                    msg: "Start time required!",
-                                    bodyIcon: 'fa fa-times-circle',
-                                    ntsTaBtn: false,
-                                    alertHeading: 'Warning',
-                                })
+                                let fd = $('#fromDate').val();
+                                let ft = $('#fromTime').val();
+                                let td = $('#toDate').val();
+                                let tt = $('#toTime').val();
+                                let tp = $('#topic').val();
 
-                            }else if(!tt){
+                                let minDiff = getMinDiff(fd+" "+ft,td+" "+tt);
 
-                                showAlert({
-                                    msg: "End time required!",
-                                    bodyIcon: 'fa fa-times-circle',
-                                    ntsTaBtn: false,
-                                    alertHeading: 'Warning',
-                                })
+                                if(!ft){
 
-                            }else if(!tp){
+                                    showAlert({
+                                        msg: "Start time required!",
+                                        bodyIcon: 'fa fa-times-circle',
+                                        ntsTaBtn: false,
+                                        alertHeading: 'Warning',
+                                    })
 
-                                showAlert({
-                                    msg: "Topic required!",
-                                    bodyIcon: 'fa fa-times-circle',
-                                    ntsTaBtn: false,
-                                    alertHeading: 'Warning',
-                                })
+                                }else if(!tt){
 
-                            }else {
+                                    showAlert({
+                                        msg: "End time required!",
+                                        bodyIcon: 'fa fa-times-circle',
+                                        ntsTaBtn: false,
+                                        alertHeading: 'Warning',
+                                    })
 
-                                showAlert({
-                                    msg: "Please wait....!",
-                                    bodyIcon: 'fa fa-refresh fa-spin',
-                                    ntsTaBtn: false,
-                                    alertHeading: 'Loading',
-                                });
+                                }else if(!tp){
 
-                                let isChatDurationOk = chatDurationMinLimit <= minDiff;
-                                let d = new Date();
-                                let currentDateTime = d.getDate()+"-"+(d.getMonth()+1)+"-"+d.getFullYear()+" "+d.toLocaleTimeString();
+                                    showAlert({
+                                        msg: "Topic required!",
+                                        bodyIcon: 'fa fa-times-circle',
+                                        ntsTaBtn: false,
+                                        alertHeading: 'Warning',
+                                    })
 
-                                let planData = {
-                                    calendar: {
-                                        calendarDate: new Date(fromDate),
-                                        conUid: conId,
-                                        currentDateTime : currentDateTime,
-                                        plan: {
-                                            startTime: new Date(fd + " " + ft),
-                                            endTime: new Date(td + " " + tt),
-                                            topic: $('#topic').val(),
-                                            cusUid: cusId,
+                                }else {
+
+                                    showAlert({
+                                        msg: "Please wait....!",
+                                        bodyIcon: 'fa fa-refresh fa-spin',
+                                        ntsTaBtn: false,
+                                        alertHeading: 'Loading',
+                                    });
+
+                                    let isChatDurationOk = chatDurationMinLimit <= minDiff;
+                                    let d = new Date();
+                                    let currentDateTime = d.getDate()+"-"+(d.getMonth()+1)+"-"+d.getFullYear()+" "+d.toLocaleTimeString();
+
+                                    let planData = {
+                                        calendar: {
+                                            calendarDate: new Date(fromDate),
                                             conUid: conId,
-                                            freeMinutesForNewCustomer: freeMinutesForNewCustomer,
-                                            hourlyRate: hourlyRate,
-                                            timeZone : timeZone,
-                                            isChatDurationOk : isChatDurationOk,
-                                            chatDurationMinLimit : chatDurationMinLimit
+                                            currentDateTime : currentDateTime,
+                                            plan: {
+                                                startTime: new Date(fd + " " + ft),
+                                                endTime: new Date(td + " " + tt),
+                                                topic: $('#topic').val(),
+                                                cusUid: cusId,
+                                                conUid: conId,
+                                                freeMinutesForNewCustomer: freeMinutesForNewCustomer,
+                                                hourlyRate: hourlyRate,
+                                                timeZone : timeZone,
+                                                isChatDurationOk : isChatDurationOk,
+                                                chatDurationMinLimit : chatDurationMinLimit
+                                            }
                                         }
-                                    }
-                                };
+                                    };
 
-                                $.ajax({
-                                    url: serverBaseUrl+"/calendar/create-event",
-                                    type: "POST",
-                                    contentType: 'application/json',
-                                    data: JSON.stringify(planData),
-                                    success: function (s) {
+                                    $.ajax({
+                                        url: serverBaseUrl+"/calendar/create-event",
+                                        type: "POST",
+                                        contentType: 'application/json',
+                                        data: JSON.stringify(planData),
+                                        success: function (s) {
 
-                                        if (s.code === 404) {
+                                            if (s.code === 404) {
+
+                                                $('#eventPopUp').hide();
+                                                showAlert({
+                                                    msg: s.msg,
+                                                    bodyIcon: 'fa fa-times-circle',
+                                                    ntsTaBtn: false,
+                                                    alertHeading: 'Error',
+                                                })
+
+                                            } else {
+
+                                                location.reload();
+
+                                            }
+
+                                        },
+                                        error: function (e) {
 
                                             $('#eventPopUp').hide();
                                             showAlert({
-                                                msg: s.msg,
+                                                msg: "Some thing went wrong !",
                                                 bodyIcon: 'fa fa-times-circle',
                                                 ntsTaBtn: false,
                                                 alertHeading: 'Error',
                                             })
 
-                                        } else {
-
-                                            location.reload();
-
                                         }
+                                    })
 
-                                    },
-                                    error: function (e) {
+                                }
 
-                                        $('#eventPopUp').hide();
-                                        showAlert({
-                                            msg: "Some thing went wrong !",
-                                            bodyIcon: 'fa fa-times-circle',
-                                            ntsTaBtn: false,
-                                            alertHeading: 'Error',
-                                        })
+                            });
 
-                                    }
-                                })
-
-                            }
-
-                        });
+                        }
 
                     },
                     eventClick: function (event) {

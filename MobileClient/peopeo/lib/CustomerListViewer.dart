@@ -70,7 +70,7 @@ class CustomerListViewerState extends State<CustomerListViewer> {
                     decoration: new BoxDecoration(
                       shape: BoxShape.circle,
                       image: new DecorationImage(
-                          fit: BoxFit.fill,
+                          fit: BoxFit.cover,
                           image: new NetworkImage(document['photoUrl'])),
                     ),
                   ),
