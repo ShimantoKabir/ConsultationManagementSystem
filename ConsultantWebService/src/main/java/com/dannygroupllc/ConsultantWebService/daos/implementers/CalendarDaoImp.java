@@ -39,15 +39,18 @@ public class CalendarDaoImp implements CalendarDao {
     public Calendar createEvent(HttpServletRequest httpServletRequest, Calendar c) {
 
         Calendar calendarRes = new Calendar();
+        System.out.println("got error");
 
         try {
 
             Date curDateTime = sdf.parse(c.getCurrentDateTime());
+            Date startDateTime = sdf.parse(c.getPlan().getfStartTime());
+            Date endDateTime = sdf.parse(c.getPlan().getfEndTime());
             System.out.println(getClass().getName()+".createEvent cur date time = "+curDateTime);
             System.out.println(getClass().getName()+".createEvent start time = "+c.getPlan().getStartTime());
 
             // if current date time before plan start time
-            if (curDateTime.before(c.getPlan().getStartTime())) {
+            if (curDateTime.before(startDateTime)) {
 
                 String calendarSql = "SELECT \n" +
                         "  * \n" +
@@ -107,10 +110,10 @@ public class CalendarDaoImp implements CalendarDao {
                     Plan plan = new Plan();
                     plan.setCalenderOid(calOid);
                     plan.setConUid(c.getConUid());
-                    plan.setEndTime(p.getEndTime());
+                    plan.setEndTime(endDateTime);
                     plan.setIp(httpServletRequest.getRemoteAddr());
                     plan.setModifiedBy(c.getConUid());
-                    plan.setStartTime(p.getStartTime());
+                    plan.setStartTime(startDateTime);
                     plan.setTopic(p.getTopic());
                     plan.setTimeZone(p.getTimeZone());
                     plan.setCreatedDate(sdf.parse(c.getCurrentDateTime()));
@@ -126,7 +129,7 @@ public class CalendarDaoImp implements CalendarDao {
                     // COMMENT OUT BEFORE APP GOES LIVE
                     curDateTime = DateUtils.addHours(curDateTime,1);
 
-                    if (curDateTime.before(c.getPlan().getStartTime())) {
+                    if (curDateTime.before(startDateTime)) {
 
                         if(c.getPlan().getChatDurationOk()){
 
@@ -149,8 +152,8 @@ public class CalendarDaoImp implements CalendarDao {
 
                             // check event over lap
                             Plan planOverLapCheckingData = new Plan();
-                            planOverLapCheckingData.setStartTime(p.getStartTime());
-                            planOverLapCheckingData.setEndTime(p.getEndTime());
+                            planOverLapCheckingData.setStartTime(startDateTime);
+                            planOverLapCheckingData.setEndTime(endDateTime);
                             planOverLapCheckingData.setConUid(c.getConUid());
                             planOverLapCheckingData.setCusUid(p.getCusUid());
 
@@ -205,10 +208,10 @@ public class CalendarDaoImp implements CalendarDao {
                                 plan.setCalenderOid(calOid);
                                 plan.setConUid(c.getConUid());
                                 plan.setCusUid(p.getCusUid());
-                                plan.setEndTime(p.getEndTime());
+                                plan.setEndTime(endDateTime);
                                 plan.setIp(httpServletRequest.getRemoteAddr());
                                 plan.setModifiedBy(p.getCusUid());
-                                plan.setStartTime(p.getStartTime());
+                                plan.setStartTime(startDateTime);
                                 plan.setFreeMinutesForNewCustomer(freeMinutesForNewCustomer);
                                 plan.setAcceptByCon(false);
                                 plan.setHourlyRate(p.getHourlyRate());
@@ -222,12 +225,12 @@ public class CalendarDaoImp implements CalendarDao {
                                 notification.setUid(c.getConUid());
                                 notification.setTitle("Booking Request");
 
-                                notification.setBody("Topic: " + p.getTopic()+", Start Time: "+
-                                        sdf.format(p.getStartTime())+", End Time: "+
-                                        sdf.format(p.getEndTime()));
+                                notification.setBody("Topic [" + p.getTopic()+"], Start Time ["+
+                                        p.getfStartTime()+"], End Time ["+
+                                        p.getfEndTime()+"]");
 
-                                notification.setStartTime(sdf.format(p.getStartTime()));
-                                notification.setEndTime(sdf.format(p.getEndTime()));
+                                notification.setStartTime(p.getfStartTime());
+                                notification.setEndTime(p.getfEndTime());
                                 NotificationSender.send(notification);
 
                                 calendarRes.setCode(200);

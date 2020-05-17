@@ -1,7 +1,5 @@
 package com.dannygroupllc.ConsultantWebService.models;
 
-import org.hibernate.annotations.CreationTimestamp;
-
 import javax.persistence.*;
 import java.util.Date;
 
@@ -355,5 +353,6 @@ public class Plan {
     public void setCreatedDate(Date createdDate) {
         this.createdDate = createdDate;
     }
+
 }
 
