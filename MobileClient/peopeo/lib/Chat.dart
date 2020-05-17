@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:data_connection_checker/data_connection_checker.dart';
 import 'package:peopeo/MySharedPreferences.dart';
 import 'package:peopeo/PlanInfo.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -13,6 +14,7 @@ import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:screen/screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:peopeo/Plan.dart';
 import 'package:peopeo/Const.dart';
@@ -87,6 +89,8 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
   String idOfCusSuccessPaymentMsg;
   int chargedMinutes = 0;
   DateTime reviewAndRatingShowDateTime;
+  bool isInternetAvailable = true;
+  var dataConnectionCheckListener;
 
   final TextEditingController textEditingController =
       new TextEditingController();
@@ -107,6 +111,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    Screen.keepOn(true);
 
     groupChatId = '';
     imageUrl = '';
@@ -176,6 +181,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
         if (!isReviewAndRatingShowedUp && dateTimeNow.isAfter(endDateTime)) {
           print('Review and rating showed up!');
           isReviewAndRatingShowedUp = true;
+          print("hi test 7");
           reviewAndRatingPopUp();
         }
 
@@ -244,6 +250,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
             !isReviewAndRatingShowedUp &&
             controller.isDismissed &&
             dateTimeNow.isAfter(reviewAndRatingShowDateTime)) {
+          print("hi test 1");
           reviewAndRatingPopUp();
           print('Show popup for review and rating in time tiker block!');
           isReviewAndRatingShowedUp = true;
@@ -253,6 +260,21 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
 
     focusNode.addListener(onFocusChange);
     readLocal();
+
+    dataConnectionCheckListener =
+        DataConnectionChecker().onStatusChange.listen((status) {
+          switch (status) {
+            case DataConnectionStatus.connected:
+              setState(() => isInternetAvailable = true);
+              print('Data connection is available.');
+              break;
+            case DataConnectionStatus.disconnected:
+              setState(() => isInternetAvailable = false);
+              print('You are disconnected from the internet.');
+              break;
+          }
+        });
+
   }
 
   void onFocusChange() {
@@ -420,7 +442,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                                     errorWidget: (context, url, error) =>
                                         Material(
                                       child: Image.asset(
-                                        'images/img_not_available.jpeg',
+                                        'assets/images/img_not_available.jpeg',
                                         width: 200.0,
                                         height: 200.0,
                                         fit: BoxFit.cover,
@@ -456,7 +478,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                           // Sticker
                           : Container(
                               child: new Image.asset(
-                                'images/${document['content']}.gif',
+                                'assets/images/${document['content']}.gif',
                                 width: 100.0,
                                 height: 100.0,
                                 fit: BoxFit.cover,
@@ -676,7 +698,6 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                           fontFamily: 'Armata',
                           fontWeight: FontWeight.bold)),
                   onPressed: () {
-
                     if (isShowSticker) {
                       setState(() {
                         isShowSticker = false;
@@ -688,11 +709,12 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                           .updateData({'chattingWith': null});
                     }
 
-                    sendMsgContent("$displayName has ended the chat session.", 3);
+                    sendMsgContent(
+                        "$displayName has ended the chat session.", 3);
                     isReviewAndRatingShowedUp = true;
                     controller.stop();
+                    print("hi test 3");
                     reviewAndRatingPopUp();
-
                   })
             ],
           ),
@@ -702,69 +724,97 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return new Scaffold(
-      appBar: new AppBar(
-          iconTheme: IconThemeData(color: Colors.black),
-          backgroundColor: Colors.white,
-          leading: InkWell(
-            onTap: (){
-              onBackPress();
-            },
-            child: Icon(Icons.stop),
-          ),
-          title: new Text(displayName,
-              style: TextStyle(
-                  color: Colors.black,
-                  fontFamily: 'Armata',
-                  fontWeight: FontWeight.bold)),
-          centerTitle: true,
-          actions: <Widget>[
-            Padding(
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(5.0, 2.0, 5.0, 2.0),
-                margin: const EdgeInsets.all(10.0),
-                decoration: BoxDecoration(
-                    border: Border.all(color: Colors.blueAccent),
-                    borderRadius: BorderRadius.all(Radius.circular(5.0) //
-                        )),
-                child: Center(
-                  child: AnimatedBuilder(
-                      animation: controller,
-                      builder: (BuildContext context, Widget child) {
-                        return Text(timerString,
-                            style: TextStyle(
-                                color: Colors.black,
-                                fontFamily: 'Armata',
-                                fontWeight: FontWeight.bold));
-                      }),
+    return AbsorbPointer(
+        absorbing: !isInternetAvailable,
+        child: Scaffold(
+            appBar: new AppBar(
+                iconTheme: IconThemeData(color: Colors.black),
+                backgroundColor: Colors.white,
+                leading: InkWell(
+                  onTap: () {
+                    onBackPress();
+                  },
+                  child: Icon(Icons.stop),
                 ),
+                title: new Text(displayName,
+                    style: TextStyle(
+                        color: Colors.black,
+                        fontFamily: 'Armata',
+                        fontWeight: FontWeight.bold)),
+                centerTitle: true,
+                actions: <Widget>[
+                  Padding(
+                    child: Container(
+                      padding: const EdgeInsets.fromLTRB(5.0, 2.0, 5.0, 2.0),
+                      margin: const EdgeInsets.all(10.0),
+                      decoration: BoxDecoration(
+                          border: Border.all(color: Colors.blueAccent),
+                          borderRadius: BorderRadius.all(Radius.circular(5.0) //
+                              )),
+                      child: Center(
+                        child: AnimatedBuilder(
+                            animation: controller,
+                            builder: (BuildContext context, Widget child) {
+                              return Text(timerString,
+                                  style: TextStyle(
+                                      color: Colors.black,
+                                      fontFamily: 'Armata',
+                                      fontWeight: FontWeight.bold));
+                            }),
+                      ),
+                    ),
+                    padding: EdgeInsets.all(5.0),
+                  )
+                ]),
+            body: WillPopScope(
+              child: Stack(
+                children: <Widget>[
+                  Column(
+                    children: <Widget>[
+                      // List of messages
+                      buildListMessage(),
+
+                      // Sticker
+                      (isShowSticker ? buildSticker() : Container()),
+
+                      // Input content
+                      buildInput(),
+                    ],
+                  ),
+                  buildLoading()
+                ],
               ),
-              padding: EdgeInsets.all(5.0),
-            )
-          ]),
-      body: WillPopScope(
-        child: Stack(
-          children: <Widget>[
-            Column(
-              children: <Widget>[
-                // List of messages
-                buildListMessage(),
-
-                // Sticker
-                (isShowSticker ? buildSticker() : Container()),
-
-                // Input content
-                buildInput(),
-              ],
+              onWillPop: onBackPress,
             ),
-
-            // Loading
-            buildLoading()
-          ],
-        ),
-        onWillPop: onBackPress,
-      ),
-    );
+            bottomNavigationBar: Visibility(
+                visible: !isInternetAvailable,
+                child: Container(
+                  color: Colors.white,
+                  height: 50.0,
+                  alignment: Alignment.center,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            valueColor:
+                            AlwaysStoppedAnimation<Color>(Colors.red),
+                            strokeWidth: 1.0,
+                          )),
+                      SizedBox(width: 10),
+                      Text("Trying to connect internet...",
+                          style: TextStyle(
+                            fontSize: 17.0,
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Armata',
+                          ))
+                    ],
+                  ),
+                )
+            )));
   }
 
   Widget buildSticker() {
@@ -1064,6 +1114,9 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                 } else if (reviewTECtl.text.toString().isEmpty) {
                   Fluttertoast.showToast(msg: "Please give a review!");
                 } else {
+                  showAlertDialog(
+                      context, "Please wait, saving review and rating ...");
+
                   var request;
                   // customer
                   if (userType == 1) {
@@ -1071,9 +1124,10 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                       'plan': {
                         'id': plan.id,
                         'conUid': peerId,
-                        'cusUid': null,
+                        'cusUid': uid,
                         'conReview': reviewTECtl.text.toString(),
-                        'conRating': rating
+                        'conRating': rating,
+                        'userType': 1
                       }
                     };
                     // consultant
@@ -1081,10 +1135,11 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                     request = {
                       'plan': {
                         'id': plan.id,
-                        'conUid': null,
+                        'conUid': uid,
                         'cusUid': peerId,
                         'cusReview': reviewTECtl.text.toString(),
-                        'cusRating': rating
+                        'cusRating': rating,
+                        'userType': 2
                       }
                     };
                   }
@@ -1103,14 +1158,22 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
     Map<String, String> headers = {"Content-type": "application/json"};
     Response response =
         await post(url, headers: headers, body: json.encode(request));
+    print("request review and rating = $request");
+
     if (response.statusCode == 200) {
       Navigator.of(context).popUntil((route) => route.isFirst);
       Navigator.pushReplacement(
           context,
           MaterialPageRoute(
               builder: (context) => PlanInfo(userType: userType, uid: uid)));
+
       print(response.body.toString());
     } else {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+              builder: (context) => PlanInfo(userType: userType, uid: uid)));
       throw Exception('Failed to load post');
     }
   }
@@ -1157,6 +1220,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                 needToShowPaymentUi = false;
                 Navigator.of(context).pop();
                 controller.stop();
+                print("hi test 4");
                 reviewAndRatingPopUp();
               },
             ),
@@ -1166,9 +1230,17 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                       color: Colors.green,
                       fontFamily: 'Armata',
                       fontWeight: FontWeight.bold)),
-              onPressed: () {
-                sendMsgContent(cusContinueMsg, 0);
-                getClientToken(amount, p.id);
+              onPressed: () async {
+
+                bool hasConnection = await DataConnectionChecker().hasConnection;
+                if(hasConnection){
+
+                  sendMsgContent(cusContinueMsg, 0);
+                  getClientToken(amount, p.id);
+
+                }else {
+                  Fluttertoast.showToast(msg: "No internat connection available.");
+                }
               },
             ),
           ],
@@ -1282,20 +1354,20 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
 
   void goBrowserForPayment(String aid) async {
     String url = webClientBaseUrl + '/payment.html?aid=' + aid + "&uid=" + uid;
+
     Navigator.of(context, rootNavigator: true).pop();
-
-    Navigator.of(context).push(MaterialPageRoute(
-        builder: (BuildContext context) => MyWebView(
-          title: "Payment",
-          url: url,
-        ))).whenComplete((){
-
-      MySharedPreferences.getBooleanValue('isPaymentSuccessful').then((isPaymentSuccessful){
-
-        if(isPaymentSuccessful){
-          paymentCheckingPopUp(context); 
-        }else {
-
+    Navigator.of(context)
+        .push(MaterialPageRoute(
+            builder: (BuildContext context) => MyWebView(
+                  title: "Payment",
+                  url: url,
+                )))
+        .whenComplete(() {
+      MySharedPreferences.getBooleanValue('isPaymentSuccessful')
+          .then((isPaymentSuccessful) {
+        if (isPaymentSuccessful) {
+          paymentCheckingPopUp(context);
+        } else {
           Fluttertoast.showToast(
               msg: "Payment unsuccessful!",
               toastLength: Toast.LENGTH_LONG,
@@ -1303,18 +1375,15 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
               timeInSecForIosWeb: 1,
               backgroundColor: Colors.red,
               textColor: Colors.white,
-              fontSize: 16.0
-          );
+              fontSize: 16.0);
 
           sendMsgContent("Customer payment unsuccessful!", 3);
           isReviewAndRatingShowedUp = true;
           controller.stop();
+          print("hi test 5");
           reviewAndRatingPopUp();
-
         }
-
       });
-
     });
   }
 
@@ -1323,60 +1392,74 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
     if (controller.status == AnimationStatus.reverse) {
       controller.dispose();
     }
+    dataConnectionCheckListener.cancel();
     super.dispose();
   }
 
-  void sendMsgContent(String content, int type) {
-    textEditingController.clear();
+  Future<void> sendMsgContent(String content, int type) async {
 
-    var gcrDocumentReference =
-        Firestore.instance.collection('messages').document(groupChatId);
+    bool hasConnection = await DataConnectionChecker().hasConnection;
 
-    gcrDocumentReference.setData({
-      'groupChatId': groupChatId,
-    });
+    if(hasConnection){
 
-    var covDocumentReference = gcrDocumentReference
-        .collection('conversations')
-        .document(DateTime.now().millisecondsSinceEpoch.toString());
+      textEditingController.clear();
 
-    var obj;
+      var gcrDocumentReference =
+      Firestore.instance.collection('messages').document(groupChatId);
 
-    if (type == 3) {
-      obj = {
-        'idFrom': id,
-        'idTo': peerId,
-        'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
-        'content': content,
-        'type': type,
-        'isReviewAndRatingShowedUp': 0
-      };
-    } else if (type == 4) {
-      obj = {
-        'idFrom': id,
-        'idTo': peerId,
-        'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
-        'content': content,
-        'type': type,
-        'isPaymentCompleteAfterFreeMinuteGone': 0
-      };
-    } else {
-      obj = {
-        'idFrom': id,
-        'idTo': peerId,
-        'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
-        'content': content,
-        'type': type,
-        'isReviewAndRatingShowedUp': -1
-      };
+      gcrDocumentReference.setData({
+        'groupChatId': groupChatId,
+      });
+
+      var covDocumentReference = gcrDocumentReference
+          .collection('conversations')
+          .document(DateTime.now().millisecondsSinceEpoch.toString());
+
+      var obj;
+
+      if (type == 3) {
+        obj = {
+          'idFrom': id,
+          'idTo': peerId,
+          'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
+          'content': content,
+          'type': type,
+          'isReviewAndRatingShowedUp': 0
+        };
+      } else if (type == 4) {
+        obj = {
+          'idFrom': id,
+          'idTo': peerId,
+          'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
+          'content': content,
+          'type': type,
+          'isPaymentCompleteAfterFreeMinuteGone': 0
+        };
+      } else {
+        obj = {
+          'idFrom': id,
+          'idTo': peerId,
+          'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
+          'content': content,
+          'type': type,
+          'isReviewAndRatingShowedUp': -1
+        };
+      }
+
+      Firestore.instance.runTransaction((transaction) async {
+        await transaction.set(covDocumentReference, obj);
+      });
+
+      listScrollController.animateTo(0.0,
+          duration: Duration(milliseconds: 300), curve: Curves.easeOut);
+
+    }else {
+
+      Fluttertoast.showToast(
+          msg: "No internet connection available!");
+
     }
 
-    Firestore.instance.runTransaction((transaction) async {
-      await transaction.set(covDocumentReference, obj);
-    });
-
-    listScrollController.animateTo(0.0,
-        duration: Duration(milliseconds: 300), curve: Curves.easeOut);
   }
 
   void checkPaymentStatus(int id, bool isCalledFromTimerPeriodic) async {
@@ -1412,6 +1495,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
         isReviewAndRatingShowedUp = true;
         Navigator.of(context).pop();
         controller.stop();
+        print("hi test 6");
         reviewAndRatingPopUp();
       }
     } else {
@@ -1431,6 +1515,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
           .collection('conversations')
           .document(idOfCusLeaveMsg)
           .updateData(<String, dynamic>{'isReviewAndRatingShowedUp': 1});
+      print("hi test 2");
       reviewAndRatingPopUp();
       controller.stop();
       isReviewAndRatingShowedUp = true;
@@ -1452,6 +1537,23 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
       print(
           "Changed review and rating show date time = $reviewAndRatingShowDateTime");
     }
+  }
+
+  showAlertDialog(BuildContext context, String msg) {
+    AlertDialog alert = AlertDialog(
+      content: ListTile(
+        leading: CircularProgressIndicator(),
+        title: Text("Loading"),
+        subtitle: Text(msg),
+      ),
+    );
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (BuildContext context) {
+        return alert;
+      },
+    );
   }
 
 }

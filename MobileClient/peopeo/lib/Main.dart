@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:badges/badges.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:data_connection_checker/data_connection_checker.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
@@ -26,8 +27,12 @@ import 'package:peopeo/PlanInfo.dart';
 import 'package:peopeo/UserInfo.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:share/share.dart';
+import 'dart:io';
 
-void main() => runApp(MyApp());
+void main() {
+  runApp(MyApp());
+}
+
 bool isUserLoggedIn = false;
 var userInfo;
 
@@ -51,17 +56,14 @@ class MyApp extends StatelessWidget {
 
               MySharedPreferences.getBooleanValue("isUploadRunning")
                   .then((isUploadRunning) {
-
-                    if(isUploadRunning == null){
-
-                      print("nothing is uploading!");
-
-                    }else if (isUploadRunning) {
-                      Fluttertoast.showToast(
-                          msg:
-                              "Video/Image upload running, Please don't close the app!",
-                          toastLength: Toast.LENGTH_LONG);
-                    }
+                if (isUploadRunning == null) {
+                  print("nothing is uploading!");
+                } else if (isUploadRunning) {
+                  Fluttertoast.showToast(
+                      msg:
+                          "Video/Image upload running, Please don't close the app!",
+                      toastLength: Toast.LENGTH_LONG);
+                }
               });
             } else {
               isUserLoggedIn = false;
@@ -82,183 +84,234 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   final FirebaseMessaging fm = FirebaseMessaging();
   int i = 0;
   DateFormat df = new DateFormat('dd-MM-yyyy hh:mm:ss a');
+  var dataConnectionCheckListener;
+  bool isInternetAvailable = false;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-          backgroundColor: Colors.white,
-          centerTitle: true,
-          leading: Padding(
-            padding: EdgeInsets.all(10.0),
-            child: getProfilePic(),
-          ),
-          title: Text(
-            "Experts",
-            style: TextStyle(
-                color: Colors.black,
-                fontFamily: 'Armata',
-                fontWeight: FontWeight.bold),
-          ),
-          actions: <Widget>[
-            IconButton(
-              icon: Badge(
-                badgeContent: getTotalUnSeenNotification(),
-                child: Icon(Icons.notifications, color: Colors.grey),
-              ),
-              onPressed: () async {
-                if (isUserLoggedIn) {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) {
-                        return NotificationViewer(uid: userInfo['uid']);
-                      },
-                    ),
-                  );
-                } else {
-                  goToLoginPage();
-                }
-              },
-            )
-          ]),
-      body: StreamBuilder(
-        stream: Firestore.instance
-            .collection('userInfoList')
-            .where('userType', isEqualTo: 2)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
-              ),
-            );
-          } else {
-            return ListView.builder(
-              itemBuilder: (context, index) =>
-                  buildItem(context, snapshot.data.documents[index]),
-              itemCount: snapshot.data.documents.length,
-            );
-          }
-        },
-      ),
-      bottomNavigationBar: Container(
-        color: Colors.white,
-        height: 50.0,
-        alignment: Alignment.center,
-        child: new BottomAppBar(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: <Widget>[
+    return AbsorbPointer(
+      absorbing: !isInternetAvailable,
+      child: Scaffold(
+        appBar: AppBar(
+            backgroundColor: Colors.white,
+            centerTitle: true,
+            leading: Padding(
+              padding: EdgeInsets.all(10.0),
+              child: getProfilePic(),
+            ),
+            title: Text(
+              "Experts",
+              style: TextStyle(
+                  color: Colors.black,
+                  fontFamily: 'Armata',
+                  fontWeight: FontWeight.bold),
+            ),
+            actions: <Widget>[
               IconButton(
-                  icon: Icon(Icons.search),
-                  onPressed: () {
-                    if (isUserLoggedIn) {
-                      List<UserInfo> userInfoList = new List();
-                      Firestore.instance
-                          .collection('userInfoList')
-                          .where('userType', isEqualTo: 2)
-                          .getDocuments()
-                          .then((docs) {
-                        if (docs != null) {
-                          docs.documents.forEach((val) {
-                            userInfoList.add(UserInfo(
-                                uid: val.data['uid'],
-                                displayName: val.data['displayName'],
-                                email: val.data['email'],
-                                hashTag: val.data['hashTag']));
-                          });
-                          showSearch(
-                              context: context,
-                              delegate: ExpertSearch(userInfoList));
-                        }
-                      });
-                    } else {
-                      goToLoginPage();
-                    }
-                  }),
-              IconButton(
-                  icon: Icon(Icons.favorite),
-                  onPressed: () {
-                    if (isUserLoggedIn) {
-                      if (userInfo['userType'] == 1) {
-                        showAlertDialog(
-                            context, "Gathering user that you liked...");
-
-                        getLikedUserIdList(userInfo['uid']).then((res) async {
-                          Navigator.of(context, rootNavigator: true).pop();
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) {
-                                return LikedUserViewer(
-                                    uid: userInfo['uid'], likedUserIdList: res,userType: userInfo['userType']);
-                              },
-                            ),
-                          );
-                        });
-                      } else {
-                        showAlertDialog(context, "Fetching customer list...");
-
-                        getLikedCustomerList(userInfo['uid']).then((res) {
-                          Navigator.of(context, rootNavigator: true).pop();
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) {
-                                return CustomerListViewer(
-                                    uid: userInfo['uid'], customerList: res);
-                              },
-                            ),
-                          );
-                        });
-                      }
-                    } else {
-                      goToLoginPage();
-                    }
-                  }),
-              IconButton(
-                  icon: Icon(Icons.history),
-                  onPressed: () {
-                    if (isUserLoggedIn) {
-                      showAlertDialog(
-                          context, "Gathering user that you chatted before.");
-
-                      getAllChattedUserInfo(userInfo['uid'])
-                          .then((chattedUserIdList) {
-                        Navigator.of(context, rootNavigator: true).pop();
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) {
-                              return ChattedUserViewer(
-                                  uid: userInfo['uid'],
-                                  chattedUserIdList: chattedUserIdList);
-                            },
-                          ),
-                        );
-                      });
-                    } else {
-                      goToLoginPage();
-                    }
-                  }),
-              IconButton(
-                  icon: Icon(Icons.calendar_today),
-                  onPressed: () {
-                    if (isUserLoggedIn) {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) {
-                            return PlanInfo(
-                                uid: userInfo['uid'],
-                                userType: userInfo['userType']);
-                          },
-                        ),
-                      );
-                    } else {
-                      goToLoginPage();
-                    }
-                  }),
-            ],
-          ),
+                icon: Badge(
+                  badgeContent: getTotalUnSeenNotification(),
+                  child: Icon(Icons.notifications, color: Colors.grey),
+                ),
+                onPressed: () async {
+                  if (isUserLoggedIn) {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) {
+                          return NotificationViewer(uid: userInfo['uid']);
+                        },
+                      ),
+                    );
+                  } else {
+                    goToLoginPage();
+                  }
+                },
+              )
+            ]),
+        body: StreamBuilder(
+          stream: Firestore.instance
+              .collection('userInfoList')
+              .where('userType', isEqualTo: 2)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                ),
+              );
+            } else {
+              return ListView.builder(
+                itemBuilder: (context, index) =>
+                    buildItem(context, snapshot.data.documents[index]),
+                itemCount: snapshot.data.documents.length,
+              );
+            }
+          },
         ),
+        bottomNavigationBar: !isInternetAvailable
+            ? Container(
+                color: Colors.white,
+                height: 50.0,
+                alignment: Alignment.center,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    SizedBox( width: 20, height: 20, child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                      strokeWidth: 1.0,
+                    )),
+                    SizedBox(
+                        width: 10
+                    ),
+                    Text("Trying to connect internet...",
+                        style: TextStyle(
+                          fontSize: 17.0,
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Armata',
+                        ))
+                  ],
+                ),
+              )
+            : Container(
+                color: Colors.white,
+                height: 50.0,
+                alignment: Alignment.center,
+                child: new BottomAppBar(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: <Widget>[
+                      IconButton(
+                          icon: Icon(Icons.search),
+                          onPressed: () {
+                            if (isUserLoggedIn) {
+                              List<UserInfo> userInfoList = new List();
+                              Firestore.instance
+                                  .collection('userInfoList')
+                                  .where('userType', isEqualTo: 2)
+                                  .getDocuments()
+                                  .then((docs) {
+                                if (docs != null) {
+                                  docs.documents.forEach((val) {
+                                    userInfoList.add(UserInfo(
+                                        uid: val.data['uid'],
+                                        displayName: val.data['displayName'],
+                                        email: val.data['email'],
+                                        hashTag: val.data['hashTag']));
+                                  });
+                                  showSearch(
+                                      context: context,
+                                      delegate: ExpertSearch(userInfoList));
+                                }
+                              });
+                            } else {
+                              goToLoginPage();
+                            }
+                          }),
+                      IconButton(
+                          icon: Icon(Icons.favorite),
+                          onPressed: () {
+                            if (isUserLoggedIn) {
+                              if (userInfo['userType'] == 1) {
+                                showAlertDialog(context,
+                                    "Gathering user that you liked...");
+
+                                getLikedUserIdList(userInfo['uid'])
+                                    .then((res) async {
+                                  Navigator.of(context, rootNavigator: true)
+                                      .pop();
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) {
+                                        return LikedUserViewer(
+                                            uid: userInfo['uid'],
+                                            likedUserIdList: res,
+                                            userType: userInfo['userType']);
+                                      },
+                                    ),
+                                  );
+                                });
+                              } else {
+                                showAlertDialog(
+                                    context, "Fetching customer list...");
+
+                                getLikedCustomerList(userInfo['uid'])
+                                    .then((res) {
+                                  Navigator.of(context, rootNavigator: true)
+                                      .pop();
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) {
+                                        return CustomerListViewer(
+                                            uid: userInfo['uid'],
+                                            customerList: res);
+                                      },
+                                    ),
+                                  );
+                                });
+                              }
+                            } else {
+                              goToLoginPage();
+                            }
+                          }),
+                      IconButton(
+                          icon: Icon(Icons.history),
+                          onPressed: () {
+                            if (isUserLoggedIn) {
+                              showAlertDialog(context,
+                                  "Gathering user that you chatted before.");
+
+                              getAllChattedUserInfo(userInfo['uid'])
+                                  .then((chattedUserIdList) {
+                                Navigator.of(context, rootNavigator: true)
+                                    .pop();
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) {
+                                      return ChattedUserViewer(
+                                          uid: userInfo['uid'],
+                                          chattedUserIdList: chattedUserIdList);
+                                    },
+                                  ),
+                                );
+                              });
+                            } else {
+                              goToLoginPage();
+                            }
+                          }),
+                      IconButton(
+                          icon: Icon(Icons.calendar_today),
+                          onPressed: () async {
+                            if (isUserLoggedIn) {
+
+                              bool hasConnection = await DataConnectionChecker().hasConnection;
+
+                              if(hasConnection){
+
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) {
+                                      return PlanInfo(
+                                          uid: userInfo['uid'],
+                                          userType: userInfo['userType']);
+                                    },
+                                  ),
+                                );
+
+                              }else {
+
+                                Fluttertoast.showToast(msg: "No internet connection available.");
+
+                              }
+
+                            } else {
+                              goToLoginPage();
+                            }
+                          }),
+                    ],
+                  ),
+                ),
+              ),
       ),
     );
   }
@@ -273,6 +326,8 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         fm = document['freeMinutesForNewCustomer'];
       }
 
+      print("fm $fm");
+
       if (hr == null) {
         Fluttertoast.showToast(msg: "This user didn't set hourly rate yet!");
       } else {
@@ -285,39 +340,51 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         Response response =
             await post(url, headers: headers, body: json.encode(request));
 
+        print("calendar preparing response = ${response.body.toString()}");
+
         if (response.statusCode == 200) {
-          print(response.body.toString());
+          HttpResponse httpResponse =
+              HttpResponse.fromJson(json.decode(response.body));
 
-          String aid = HttpResponse.fromJson(json.decode(response.body)).aid;
+          if (httpResponse.code == 200) {
+            String calenderUrl = webClientBaseUrl +
+                "/calendar.html?aid=" +
+                httpResponse.aid +
+                "&conid=" +
+                conId +
+                "&cusid=" +
+                userInfo['uid'] +
+                "&hourly-rate=" +
+                hr.toString() +
+                "&free-minutes=" +
+                fm.toString() +
+                "&time-zone=" +
+                tz;
 
-          String calenderUrl = webClientBaseUrl +
-              "/calendar.html?aid=" +
-              aid +
-              "&conid=" +
-              conId +
-              "&cusid=" +
-              userInfo['uid'] +
-              "&hourly-rate=" +
-              hr.toString() +
-              "&free-minutes=" +
-              fm.toString() +
-              "&time-zone=" +
-              tz;
+            print("calender url = $calenderUrl");
 
-          print("calender url = $calenderUrl");
-
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) {
-                return MyFlutterWebView(title: "Calendar of ["+document['displayName']+"]", url: calenderUrl);
-              },
-            ),
-          );
+            Navigator.of(context).pop();
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) {
+                  return MyFlutterWebView(
+                      title: "Calendar of [" + document['displayName'] + "]",
+                      url: calenderUrl);
+                },
+              ),
+            );
+          } else {
+            Navigator.of(context).pop();
+            Fluttertoast.showToast(msg: "Something went woring!");
+          }
         } else {
+          Navigator.of(context).pop();
+          Fluttertoast.showToast(msg: "Something went woring!");
           throw Exception('Failed to load post');
         }
       }
     } else {
+      Navigator.of(context).pop();
       Fluttertoast.showToast(
           msg:
               "Because of you are a expert you can't see another expert calander!");
@@ -372,7 +439,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                       shape: BoxShape.circle,
                       image: new DecorationImage(
                           fit: BoxFit.cover,
-                          image: new NetworkImage(document['photoUrl'])),
+                          image: isInternetAvailable ? NetworkImage(document['photoUrl']) : AssetImage("assets/images/demo_profile_pic.png")),
                     ),
                   ),
                   Expanded(
@@ -407,25 +474,27 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                       .snapshots(),
                                   builder: (context, snapshot) {
                                     if (snapshot.hasData) {
-                                      print("total like = ${snapshot.data.documents.length}");
+                                      String like;
+
                                       if (snapshot.data.documents.length > 0) {
-                                        return Text(
-                                            snapshot.data.documents.length
-                                                    .toString() +
-                                                " Likes",
-                                            style: TextStyle(
-                                              fontSize: 12.0,
-                                              fontWeight: FontWeight.w600,
-                                              fontFamily: 'Armata',
-                                            ));
+                                        if (snapshot.data.documents.length ==
+                                            1) {
+                                          like = "1 Like";
+                                        } else {
+                                          like = snapshot.data.documents.length
+                                                  .toString() +
+                                              " Likes";
+                                        }
                                       } else {
-                                        return Text('0 Like',
-                                            style: TextStyle(
-                                              fontSize: 12.0,
-                                              fontWeight: FontWeight.w600,
-                                              fontFamily: 'Armata',
-                                            ));
+                                        like = "0 Like";
                                       }
+
+                                      return Text(like,
+                                          style: TextStyle(
+                                            fontSize: 12.0,
+                                            fontWeight: FontWeight.w600,
+                                            fontFamily: 'Armata',
+                                          ));
                                     } else {
                                       return Text('0 Like',
                                           style: TextStyle(
@@ -544,16 +613,42 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                     shape: new RoundedRectangleBorder(
                         borderRadius: new BorderRadius.circular(8.0),
                         side: BorderSide(color: Colors.red)),
-                    onPressed: () {
+                    onPressed: () async {
                       // first reload auth on server side
                       // then redirect to browser and open calender
+
                       if (isUserLoggedIn) {
-                        getTimeZone().then((tz) {
-                          reloadAuth(document, tz);
-                        }).catchError((er) {
-                          print("Time zone error $er");
-                          Fluttertoast.showToast(msg: "Can't fetch time zone!");
-                        });
+                        if (document['hourlyRate'] == null) {
+                          Fluttertoast.showToast(
+                              msg:
+                                  "This expert didn't set his hourly rate yet!");
+                        } else {
+
+                          showAlertDialog(context, "Preparing calender ..");
+                          bool hasConnection = await DataConnectionChecker().hasConnection;
+
+                          if(hasConnection){
+
+                            getTimeZone().then((tz) {
+                              reloadAuth(document, tz);
+                            }).catchError((er) {
+                              Navigator.of(context).pop();
+                              print("Time zone error $er");
+                              Fluttertoast.showToast(
+                                  msg: "Can't fetch time zone!");
+                            });
+
+                          }else {
+
+                            setState(() {
+                              isInternetAvailable = false;
+                            });
+                            Navigator.of(context).pop();
+                            Fluttertoast.showToast(
+                                msg: "No internet connection available!");
+
+                          }
+                        }
                       } else {
                         goToLoginPage();
                       }
@@ -570,24 +665,6 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         ),
       );
     }
-  }
-
-  getLike(DocumentSnapshot ds) {
-    Firestore.instance
-        .collection('userInfoList')
-        .document(ds['uid'])
-        .collection("likedUserIdList")
-        .getDocuments()
-        .then((docs) {
-      print(docs.documents.length);
-    });
-
-    return Text('0 Like',
-        style: TextStyle(
-          fontSize: 12.0,
-          fontWeight: FontWeight.w600,
-          fontFamily: 'Armata',
-        ));
   }
 
   getFreeMinutes(DocumentSnapshot document) {
@@ -820,8 +897,21 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       updateOnlineStatus();
     });
 
-    MySharedPreferences.setBooleanValue("isUploadRunning",false);
+    MySharedPreferences.setBooleanValue("isUploadRunning", false);
 
+    dataConnectionCheckListener =
+        DataConnectionChecker().onStatusChange.listen((status) {
+      switch (status) {
+        case DataConnectionStatus.connected:
+          setState(() => isInternetAvailable = true);
+          print('Data connection is available.');
+          break;
+        case DataConnectionStatus.disconnected:
+          setState(() => isInternetAvailable = false);
+          print('You are disconnected from the internet.');
+          break;
+      }
+    });
   }
 
   Future<String> getTimeZone() async {
@@ -1001,6 +1091,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
 
   getProfilePic() {
     if (isUserLoggedIn) {
+
       return Container(
         height: 10.0,
         width: 10.0,
@@ -1028,9 +1119,10 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         decoration: new BoxDecoration(
           shape: BoxShape.circle,
           image: new DecorationImage(
-              fit: BoxFit.fill, image: NetworkImage(userInfo['photoUrl'])),
+              fit: BoxFit.fill, image: isInternetAvailable ? NetworkImage(userInfo['photoUrl']) : AssetImage("assets/images/demo_profile_pic.png")),
         ),
       );
+
     } else {
       return Container(
         height: 5.0,
@@ -1059,9 +1151,9 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   getOnlineStatus(DocumentSnapshot document) {
     if (document['isOnline'] == null) {
       return Icon(Icons.lens, color: Colors.green);
-    } else if(document['isOnline']) {
+    } else if (document['isOnline']) {
       return Icon(Icons.lens, color: Colors.green);
-    }else {
+    } else {
       return Icon(Icons.lens, color: Colors.grey);
     }
   }
@@ -1080,5 +1172,11 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         });
       });
     }
+  }
+
+  @override
+  void dispose() {
+    dataConnectionCheckListener.cancel();
+    super.dispose();
   }
 }

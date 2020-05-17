@@ -182,7 +182,7 @@ class ChatHistoryState extends State<ChatHistory>
                                     errorWidget: (context, url, error) =>
                                         Material(
                                       child: Image.asset(
-                                        'images/img_not_available.jpeg',
+                                        'assets/images/img_not_available.jpeg',
                                         width: 200.0,
                                         height: 200.0,
                                         fit: BoxFit.cover,
@@ -218,7 +218,7 @@ class ChatHistoryState extends State<ChatHistory>
                           // Sticker
                           : Container(
                               child: new Image.asset(
-                                'images/${document['content']}.gif',
+                                'assets/images/${document['content']}.gif',
                                 width: 100.0,
                                 height: 100.0,
                                 fit: BoxFit.cover,

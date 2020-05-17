@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:data_connection_checker/data_connection_checker.dart';
 import 'package:peopeo/Const.dart';
 import 'package:peopeo/HttpResponse.dart';
 import 'package:flutter/cupertino.dart';
@@ -7,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart';
+import 'package:peopeo/MySharedPreferences.dart';
+import 'package:peopeo/MyWebView.dart';
 import 'package:side_header_list_view/side_header_list_view.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:peopeo/Chat.dart';
@@ -26,108 +29,177 @@ class PlanInfo extends StatefulWidget {
 }
 
 class PlanInfoState extends State<PlanInfo> {
+
   String uid;
   int userType;
   DateFormat df = new DateFormat('dd-MM-yyyy hh:mm a');
+  bool isInternetAvailable = true;
+  var dataConnectionCheckListener;
 
   PlanInfoState({Key key, @required this.uid, @required this.userType});
 
   @override
+  void initState() {
+    super.initState();
+    print("uid = $uid and user type = $userType");
+    dataConnectionCheckListener =
+        DataConnectionChecker().onStatusChange.listen((status) {
+          switch (status) {
+            case DataConnectionStatus.connected:
+              setState(() => isInternetAvailable = true);
+              print('Data connection is available in consultant profile.');
+              break;
+            case DataConnectionStatus.disconnected:
+              setState(() => isInternetAvailable = false);
+              print('You are disconnected from the internet in consultant profile.');
+              break;
+          }
+        });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // TODO: implement build
-    return Scaffold(
-      appBar: AppBar(
-          iconTheme: IconThemeData(color: Colors.black),
-          backgroundColor: Colors.white,
-          title: Text('Schedules',
-              style: TextStyle(
-                  color: Colors.black,
-                  fontFamily: 'Armata',
-                  fontWeight: FontWeight.bold)),
-          centerTitle: true),
-      body: Container(
-        child: FutureBuilder<List<Plan>>(
-            future: getPlanList(),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                return Center(
-                    child: Text(
-                  "No schedules found",
+    return AbsorbPointer(
+        absorbing: !isInternetAvailable,
+        child: Scaffold(
+          appBar: AppBar(
+              iconTheme: IconThemeData(color: Colors.black),
+              backgroundColor: Colors.white,
+              title: Text('Schedules',
                   style: TextStyle(
-                      fontSize: 20.0,
-                      color: Colors.red,
+                      color: Colors.black,
                       fontFamily: 'Armata',
-                      fontWeight: FontWeight.bold),
-                ));
-              } else {
-                return SideHeaderListView(
-
-                  itemCount: snapshot.data.length,
-                  padding: new EdgeInsets.all(5.0),
-                  headerBuilder: (BuildContext context, int index) {
-
-                    String st = df.format(DateTime.parse(snapshot.data[index].fStartTime));
-
-                    return Container(
-                        child: Text(
-                            st.substring(0, 10),
+                      fontWeight: FontWeight.bold)),
+              centerTitle: true),
+          body: Container(
+            child: FutureBuilder<List<Plan>>(
+                future: getPlanList(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    if (snapshot.data.length > 0) {
+                      return SideHeaderListView(
+                        itemCount: snapshot.data.length,
+                        padding: new EdgeInsets.all(5.0),
+                        headerBuilder: (BuildContext context, int index) {
+                          String st = df.format(
+                              DateTime.parse(snapshot.data[index].fStartTime));
+                          return Container(
+                              child: Text(st.substring(0, 10),
+                                  style: TextStyle(
+                                      fontSize: 15.0,
+                                      color: Colors.black,
+                                      fontFamily: 'Armata',
+                                      fontWeight: FontWeight.bold)));
+                        },
+                        itemBuilder: (BuildContext context, int index) {
+                          String tp = snapshot.data[index].topic;
+                          String st = df.format(
+                              DateTime.parse(snapshot.data[index].fStartTime));
+                          String et = df.format(
+                              DateTime.parse(snapshot.data[index].fEndTime));
+                          return Card(
+                            elevation: 2.0,
+                            child: Padding(
+                              padding: EdgeInsets.all(5.0),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: <Widget>[
+                                  Text("Topic $tp",
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                          color: Colors.black,
+                                          fontFamily: 'Armata',
+                                          fontSize: 15.0,
+                                          fontWeight: FontWeight.bold)),
+                                  getPeerDisplayName(snapshot.data[index]),
+                                  Text(
+                                      "Start Time " +
+                                          st.substring(11, st.length),
+                                      style: TextStyle(
+                                          color: Colors.black,
+                                          fontFamily: 'Armata',
+                                          fontWeight: FontWeight.normal)),
+                                  Text(
+                                      "End Time " + et.substring(11, et.length),
+                                      style: TextStyle(
+                                          color: Colors.black,
+                                          fontFamily: 'Armata',
+                                          fontWeight: FontWeight.normal)),
+                                  showPaymentButtonOrChatButton(
+                                      snapshot.data[index])
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                        hasSameHeader: (int a, int b) {
+                          return snapshot.data[a].fStartTime.substring(0, 9) ==
+                              snapshot.data[b].fStartTime.substring(0, 9);
+                        },
+                        itemExtend: null,
+                      );
+                    } else {
+                      return Center(
+                          child: Text(
+                            "[No schedules found]",
                             style: TextStyle(
-                                fontSize: 15.0,
-                                color: Colors.black,
+                                fontSize: 20.0,
+                                color: Colors.red,
                                 fontFamily: 'Armata',
-                                fontWeight: FontWeight.bold)));
-                  },
-                  itemBuilder: (BuildContext context, int index) {
-
-                    String tp = snapshot.data[index].topic;
-                    String st = df.format(DateTime.parse(snapshot.data[index].fStartTime));
-                    String et = df.format(DateTime.parse(snapshot.data[index].fEndTime));
-
-                    return Card(
-                      elevation: 2.0,
-                      child: Padding(
-                        padding: EdgeInsets.all(5.0),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: <Widget>[
-                            Text("Topic $tp",
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                    color: Colors.black,
-                                    fontFamily: 'Armata',
-                                    fontSize: 15.0,
-                                    fontWeight: FontWeight.bold)),
-                            getPeerDisplayName(snapshot.data[index]),
-                            Text(
-                                "Start Time " + st.substring(11,st.length),
-                                style: TextStyle(
-                                    color: Colors.black,
-                                    fontFamily: 'Armata',
-                                    fontWeight: FontWeight.normal)),
-                            Text(
-                                "End Time " + et.substring(11,et.length),
-                                style: TextStyle(
-                                    color: Colors.black,
-                                    fontFamily: 'Armata',
-                                    fontWeight: FontWeight.normal)),
-                            showPaymentButtonOrChatButton(snapshot.data[index])
-                          ],
+                                fontWeight: FontWeight.bold),
+                          ));
+                    }
+                  } else {
+                    if(snapshot.data == null){
+                      return Center(
+                          child: Text(
+                            "[Couldn't fetch any schedule from server]",
+                            style: TextStyle(
+                                fontSize: 20.0,
+                                color: Colors.red,
+                                fontFamily: 'Armata',
+                                fontWeight: FontWeight.bold),
+                          ));
+                    }else {
+                      return Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
                         ),
-                      ),
-                    );
-                  },
-                  hasSameHeader: (int a, int b) {
-                    return snapshot.data[a].fStartTime.substring(0, 9) ==
-                        snapshot.data[b].fStartTime.substring(0, 9);
-                  },
-                  itemExtend: null,
-                );
-              }
-            }),
-      ),
-    );
+                      );
+                    }
+                  }
+                }),
+          ),
+          bottomNavigationBar: Visibility(
+              visible: !isInternetAvailable,
+              child: Container(
+                color: Colors.white,
+                height: 50.0,
+                alignment: Alignment.center,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                          strokeWidth: 1.0,
+                        )),
+                    SizedBox(width: 10),
+                    Text("Trying to connect internet...",
+                        style: TextStyle(
+                          fontSize: 17.0,
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Armata',
+                        ))
+                  ],
+                ),
+              )),
+        ));
   }
 
   Future<List<Plan>> getPlanList() async {
@@ -146,11 +218,18 @@ class PlanInfoState extends State<PlanInfo> {
     }
     Response response =
         await post(url, headers: headers, body: json.encode(request));
+    print("response $response");
+
     if (response.statusCode == 200) {
-      print(response.body.toString());
-      return HttpResponse.fromJson(json.decode(response.body)).planList;
+      print(response.body);
+      var body = json.decode(response.body);
+
+      if (body['code'] == 404) {
+        return [];
+      } else {
+        return HttpResponse.fromJson(json.decode(response.body)).planList;
+      }
     } else {
-      print("Plan list getting errowr!");
       Fluttertoast.showToast(msg: "Plan list getting error!");
       return [];
     }
@@ -166,7 +245,7 @@ class PlanInfoState extends State<PlanInfo> {
 
     if (response.statusCode == 200) {
       // checking if server returns an OK response, then parse the JSON.
-      print(HttpResponse.fromJson(json.decode(response.body)).clientToken);
+      // print(HttpResponse.fromJson(json.decode(response.body)).clientToken);
 
       String clientToken =
           HttpResponse.fromJson(json.decode(response.body)).clientToken;
@@ -180,15 +259,41 @@ class PlanInfoState extends State<PlanInfo> {
 
   void goBrowserForPayment(String aid) async {
     String url = webClientBaseUrl + '/payment.html?aid=' + aid + "&uid=" + uid;
-    if (await canLaunch(url)) {
-      await launch(url);
-    } else {
-      throw 'Could not launch $url';
-    }
+
+    Navigator.of(context, rootNavigator: true).pop();
+    Navigator.of(context)
+        .push(MaterialPageRoute(
+            builder: (BuildContext context) => MyWebView(
+                  title: "Payment",
+                  url: url,
+                )))
+        .whenComplete(() {
+      MySharedPreferences.getBooleanValue('isPaymentSuccessful')
+          .then((isPaymentSuccessful) {
+        if (isPaymentSuccessful) {
+          Fluttertoast.showToast(
+              msg: "Payment successful!",
+              toastLength: Toast.LENGTH_LONG,
+              gravity: ToastGravity.BOTTOM,
+              timeInSecForIosWeb: 1,
+              backgroundColor: Colors.green,
+              textColor: Colors.white,
+              fontSize: 16.0);
+        } else {
+          Fluttertoast.showToast(
+              msg: "Payment unsuccessful!",
+              toastLength: Toast.LENGTH_LONG,
+              gravity: ToastGravity.BOTTOM,
+              timeInSecForIosWeb: 1,
+              backgroundColor: Colors.red,
+              textColor: Colors.white,
+              fontSize: 16.0);
+        }
+      });
+    });
   }
 
   showPaymentButtonOrChatButton(Plan p) {
-
     String buttonText = "Start Chat";
 
     // handle consultant
@@ -214,12 +319,11 @@ class PlanInfoState extends State<PlanInfo> {
               final fStartTime = DateTime.parse(p.fStartTime);
               final fEndTime = DateTime.parse(p.fEndTime);
 
-
               // allow enter chat room before 5 minutes
-              print("before sub start time $fStartTime");
+              // print("before sub start time $fStartTime");
               final subStartTime = fStartTime.subtract(Duration(minutes: 5));
-              print("after sub start time $subStartTime");
-              print(DateTime.now());
+              // print("after sub start time $subStartTime");
+              // print(DateTime.now());
 
               bool scheduleOk = true;
 
@@ -241,7 +345,7 @@ class PlanInfoState extends State<PlanInfo> {
                 final DateTime pDateTime = fStartTime
                     .add(Duration(minutes: p.freeMinutesForNewCustomer));
 
-                print("adding time after free minutes = $pDateTime");
+                // print("adding time after free minutes = $pDateTime");
 
                 if (DateTime.now().isAfter(pDateTime)) {
                   scheduleOk = false;
@@ -251,7 +355,7 @@ class PlanInfoState extends State<PlanInfo> {
                 }
               }
 
-              print("scheduleOk $scheduleOk");
+              // print("scheduleOk $scheduleOk");
 
               if (scheduleOk) {
                 Firestore.instance
@@ -295,16 +399,25 @@ class PlanInfoState extends State<PlanInfo> {
                     color: Colors.black,
                     fontFamily: 'Armata',
                     fontWeight: FontWeight.bold)),
-            onPressed: () {
+            onPressed: () async {
 
-              final fStartTime = DateTime.parse(p.fStartTime);
-              final fEndTime = DateTime.parse(p.fEndTime);
+              bool hasConnection = await DataConnectionChecker().hasConnection;
 
-              int milliseconds = fEndTime.difference(fStartTime).inMilliseconds;
+              if(hasConnection){
 
-              Duration timeDuration = Duration(milliseconds: milliseconds);
-              double chargeAmount = p.hourlyRate * (timeDuration.inMinutes / 60);
-              confirmPopUp(context, chargeAmount.toStringAsFixed(2), p);
+                final fStartTime = DateTime.parse(p.fStartTime);
+                final fEndTime = DateTime.parse(p.fEndTime);
+
+                int milliseconds = fEndTime.difference(fStartTime).inMilliseconds;
+
+                Duration timeDuration = Duration(milliseconds: milliseconds);
+                double chargeAmount =
+                    p.hourlyRate * (timeDuration.inMinutes / 60);
+                confirmPopUp(context, chargeAmount.toStringAsFixed(2), p);
+
+              }else {
+                Fluttertoast.showToast(msg: "No internat connection available.");
+              }
 
             },
           ),
@@ -323,18 +436,17 @@ class PlanInfoState extends State<PlanInfo> {
                     fontFamily: 'Armata',
                     fontWeight: FontWeight.bold)),
             onPressed: () {
-
               int fm = p.freeMinutesForNewCustomer;
-              print("free minute = $fm");
+              // print("free minute = $fm");
 
               final fStartTime = DateTime.parse(p.fStartTime);
               final fEndTime = DateTime.parse(p.fEndTime);
 
-              print("before sub start time $fStartTime");
+              // print("before sub start time $fStartTime");
               // allow enter chat room before 5 minutes
               final subStartTime = fStartTime.subtract(Duration(minutes: 5));
-              print("after sub start time $subStartTime");
-              print(DateTime.now());
+              // print("after sub start time $subStartTime");
+              // print(DateTime.now());
 
               bool scheduleOk = true;
 
@@ -352,13 +464,13 @@ class PlanInfoState extends State<PlanInfo> {
                 Fluttertoast.showToast(msg: "Chat sesssion has been ended!");
               }
 
-              print("scheduleOk = $scheduleOk");
+              // print("scheduleOk = $scheduleOk");
 
               if (p.freeMinutesForNewCustomer != null) {
                 final DateTime pDateTime = fStartTime
                     .add(Duration(minutes: p.freeMinutesForNewCustomer));
 
-                print("adding time after free minutes = $pDateTime");
+                // print("adding time after free minutes = $pDateTime");
 
                 if (DateTime.now().isAfter(pDateTime)) {
                   scheduleOk = false;
@@ -459,38 +571,43 @@ class PlanInfoState extends State<PlanInfo> {
     if (response.statusCode == 200) {
       String aid = HttpResponse.fromJson(json.decode(response.body)).aid;
       goBrowserForPayment(aid);
-      print(response.body.toString());
+      // print(response.body.toString());
     } else {
       throw Exception('Failed to load post');
     }
   }
 
   getPeerDisplayName(Plan data) {
-
     String uid;
     String head;
 
-    if(userType == 1){
+    if (userType == 1) {
       uid = data.conUid;
       head = "Expert";
-    }else {
+    } else {
       uid = data.cusUid;
       head = "Customer";
     }
 
-    print("Peer id $uid");
+    // print("Peer id $uid");
 
     return FutureBuilder(
-      future: Firestore.instance.collection("userInfoList").document(uid).get(),
-      builder: (BuildContext context, AsyncSnapshot<DocumentSnapshot> snapshot) {
-        if(snapshot.hasData){
-          return Text("$head [${snapshot.data.data['displayName']}]");
-        }else {
-          return Text("$head [Not found]");
-        }
-      }
-    );
+        future:
+            Firestore.instance.collection("userInfoList").document(uid).get(),
+        builder:
+            (BuildContext context, AsyncSnapshot<DocumentSnapshot> snapshot) {
+          if (snapshot.hasData) {
+            return Text("$head [${snapshot.data.data['displayName']}]");
+          } else {
+            return Text("$head [Not found]");
+          }
+        });
+  }
 
+  @override
+  void dispose() {
+    dataConnectionCheckListener.cancel();
+    super.dispose();
   }
 
 }

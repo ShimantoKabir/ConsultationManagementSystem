@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:data_connection_checker/data_connection_checker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
@@ -10,11 +11,10 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:http/http.dart';
 import 'package:peopeo/Const.dart';
-import 'package:peopeo/EditConsultantProfile.dart';
+import 'package:peopeo/EditProfile.dart';
 import 'package:peopeo/FullPhoto.dart';
 import 'package:peopeo/HttpResponse.dart';
 import 'package:peopeo/LoginPage.dart';
-import 'package:peopeo/Main.dart';
 import 'package:peopeo/MyFlutterWebView.dart';
 import 'package:peopeo/MySharedPreferences.dart';
 import 'package:peopeo/Plan.dart';
@@ -32,8 +32,11 @@ class ConsultantProfile extends StatefulWidget {
 
 class ConsultantProfileState extends State<ConsultantProfile>
     with TickerProviderStateMixin {
+
   String uid;
   bool needToShowEditButton = false;
+  bool isInternetAvailable = true;
+  var dataConnectionCheckListener;
 
   ConsultantProfileState({Key key, @required this.uid});
 
@@ -60,287 +63,338 @@ class ConsultantProfileState extends State<ConsultantProfile>
     });
 
     super.initState();
+
+    dataConnectionCheckListener =
+        DataConnectionChecker().onStatusChange.listen((status) {
+          switch (status) {
+            case DataConnectionStatus.connected:
+              setState(() => isInternetAvailable = true);
+              print('Data connection is available in consultant profile.');
+              break;
+            case DataConnectionStatus.disconnected:
+              setState(() => isInternetAvailable = false);
+              print('You are disconnected from the internet in consultant profile.');
+              break;
+          }
+        });
+
   }
 
   @override
   void dispose() {
     tabController.dispose();
+    dataConnectionCheckListener.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-          iconTheme: IconThemeData(color: Colors.black),
+    return AbsorbPointer(
+        absorbing: !isInternetAvailable,
+        child: Scaffold(
           backgroundColor: Colors.white,
-          title: Text('Profile',
-              style: TextStyle(
-                  color: Colors.black,
-                  fontFamily: 'Armata',
-                  fontWeight: FontWeight.bold)),
-          centerTitle: true,
-          actions: <Widget>[
-            Padding(
-                padding: EdgeInsets.fromLTRB(0.0, 0.0, 10.0, 0.0),
-                child: Center(
-                    child: InkWell(
-                        onTap: () async {
-                          showDialog(
-                            context: context,
-                            builder: (context) => new AlertDialog(
-                              title: new Text('Alert',
-                                  style: TextStyle(
-                                    fontSize: 18.0,
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.bold,
-                                    fontFamily: 'Armata',
-                                  )),
-                              content: new Text('Do you want to logout?',
-                                  style: TextStyle(
-                                    fontSize: 18.0,
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.bold,
-                                    fontFamily: 'Armata',
-                                  )),
-                              actions: <Widget>[
-                                FlatButton(
-                                    child: Text('No',
+          appBar: AppBar(
+              iconTheme: IconThemeData(color: Colors.black),
+              backgroundColor: Colors.white,
+              title: Text('Profile',
+                  style: TextStyle(
+                      color: Colors.black,
+                      fontFamily: 'Armata',
+                      fontWeight: FontWeight.bold)),
+              centerTitle: true,
+              actions: <Widget>[
+                Visibility(
+                  visible: needToShowEditButton,
+                  child: Padding(
+                      padding: EdgeInsets.fromLTRB(0.0, 0.0, 10.0, 0.0),
+                      child: Center(
+                          child: InkWell(
+                              onTap: () async {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => new AlertDialog(
+                                    title: new Text('Alert',
                                         style: TextStyle(
-                                            color: Colors.black,
-                                            fontFamily: 'Armata',
-                                            fontWeight: FontWeight.bold)),
-                                    onPressed: () =>
-                                        Navigator.of(context).pop(false)),
-                                FlatButton(
-                                    child: Text('Yes',
+                                          fontSize: 18.0,
+                                          color: Colors.black,
+                                          fontWeight: FontWeight.bold,
+                                          fontFamily: 'Armata',
+                                        )),
+                                    content: new Text('Do you want to logout?',
                                         style: TextStyle(
-                                            color: Colors.green,
-                                            fontFamily: 'Armata',
-                                            fontWeight: FontWeight.bold)),
-                                    onPressed: () {
-                                      logOut().then((isDataCleared) {
-                                        if (isDataCleared) {
-                                          Navigator.of(context).pop(false);
-                                          redirectLoginPage();
-                                        }
-                                      });
-                                    })
-                              ],
-                            ),
-                          );
-                        },
-                        child: FaIcon(FontAwesomeIcons.signOutAlt))))
-          ]),
-      body: StreamBuilder(
-          stream: Firestore.instance
-              .collection('userInfoList')
-              .where('uid', isEqualTo: uid)
-              .snapshots(),
-          builder: (context, snapshot) {
-            if (snapshot.hasData) {
-              return ListView(
-                children: <Widget>[
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      Divider(
-                        height: 0.0,
-                        thickness: 1.0,
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(5.0),
-                        child: Row(
-                          children: <Widget>[
-                            InkWell(
-                              child: Container(
-                                height: 100.0,
-                                width: 100.0,
-                                decoration: new BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  image: new DecorationImage(
-                                      fit: BoxFit.cover,
-                                      image: new NetworkImage(snapshot
-                                          .data.documents[0]['photoUrl'])),
-                                ),
-                              ),
-                              onTap: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (context) {
-                                      return FullPhoto(
-                                          url: snapshot.data.documents[0]
-                                              ['photoUrl']);
-                                    },
+                                          fontSize: 18.0,
+                                          color: Colors.black,
+                                          fontWeight: FontWeight.bold,
+                                          fontFamily: 'Armata',
+                                        )),
+                                    actions: <Widget>[
+                                      FlatButton(
+                                          child: Text('No',
+                                              style: TextStyle(
+                                                  color: Colors.black,
+                                                  fontFamily: 'Armata',
+                                                  fontWeight: FontWeight.bold)),
+                                          onPressed: () =>
+                                              Navigator.of(context).pop(false)),
+                                      FlatButton(
+                                          child: Text('Yes',
+                                              style: TextStyle(
+                                                  color: Colors.green,
+                                                  fontFamily: 'Armata',
+                                                  fontWeight: FontWeight.bold)),
+                                          onPressed: () {
+                                            logOut().then((isDataCleared) {
+                                              if (isDataCleared) {
+                                                Navigator.of(context)
+                                                    .pop(false);
+                                                redirectLoginPage();
+                                              }
+                                            });
+                                          })
+                                    ],
                                   ),
                                 );
                               },
-                            ),
-                            Expanded(
-                              child: Column(
-                                children: <Widget>[
-                                  // likedUserIdList
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceAround,
+                              child: FaIcon(FontAwesomeIcons.signOutAlt)))),
+                )
+              ]),
+          body: StreamBuilder(
+              stream: Firestore.instance
+                  .collection('userInfoList')
+                  .where('uid', isEqualTo: uid)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  return ListView(
+                    children: <Widget>[
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          Divider(
+                            height: 0.0,
+                            thickness: 1.0,
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(5.0),
+                            child: Row(
+                              children: <Widget>[
+                                InkWell(
+                                  child: Container(
+                                    height: 100.0,
+                                    width: 100.0,
+                                    decoration: new BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      image: new DecorationImage(
+                                          fit: BoxFit.cover,
+                                          image: new NetworkImage(snapshot
+                                              .data.documents[0]['photoUrl'])),
+                                    ),
+                                  ),
+                                  onTap: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (context) {
+                                          return FullPhoto(
+                                              url: snapshot.data.documents[0]
+                                                  ['photoUrl']);
+                                        },
+                                      ),
+                                    );
+                                  },
+                                ),
+                                Expanded(
+                                  child: Column(
                                     children: <Widget>[
-                                      Column(
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceAround,
                                         children: <Widget>[
-                                          IconButton(
-                                            icon: Icon(Icons.favorite),
-                                            onPressed: () {},
+                                          Column(
+                                            children: <Widget>[
+                                              IconButton(
+                                                icon: Icon(Icons.favorite),
+                                                onPressed: () {},
+                                              ),
+                                              StreamBuilder(
+                                                stream: Firestore.instance
+                                                    .collection('userInfoList')
+                                                    .document(uid)
+                                                    .collection(
+                                                        "likedUserIdList")
+                                                    .snapshots(),
+                                                builder: (context, snapshot) {
+
+                                                  if (snapshot.hasData) {
+                                                    String like;
+
+                                                    if (snapshot.data.documents.length > 0) {
+                                                      if (snapshot.data.documents.length ==
+                                                          1) {
+                                                        like = "1 Like";
+                                                      } else {
+                                                        like = snapshot.data.documents.length
+                                                            .toString() +
+                                                            " Likes";
+                                                      }
+                                                    } else {
+                                                      like = "0 Like";
+                                                    }
+
+                                                    return Text(like,
+                                                        style: TextStyle(
+                                                          fontSize: 12.0,
+                                                          fontWeight: FontWeight.w600,
+                                                          fontFamily: 'Armata',
+                                                        ));
+                                                  } else {
+                                                    return Text('0 Like',
+                                                        style: TextStyle(
+                                                          fontSize: 12.0,
+                                                          fontWeight: FontWeight.w600,
+                                                          fontFamily: 'Armata',
+                                                        ));
+                                                  }
+
+                                                },
+                                              )
+                                            ],
                                           ),
-                                          StreamBuilder(
-                                            stream: Firestore.instance
-                                                .collection('userInfoList')
-                                                .document(uid)
-                                                .collection("likedUserIdList")
-                                                .snapshots(),
-                                            builder: (context, snapshot) {
-                                              if (snapshot.hasData) {
-                                                if (snapshot.data.documents
-                                                        .length ==
-                                                    1) {
-                                                  return Text(
-                                                      snapshot.data.documents
-                                                              .length
-                                                              .toString() +
-                                                          " Likes",
-                                                      style: TextStyle(
-                                                        fontSize: 12.0,
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                        fontFamily: 'Armata',
-                                                      ));
-                                                } else {
-                                                  return Text('0 Like',
-                                                      style: TextStyle(
-                                                        fontSize: 12.0,
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                        fontFamily: 'Armata',
-                                                      ));
-                                                }
-                                              } else {
-                                                return Text('0 Like',
-                                                    style: TextStyle(
+                                          Column(
+                                            children: <Widget>[
+                                              IconButton(
+                                                icon: Icon(Icons.attach_money),
+                                                onPressed: () {},
+                                              ),
+                                              Text(
+                                                  getHourlyRate(snapshot
+                                                      .data.documents[0]),
+                                                  style: TextStyle(
                                                       fontSize: 12.0,
-                                                      fontWeight:
-                                                          FontWeight.w600,
                                                       fontFamily: 'Armata',
-                                                    ));
-                                              }
-                                            },
+                                                      fontWeight:
+                                                          FontWeight.w600))
+                                            ],
                                           )
                                         ],
                                       ),
-                                      Column(
-                                        children: <Widget>[
-                                          IconButton(
-                                            icon: Icon(Icons.attach_money),
-                                            onPressed: () {},
+                                      Padding(
+                                        padding: const EdgeInsets.fromLTRB(
+                                            2.0, 15.0, 2.0, 2.0),
+                                        child: Center(
+                                          child: Text(
+                                            getFreeMinutesForNewCustomer(
+                                                snapshot.data.documents[0]),
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                                color: Colors.green,
+                                                fontFamily: "Armata"),
                                           ),
-                                          Text(
-                                              getHourlyRate(
-                                                  snapshot.data.documents[0]),
-                                              style: TextStyle(
-                                                  fontSize: 12.0,
-                                                  fontFamily: 'Armata',
-                                                  fontWeight: FontWeight.w600))
-                                        ],
+                                        ),
+                                      ),
+                                      Visibility(
+                                        visible: needToShowEditButton,
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(0.0),
+                                          child: RaisedButton(
+                                            shape: new RoundedRectangleBorder(
+                                                borderRadius:
+                                                    new BorderRadius.circular(
+                                                        8.0),
+                                                side: BorderSide(
+                                                    color: Colors.red)),
+                                            onPressed: () async {
+                                              MySharedPreferences
+                                                      .getStringValue(
+                                                          "userInfo")
+                                                  .then((ui) async {
+                                                var userInfo = jsonDecode(ui);
+
+                                                print(
+                                                    "spUid = ${userInfo['uid']}, uid $uid, user type ${userInfo['userType']}");
+
+                                                showAlertDialog(context,
+                                                    "Preparing calender ..");
+
+                                                bool hasConnection = await DataConnectionChecker().hasConnection;
+
+                                                if(hasConnection){
+
+                                                  getTimeZone().then((tz) {
+                                                    reloadAuth(
+                                                        context, tz, userInfo);
+                                                  }).catchError((er) {
+                                                    Navigator.of(context).pop();
+                                                    print("Time zone error $er");
+                                                    Fluttertoast.showToast(
+                                                        msg:
+                                                        "Can't fetch time zone!");
+                                                  });
+
+                                                }else {
+
+                                                  Navigator.of(context).pop();
+                                                  Fluttertoast.showToast(
+                                                      msg:"No internet connection available.");
+
+                                                }
+
+                                              });
+                                            },
+                                            color: Colors.red,
+                                            textColor: Colors.white,
+                                            child: Text(
+                                                "Show Calender".toUpperCase(),
+                                                style: TextStyle(fontSize: 14)),
+                                          ),
+                                        ),
                                       )
                                     ],
                                   ),
-                                  Padding(
-                                    padding: const EdgeInsets.fromLTRB(
-                                        2.0, 15.0, 2.0, 2.0),
-                                    child: Center(
-                                      child: Text(
-                                        getFreeMinutesForNewCustomer(
-                                            snapshot.data.documents[0]),
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                            color: Colors.green,
-                                            fontFamily: "Armata"),
+                                )
+                              ],
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.all(5.0),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: <Widget>[
+                                Row(
+                                  children: <Widget>[
+                                    Text(
+                                      "(" +
+                                          getRating(snapshot.data.documents[0])
+                                              .toString() +
+                                          ")",
+                                      textAlign: TextAlign.left,
+                                      style: TextStyle(
+                                        fontSize: 18.0,
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.bold,
+                                        fontFamily: 'Armata',
                                       ),
                                     ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(0.0),
-                                    child: RaisedButton(
-                                      shape: new RoundedRectangleBorder(
-                                          borderRadius:
-                                              new BorderRadius.circular(8.0),
-                                          side: BorderSide(color: Colors.red)),
-                                      onPressed: () async {
-                                        MySharedPreferences.getStringValue(
-                                                "userInfo")
-                                            .then((ui) {
-
-                                          var userInfo = jsonDecode(ui);
-
-                                          print("spUid = ${userInfo['uid']}, uid $uid, user type ${userInfo['userType']}");
-
-                                          if (uid == userInfo['uid']) {
-
-                                            getTimeZone().then((tz) {
-                                              reloadAuth(uid, tz,snapshot.data.documents[0]);
-                                            }).catchError((er) {
-                                              print("Time zone error $er");
-                                              Fluttertoast.showToast(
-                                                  msg:
-                                                  "Can't fetch time zone!");
-                                            });
-
-                                          }else if(userInfo['userType'] == 1){
-
-                                            getTimeZone().then((tz) {
-                                              reloadAuth(uid, tz,snapshot.data.documents[0]);
-                                            }).catchError((er) {
-                                              print("Time zone error $er");
-                                              Fluttertoast.showToast(
-                                                  msg:
-                                                  "Can't fetch time zone!");
-                                            });
-
-                                          }else {
-
-                                            Fluttertoast.showToast(msg:"You don't have permission to see calender!");
-
-                                          }
-
-                                        });
-                                      },
-                                      color: Colors.red,
-                                      textColor: Colors.white,
-                                      child: Text("Show Calender".toUpperCase(),
-                                          style: TextStyle(fontSize: 14)),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(5.0),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: <Widget>[
-                            Row(
-                              children: <Widget>[
+                                    RatingBarIndicator(
+                                        rating: getRating(
+                                            snapshot.data.documents[0]),
+                                        direction: Axis.horizontal,
+                                        itemCount: 5,
+                                        itemSize: 25.0,
+                                        itemBuilder: (context, index) => Icon(
+                                              Icons.star,
+                                              color: Colors.amber,
+                                            ))
+                                  ],
+                                ),
+                                SizedBox(
+                                  height: 10.0,
+                                ),
                                 Text(
-                                  "(" +
-                                      getRating(snapshot.data.documents[0])
-                                          .toString() +
-                                      ")",
+                                  getDisplayName(snapshot.data.documents[0]),
                                   textAlign: TextAlign.left,
                                   style: TextStyle(
                                     fontSize: 18.0,
@@ -349,156 +403,198 @@ class ConsultantProfileState extends State<ConsultantProfile>
                                     fontFamily: 'Armata',
                                   ),
                                 ),
-                                RatingBarIndicator(
-                                    rating:
-                                        getRating(snapshot.data.documents[0]),
-                                    direction: Axis.horizontal,
-                                    itemCount: 5,
-                                    itemSize: 25.0,
-                                    itemBuilder: (context, index) => Icon(
-                                          Icons.star,
-                                          color: Colors.amber,
-                                        ))
+                                SizedBox(
+                                  height: 10.0,
+                                ),
+                                Text(
+                                  getShortDescription(
+                                      snapshot.data.documents[0]),
+                                  style: TextStyle(
+                                    fontSize: 15.0,
+                                    color: Colors.black54,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'Armata',
+                                  ),
+                                ),
+                                SizedBox(
+                                  height: 10.0,
+                                ),
+                                Text(
+                                  getLongDescription(
+                                      snapshot.data.documents[0]),
+                                  style: TextStyle(
+                                    fontSize: 15.0,
+                                    color: Colors.grey,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'Armata',
+                                  ),
+                                ),
+                                SizedBox(
+                                  height: 10.0,
+                                ),
+                                Text(
+                                  getCoronaExp(snapshot.data.documents[0]),
+                                  style: TextStyle(
+                                    fontSize: 15.0,
+                                    color: Colors.red,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'Armata',
+                                  ),
+                                ),
+                                SizedBox(
+                                  height: 10.0,
+                                )
                               ],
                             ),
-                            SizedBox(
-                              height: 10.0,
-                            ),
-                            Text(
-                              getDisplayName(snapshot.data.documents[0]),
-                              textAlign: TextAlign.left,
-                              style: TextStyle(
-                                fontSize: 18.0,
-                                color: Colors.black,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: 'Armata',
+                          ),
+                          Divider(
+                            height: 0.0,
+                            thickness: 1.0,
+                          ),
+                        ],
+                      ),
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                            horizontal: 0.0, vertical: 0.0),
+                        child: Column(
+                          children: <Widget>[
+                            Container(
+                              child: new TabBar(
+                                controller: tabController,
+                                labelColor: Colors.black,
+                                indicatorColor: Colors.blue,
+                                indicatorSize: TabBarIndicatorSize.tab,
+                                tabs: tabList,
                               ),
                             ),
-                            SizedBox(
-                              height: 10.0,
-                            ),
-                            Text(
-                              getShortDescription(snapshot.data.documents[0]),
-                              style: TextStyle(
-                                fontSize: 15.0,
-                                color: Colors.black54,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: 'Armata',
+                            Container(
+                              height: MediaQuery.of(context).size.height,
+                              child: TabBarView(
+                                controller: tabController,
+                                children: <Widget>[
+                                  showPictureInGridView('im'),
+                                  showPictureInGridView('vd'),
+                                  isInternetAvailable ?
+                                  FutureBuilder(
+                                    future: Firestore.instance
+                                        .collection('userInfoList')
+                                        .document(uid)
+                                        .get(),
+                                    builder: (BuildContext context,
+                                        AsyncSnapshot<DocumentSnapshot>
+                                            snapshot) {
+                                      if (snapshot.hasData) {
+                                        return showReviewAndRating(
+                                            snapshot.data);
+                                      } else {
+                                        return Wrap(
+                                          children: <Widget>[
+                                            Padding(
+                                              padding: EdgeInsets.all(15.0),
+                                              child: Center(
+                                                child: Text(
+                                                    "No review and rating available!"),
+                                              ),
+                                            )
+                                          ],
+                                        );
+                                      }
+                                    },
+                                  ) : Wrap(
+                                    children: <Widget>[
+                                      Padding(
+                                        padding: EdgeInsets.all(15.0),
+                                        child: Center(
+                                          child: Text(
+                                              "[No internet connection available]",
+                                              style: TextStyle(
+                                                fontSize: 15.0,
+                                                color: Colors.red,
+                                                fontWeight: FontWeight.bold,
+                                                fontFamily: 'Armata',
+                                              )),
+                                        ),
+                                      )
+                                    ],
+                                  )
+                                ],
                               ),
-                            ),
-                            SizedBox(
-                              height: 10.0,
-                            ),
-                            Text(
-                              getLongDescription(snapshot.data.documents[0]),
-                              style: TextStyle(
-                                fontSize: 15.0,
-                                color: Colors.grey,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: 'Armata',
-                              ),
-                            ),
-                            SizedBox(
-                              height: 10.0,
-                            ),
-                            Text(
-                              getCoronaExp(snapshot.data.documents[0]),
-                              style: TextStyle(
-                                fontSize: 15.0,
-                                color: Colors.red,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: 'Armata',
-                              ),
-                            ),
-                            SizedBox(
-                              height: 10.0,
                             )
                           ],
                         ),
                       ),
-                      Divider(
-                        height: 0.0,
-                        thickness: 1.0,
-                      ),
                     ],
-                  ),
-                  Padding(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: 0.0, vertical: 0.0),
-                    child: Column(
-                      children: <Widget>[
-                        Container(
-                          child: new TabBar(
-                            controller: tabController,
-                            labelColor: Colors.black,
-                            indicatorColor: Colors.blue,
-                            indicatorSize: TabBarIndicatorSize.tab,
-                            tabs: tabList,
-                          ),
-                        ),
-                        Container(
-                          height: MediaQuery.of(context).size.height,
-                          child: TabBarView(
-                            controller: tabController,
-                            children: <Widget>[
-                              showPictureInGridView('im'),
-                              showPictureInGridView('vd'),
-                              FutureBuilder(
-                                future: Firestore.instance
-                                    .collection('userInfoList')
-                                    .document(uid)
-                                    .get(),
-                                builder: (BuildContext context,
-                                    AsyncSnapshot<DocumentSnapshot> snapshot) {
-                                  if (snapshot.hasData) {
-                                    return showReviewAndRating(snapshot.data);
-                                  } else {
-                                    return Wrap(
-                                      children: <Widget>[
-                                        Padding(
-                                          padding: EdgeInsets.all(15.0),
-                                          child: Center(
-                                            child: Text(
-                                                "No review and rating available!"),
-                                          ),
-                                        )
-                                      ],
-                                    );
-                                  }
-                                },
-                              )
-                            ],
-                          ),
-                        )
-                      ],
+                  );
+                } else {
+                  return Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
                     ),
-                  ),
+                  );
+                }
+              }),
+          bottomNavigationBar: Visibility(
+            visible: !isInternetAvailable,
+            child: Container(
+              color: Colors.white,
+              height: 50.0,
+              alignment: Alignment.center,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        valueColor:
+                        AlwaysStoppedAnimation<Color>(Colors.red),
+                        strokeWidth: 1.0,
+                      )),
+                  SizedBox(width: 10),
+                  Text("Trying to connect internet...",
+                      style: TextStyle(
+                        fontSize: 17.0,
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Armata',
+                      ))
                 ],
-              );
-            } else {
-              return Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
-                ),
-              );
-            }
-          }),
-      floatingActionButton: Visibility(
-        visible: needToShowEditButton,
-        child: FloatingActionButton(
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) {
-                  return EditConsultantProfile(uid: uid);
-                },
               ),
-            );
-          },
-          child: Icon(Icons.edit),
-          backgroundColor: Colors.red,
-        ),
+            )
+          ),
+          floatingActionButton: Visibility(
+            visible: needToShowEditButton,
+            child: FloatingActionButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) {
+                      return EditProfile(uid: uid, userType: 2);
+                    },
+                  ),
+                );
+              },
+              child: Icon(Icons.edit),
+              backgroundColor: Colors.red,
+            ),
+          ),
+        ));
+  }
+
+  showAlertDialog(BuildContext context, String msg) {
+    AlertDialog alert = AlertDialog(
+      content: ListTile(
+        leading: CircularProgressIndicator(),
+        title: Text("Loading"),
+        subtitle: Text(msg),
       ),
+    );
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (BuildContext context) {
+        return alert;
+      },
     );
   }
 
@@ -544,35 +640,45 @@ class ConsultantProfileState extends State<ConsultantProfile>
     }
   }
 
-  void reloadAuth(String uid, String tz, document) async {
+  void reloadAuth(BuildContext context, String tz, var ui) async {
     String reqUrl = serverBaseUrl + '/auth/reload';
     Map<String, String> headers = {"Content-type": "application/json"};
     var request = {
       'auth': {'uId': uid}
     };
+
     Response response =
         await post(reqUrl, headers: headers, body: json.encode(request));
+
     if (response.statusCode == 200) {
-      String aid = HttpResponse.fromJson(json.decode(response.body)).aid;
-      print(aid);
-      String calenderUrl = webClientBaseUrl +
-          "/calendar.html?aid=" +
-          aid +
-          "&conid=" +
-          uid +
-          "&time-zone=" +
-          tz;
+      HttpResponse hr = HttpResponse.fromJson(json.decode(response.body));
 
-      print("Calender url $calenderUrl");
+      if (hr.code == 200) {
+        String calenderUrl = webClientBaseUrl +
+            "/calendar.html?aid=" +
+            hr.aid +
+            "&conid=" +
+            uid +
+            "&time-zone=" +
+            tz;
 
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) {
-            return MyFlutterWebView(title: "Calendar of ["+document['displayName']+"]", url: calenderUrl);
-          },
-        ),
-      );
+        print("calender url = $calenderUrl");
+        Navigator.of(context).pop();
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) {
+              return MyFlutterWebView(
+                  title: "Calendar of [" + ui['displayName'] + "]",
+                  url: calenderUrl);
+            },
+          ),
+        );
+      } else {
+        Navigator.of(context).pop();
+        Fluttertoast.showToast(msg: "Something went woring!");
+      }
     } else {
+      Navigator.of(context).pop();
       throw Exception('Failed to load browser');
     }
   }
@@ -583,10 +689,10 @@ class ConsultantProfileState extends State<ConsultantProfile>
 
     if (fileType == "vd") {
       collectionName = "videoThumbnailUrlList";
-      msgName = "No video found!";
+      msgName = "[No video found]";
     } else {
       collectionName = "imageUrlList";
-      msgName = "No image found!";
+      msgName = "[No image found]";
     }
 
     return StreamBuilder(
@@ -616,7 +722,13 @@ class ConsultantProfileState extends State<ConsultantProfile>
                 Padding(
                   padding: EdgeInsets.all(15.0),
                   child: Center(
-                    child: Text(msgName),
+                    child: Text(msgName,
+                        style: TextStyle(
+                          fontSize: 15.0,
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Armata',
+                        )),
                   ),
                 )
               ],
@@ -704,11 +816,17 @@ class ConsultantProfileState extends State<ConsultantProfile>
     Response response =
         await post(url, headers: headers, body: json.encode(request));
 
+    print("review and rating = ${response.body}");
+
     if (response.statusCode == 200) {
-      print(response.body.toString());
-      return HttpResponse.fromJson(json.decode(response.body)).planList;
+      var body = json.decode(response.body);
+
+      if (body['code'] == 200) {
+        return HttpResponse.fromJson(body).planList;
+      } else {
+        return [];
+      }
     } else {
-      print("Plan list getting errowr!");
       Fluttertoast.showToast(msg: "Plan list getting error!");
       return [];
     }
@@ -719,18 +837,38 @@ class ConsultantProfileState extends State<ConsultantProfile>
       future: getPlanList(documentSnapshot),
       builder: (context, snapshot) {
         if (snapshot.hasData) {
-          return ListView.builder(
-            itemBuilder: (context, index) =>
-                buildItem(context, snapshot.data[index], documentSnapshot),
-            itemCount: snapshot.data.length,
-          );
+          if (snapshot.data.length > 0) {
+            return ListView.builder(
+              itemBuilder: (context, index) =>
+                  buildItem(context, snapshot.data[index], documentSnapshot),
+              itemCount: snapshot.data.length,
+            );
+          } else {
+            return Wrap(
+              children: <Widget>[
+                Padding(
+                  padding: EdgeInsets.all(15.0),
+                  child: Center(
+                      child: Text("[No review and rating found]",
+                          style: TextStyle(
+                            fontSize: 15.0,
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Armata',
+                          ))),
+                )
+              ],
+            );
+          }
         } else {
           return Wrap(
             children: <Widget>[
               Padding(
                 padding: EdgeInsets.all(15.0),
                 child: Center(
-                  child: Text("No review and rating found!"),
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                  ),
                 ),
               )
             ],
@@ -752,7 +890,13 @@ class ConsultantProfileState extends State<ConsultantProfile>
                     Icons.star,
                     color: Colors.amber,
                   )),
-          subtitle: Text("Review: " + document.review)),
+          subtitle: Text(document.review,
+              style: TextStyle(
+                fontSize: 15.0,
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Armata',
+              ))),
     );
   }
 
@@ -783,4 +927,5 @@ class ConsultantProfileState extends State<ConsultantProfile>
         MaterialPageRoute(builder: (context) => LoginPage()),
         (Route<dynamic> route) => false);
   }
+
 }

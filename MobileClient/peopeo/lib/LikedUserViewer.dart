@@ -2,59 +2,115 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:data_connection_checker/data_connection_checker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart';
+import 'package:peopeo/MyFlutterWebView.dart';
 import 'package:share/share.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'Const.dart';
 import 'ConsultantProfile.dart';
 import 'HttpResponse.dart';
-import 'MySharedPreferences.dart';
 
 class LikedUserViewer extends StatefulWidget {
   final List<Map<String, dynamic>> likedUserIdList;
   final String uid;
   final int userType;
 
-  LikedUserViewer({Key key, @required this.uid, @required this.likedUserIdList, @required this.userType})
+  LikedUserViewer(
+      {Key key,
+      @required this.uid,
+      @required this.likedUserIdList,
+      @required this.userType})
       : super(key: key);
 
   @override
-  LikedUserViewerState createState() =>
-      new LikedUserViewerState(uid: uid, likedUserIdList: likedUserIdList,userType : userType);
+  LikedUserViewerState createState() => new LikedUserViewerState(
+      uid: uid, likedUserIdList: likedUserIdList, userType: userType);
 }
 
 class LikedUserViewerState extends State<LikedUserViewer> {
+
   LikedUserViewerState(
-      {Key key, @required this.uid, @required this.likedUserIdList, @required this.userType});
+      {Key key,
+      @required this.uid,
+      @required this.likedUserIdList,
+      @required this.userType});
 
   List<Map<String, dynamic>> likedUserIdList;
   String uid;
   int userType;
+  bool isInternetAvailable = true;
+  var dataConnectionCheckListener;
+
+  @override
+  void initState() {
+    dataConnectionCheckListener =
+        DataConnectionChecker().onStatusChange.listen((status) {
+          switch (status) {
+            case DataConnectionStatus.connected:
+              setState(() => isInternetAvailable = true);
+              print('Data connection is available in consultant profile.');
+              break;
+            case DataConnectionStatus.disconnected:
+              setState(() => isInternetAvailable = false);
+              print('You are disconnected from the internet in consultant profile.');
+              break;
+          }
+        });
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
-    return Scaffold(
-      appBar: new AppBar(
-        iconTheme: IconThemeData(color: Colors.black),
-        backgroundColor: Colors.white,
-        title: new Text('Like',
-            style: TextStyle(
-                color: Colors.black,
-                fontFamily: 'Armata',
-                fontWeight: FontWeight.bold)),
-        centerTitle: true,
-      ),
-      body: Container(
-        child: showLikedUser(),
-      )
-    );
+    return AbsorbPointer(
+        absorbing: !isInternetAvailable,
+        child: Scaffold(
+          appBar: new AppBar(
+            iconTheme: IconThemeData(color: Colors.black),
+            backgroundColor: Colors.white,
+            title: new Text('Like',
+                style: TextStyle(
+                    color: Colors.black,
+                    fontFamily: 'Armata',
+                    fontWeight: FontWeight.bold)),
+            centerTitle: true,
+          ),
+          body: Container(
+            child: showLikedUser(),
+          ),
+          bottomNavigationBar: Visibility(
+              visible: !isInternetAvailable,
+              child: Container(
+                color: Colors.white,
+                height: 50.0,
+                alignment: Alignment.center,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                          strokeWidth: 1.0,
+                        )),
+                    SizedBox(width: 10),
+                    Text("Trying to connect internet...",
+                        style: TextStyle(
+                          fontSize: 17.0,
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Armata',
+                        ))
+                  ],
+                ),
+              )),
+        ));
   }
 
   Widget buildItem(
@@ -104,7 +160,7 @@ class LikedUserViewerState extends State<LikedUserViewer> {
                     decoration: new BoxDecoration(
                       shape: BoxShape.circle,
                       image: new DecorationImage(
-                          fit: BoxFit.fill,
+                          fit: BoxFit.cover,
                           image: new NetworkImage(document['photoUrl'])),
                     ),
                   ),
@@ -118,11 +174,7 @@ class LikedUserViewerState extends State<LikedUserViewer> {
                               children: <Widget>[
                                 IconButton(
                                   icon: Icon(Icons.thumb_up),
-                                  onPressed: () {
-
-
-
-                                  },
+                                  onPressed: () {},
                                 ),
                                 StreamBuilder(
                                   stream: Firestore.instance
@@ -132,24 +184,27 @@ class LikedUserViewerState extends State<LikedUserViewer> {
                                       .snapshots(),
                                   builder: (context, snapshot) {
                                     if (snapshot.hasData) {
-                                      if (snapshot.data.documents.length == 1) {
-                                        return Text(
-                                            snapshot.data.documents.length
-                                                .toString() +
-                                                " Likes",
-                                            style: TextStyle(
-                                              fontSize: 12.0,
-                                              fontWeight: FontWeight.w600,
-                                              fontFamily: 'Armata',
-                                            ));
+                                      String like;
+
+                                      if (snapshot.data.documents.length > 0) {
+                                        if (snapshot.data.documents.length ==
+                                            1) {
+                                          like = "1 Like";
+                                        } else {
+                                          like = snapshot.data.documents.length
+                                                  .toString() +
+                                              " Likes";
+                                        }
                                       } else {
-                                        return Text('0 Like',
-                                            style: TextStyle(
-                                              fontSize: 12.0,
-                                              fontWeight: FontWeight.w600,
-                                              fontFamily: 'Armata',
-                                            ));
+                                        like = "0 Like";
                                       }
+
+                                      return Text(like,
+                                          style: TextStyle(
+                                            fontSize: 12.0,
+                                            fontWeight: FontWeight.w600,
+                                            fontFamily: 'Armata',
+                                          ));
                                     } else {
                                       return Text('0 Like',
                                           style: TextStyle(
@@ -203,15 +258,14 @@ class LikedUserViewerState extends State<LikedUserViewer> {
                         ),
                       ),
                       RatingBarIndicator(
-                        rating: getRating(document),
-                        direction: Axis.horizontal,
-                        itemCount: 5,
-                        itemSize: 25.0,
-                        itemBuilder: (context, index) => Icon(
-                          Icons.star,
-                          color: Colors.amber,
-                        )
-                      )
+                          rating: getRating(document),
+                          direction: Axis.horizontal,
+                          itemCount: 5,
+                          itemSize: 25.0,
+                          itemBuilder: (context, index) => Icon(
+                                Icons.star,
+                                color: Colors.amber,
+                              ))
                     ],
                   ),
                   getDisplayName(document),
@@ -260,15 +314,32 @@ class LikedUserViewerState extends State<LikedUserViewer> {
                     shape: new RoundedRectangleBorder(
                         borderRadius: new BorderRadius.circular(8.0),
                         side: BorderSide(color: Colors.red)),
-                    onPressed: () {
-                      // first reload auth on server side
-                      // then redirect to browser and open calender
-                      getTimeZone().then((tz) {
-                        reloadAuth(document, tz);
-                      }).catchError((er) {
-                        print("Time zone error $er");
-                        Fluttertoast.showToast(msg: "Can't fetch time zone!");
-                      });
+                    onPressed: () async {
+                      if (document['hourlyRate'] == null) {
+                        Fluttertoast.showToast(
+                            msg: "This expert didn't set his hourly rate yet!");
+                      } else {
+                        showAlertDialog(context, "Preparing calender ..");
+
+                        bool hasConnection = await DataConnectionChecker().hasConnection;
+
+                        if(hasConnection){
+
+                          getTimeZone().then((tz) {
+                            reloadAuth(context, document, tz);
+                          }).catchError((er) {
+                            Navigator.of(context).pop();
+                            print("Time zone error $er");
+                            Fluttertoast.showToast(msg: "Can't fetch time zone!");
+                          });
+
+                        }else {
+
+                          Navigator.of(context).pop();
+                          Fluttertoast.showToast(msg: "No internat connection available.");
+
+                        }
+                      }
                     },
                     color: Colors.red,
                     textColor: Colors.white,
@@ -284,12 +355,29 @@ class LikedUserViewerState extends State<LikedUserViewer> {
     }
   }
 
+  showAlertDialog(BuildContext context, String msg) {
+    AlertDialog alert = AlertDialog(
+      content: ListTile(
+        leading: CircularProgressIndicator(),
+        title: Text("Loading"),
+        subtitle: Text(msg),
+      ),
+    );
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (BuildContext context) {
+        return alert;
+      },
+    );
+  }
+
   getOnlineStatus(Map<String, dynamic> document) {
     if (document['isOnline'] == null) {
       return Icon(Icons.lens, color: Colors.green);
-    } else if(document['isOnline']) {
+    } else if (document['isOnline']) {
       return Icon(Icons.lens, color: Colors.green);
-    }else {
+    } else {
       return Icon(Icons.lens, color: Colors.grey);
     }
   }
@@ -306,69 +394,71 @@ class LikedUserViewerState extends State<LikedUserViewer> {
     return timeZone;
   }
 
-  void reloadAuth(Map<String, dynamic> document, String tz) async {
-    MySharedPreferences.getIntegerValue("userType").then((ut) {
-      MySharedPreferences.getStringValue("uid").then((uid) async {
-        if (ut == 1) {
-          int hr = document['hourlyRate'];
-          int fm = 0;
-          String conId = document['uid'];
+  void reloadAuth(
+      BuildContext context, Map<String, dynamic> document, String tz) async {
+    int hr = document['hourlyRate'];
+    int fm = 0;
+    String conId = document['uid'];
 
-          if (document['freeMinutesForNewCustomer'] != null) {
-            fm = document['freeMinutesForNewCustomer'];
-          }
+    if (document['freeMinutesForNewCustomer'] != null) {
+      fm = document['freeMinutesForNewCustomer'];
+    }
 
-          if (hr == null) {
-            Fluttertoast.showToast(
-                msg: "This user didn't set hourly rate yet!");
-          } else {
-            String url = serverBaseUrl + '/auth/reload';
-            Map<String, String> headers = {"Content-type": "application/json"};
-            var request = {
-              'auth': {'uId': uid}
-            };
+    if (hr == null) {
+      Fluttertoast.showToast(msg: "This user didn't set hourly rate yet!");
+    } else {
+      String url = serverBaseUrl + '/auth/reload';
+      Map<String, String> headers = {"Content-type": "application/json"};
+      var request = {
+        'auth': {'uId': document['uid']}
+      };
 
-            Response response =
-            await post(url, headers: headers, body: json.encode(request));
+      Response response =
+          await post(url, headers: headers, body: json.encode(request));
 
-            if (response.statusCode == 200) {
-              print(response.body.toString());
+      print("calendar preparing response = ${response.body.toString()}");
 
-              String aid =
-                  HttpResponse.fromJson(json.decode(response.body)).aid;
+      if (response.statusCode == 200) {
+        HttpResponse httpResponse =
+            HttpResponse.fromJson(json.decode(response.body));
 
-              String calenderUrl = webClientBaseUrl +
-                  "/calendar.html?aid=" +
-                  aid +
-                  "&conid=" +
-                  conId +
-                  "&cusid=" +
-                  uid +
-                  "&hourly-rate=" +
-                  hr.toString() +
-                  "&free-minutes=" +
-                  fm.toString() +
-                  "&time-zone=" +
-                  tz;
+        if (httpResponse.code == 200) {
+          String calenderUrl = webClientBaseUrl +
+              "/calendar.html?aid=" +
+              httpResponse.aid +
+              "&conid=" +
+              conId +
+              "&cusid=" +
+              document['uid'] +
+              "&hourly-rate=" +
+              hr.toString() +
+              "&free-minutes=" +
+              fm.toString() +
+              "&time-zone=" +
+              tz;
 
-              print(calenderUrl);
+          print("calender url = $calenderUrl");
 
-              if (await canLaunch(calenderUrl)) {
-                await launch(calenderUrl);
-              } else {
-                throw 'Could not launch $calenderUrl';
-              }
-            } else {
-              throw Exception('Failed to load post');
-            }
-          }
+          Navigator.of(context).pop();
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) {
+                return MyFlutterWebView(
+                    title: "Calendar of [" + document['displayName'] + "]",
+                    url: calenderUrl);
+              },
+            ),
+          );
         } else {
-          Fluttertoast.showToast(
-              msg:
-              "Because of you are a consultant you can't see another consultant calander!");
+          Navigator.of(context).pop();
+          Fluttertoast.showToast(msg: "Something went woring!");
         }
-      });
-    });
+      } else {
+        Navigator.of(context).pop();
+        Fluttertoast.showToast(msg: "Something went woring!");
+        throw Exception('Failed to load post');
+      }
+    }
   }
 
   getHourlyRate(Map<String, dynamic> document) {
@@ -476,17 +566,13 @@ class LikedUserViewerState extends State<LikedUserViewer> {
   }
 
   showLikedUser() {
-
-    if(likedUserIdList.length > 0){
-
+    if (likedUserIdList.length > 0) {
       return ListView.builder(
         itemBuilder: (context, index) =>
             buildItem(context, likedUserIdList[index], uid),
         itemCount: likedUserIdList.length,
       );
-
-    }else {
-
+    } else {
       return Center(
         child: Text("[You didn't like any expert yet]",
             style: TextStyle(
@@ -494,9 +580,13 @@ class LikedUserViewerState extends State<LikedUserViewer> {
                 fontFamily: 'Armata',
                 fontWeight: FontWeight.bold)),
       );
-
     }
+  }
 
+  @override
+  void dispose() {
+    dataConnectionCheckListener.cancel();
+    super.dispose();
   }
 
 }

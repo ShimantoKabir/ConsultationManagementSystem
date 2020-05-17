@@ -21,8 +21,8 @@ class HttpResponse {
       this.planList});
 
   factory HttpResponse.fromJson(Map<String, dynamic> json) {
+
     var list = json['planList'] as List;
-    print(list.runtimeType);
     List<Plan> planList = list.map((i) => Plan.fromJson(i)).toList();
 
     return HttpResponse(
