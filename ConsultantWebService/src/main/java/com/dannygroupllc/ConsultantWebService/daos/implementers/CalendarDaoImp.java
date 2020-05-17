@@ -39,7 +39,6 @@ public class CalendarDaoImp implements CalendarDao {
     public Calendar createEvent(HttpServletRequest httpServletRequest, Calendar c) {
 
         Calendar calendarRes = new Calendar();
-        System.out.println("got error");
 
         try {
 
