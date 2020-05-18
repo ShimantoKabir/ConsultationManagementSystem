@@ -43,13 +43,11 @@ public class CalendarDaoImp implements CalendarDao {
         try {
 
             Date curDateTime = sdf.parse(c.getCurrentDateTime());
-            Date startDateTime = sdf.parse(c.getPlan().getfStartTime());
-            Date endDateTime = sdf.parse(c.getPlan().getfEndTime());
             System.out.println(getClass().getName()+".createEvent cur date time = "+curDateTime);
             System.out.println(getClass().getName()+".createEvent start time = "+c.getPlan().getStartTime());
 
             // if current date time before plan start time
-            if (curDateTime.before(startDateTime)) {
+            if (curDateTime.before(c.getPlan().getStartTime())) {
 
                 String calendarSql = "SELECT \n" +
                         "  * \n" +
@@ -89,7 +87,9 @@ public class CalendarDaoImp implements CalendarDao {
                 // check is the event need to create for customer or consultant
                 Plan p = c.getPlan();
 
-                System.out.println(getClass().getName()+".createEvent: is chat duration ok ="+p.getChatDurationOk()+", chat duration limit ="+p.getChatDurationMinLimit());
+                System.out.println(getClass().getName()+".createEvent: is chat duration ok ="
+                        +p.getChatDurationOk()+", chat duration limit ="
+                        +p.getChatDurationMinLimit());
 
                 // consultant creating his plan
                 if (p.getCusUid() == null) {
@@ -109,10 +109,10 @@ public class CalendarDaoImp implements CalendarDao {
                     Plan plan = new Plan();
                     plan.setCalenderOid(calOid);
                     plan.setConUid(c.getConUid());
-                    plan.setEndTime(endDateTime);
+                    plan.setEndTime(p.getEndTime());
                     plan.setIp(httpServletRequest.getRemoteAddr());
                     plan.setModifiedBy(c.getConUid());
-                    plan.setStartTime(startDateTime);
+                    plan.setStartTime(p.getStartTime());
                     plan.setTopic(p.getTopic());
                     plan.setTimeZone(p.getTimeZone());
                     plan.setCreatedDate(sdf.parse(c.getCurrentDateTime()));
@@ -128,9 +128,9 @@ public class CalendarDaoImp implements CalendarDao {
                     // COMMENT OUT BEFORE APP GOES LIVE
                     curDateTime = DateUtils.addHours(curDateTime,1);
 
-                    if (curDateTime.before(startDateTime)) {
+                    if (curDateTime.before(p.getStartTime())) {
 
-                        if(c.getPlan().getChatDurationOk()){
+                        if(p.getChatDurationOk()){
 
                             // check if this customer have an plan with this consultant before
                             String havingPlanBeforeSql = "SELECT \n" +
@@ -151,8 +151,8 @@ public class CalendarDaoImp implements CalendarDao {
 
                             // check event over lap
                             Plan planOverLapCheckingData = new Plan();
-                            planOverLapCheckingData.setStartTime(startDateTime);
-                            planOverLapCheckingData.setEndTime(endDateTime);
+                            planOverLapCheckingData.setStartTime(p.getStartTime());
+                            planOverLapCheckingData.setEndTime(p.getEndTime());
                             planOverLapCheckingData.setConUid(c.getConUid());
                             planOverLapCheckingData.setCusUid(p.getCusUid());
 
@@ -207,10 +207,10 @@ public class CalendarDaoImp implements CalendarDao {
                                 plan.setCalenderOid(calOid);
                                 plan.setConUid(c.getConUid());
                                 plan.setCusUid(p.getCusUid());
-                                plan.setEndTime(endDateTime);
+                                plan.setEndTime(p.getEndTime());
                                 plan.setIp(httpServletRequest.getRemoteAddr());
                                 plan.setModifiedBy(p.getCusUid());
-                                plan.setStartTime(startDateTime);
+                                plan.setStartTime(p.getStartTime());
                                 plan.setFreeMinutesForNewCustomer(freeMinutesForNewCustomer);
                                 plan.setAcceptByCon(false);
                                 plan.setHourlyRate(p.getHourlyRate());
