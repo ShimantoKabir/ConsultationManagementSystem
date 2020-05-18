@@ -43,11 +43,13 @@ public class CalendarDaoImp implements CalendarDao {
         try {
 
             Date curDateTime = sdf.parse(c.getCurrentDateTime());
+            Date startDateTime = sdf.parse(c.getPlan().getfStartTime());
+            Date endDateTime = sdf.parse(c.getPlan().getfEndTime());
             System.out.println(getClass().getName()+".createEvent cur date time = "+curDateTime);
             System.out.println(getClass().getName()+".createEvent start time = "+c.getPlan().getStartTime());
 
             // if current date time before plan start time
-            if (curDateTime.before(c.getPlan().getStartTime())) {
+            if (curDateTime.before(startDateTime)) {
 
                 String calendarSql = "SELECT \n" +
                         "  * \n" +
@@ -128,7 +130,7 @@ public class CalendarDaoImp implements CalendarDao {
                     // COMMENT OUT BEFORE APP GOES LIVE
                     curDateTime = DateUtils.addHours(curDateTime,1);
 
-                    if (curDateTime.before(p.getStartTime())) {
+                    if (curDateTime.before(startDateTime)) {
 
                         if(p.getChatDurationOk()){
 
