@@ -1,8 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:data_connection_checker/data_connection_checker.dart';
+import 'package:connectivity/connectivity.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:peopeo/EditProfile.dart';
 import 'package:peopeo/HttpResponse.dart';
@@ -33,7 +34,7 @@ class CustomerProfileState extends State<CustomerProfile>
   String uid;
   bool needToShowEditButton = false;
   bool isInternetAvailable = true;
-  var dataConnectionCheckListener;
+  StreamSubscription<ConnectivityResult> connectivitySubscription;
 
   CustomerProfileState({Key key, @required this.uid});
 
@@ -59,19 +60,17 @@ class CustomerProfileState extends State<CustomerProfile>
       }
     });
 
-    dataConnectionCheckListener =
-        DataConnectionChecker().onStatusChange.listen((status) {
-          switch (status) {
-            case DataConnectionStatus.connected:
-              setState(() => isInternetAvailable = true);
-              print('Data connection is available in consultant profile.');
-              break;
-            case DataConnectionStatus.disconnected:
-              setState(() => isInternetAvailable = false);
-              print('You are disconnected from the internet in consultant profile.');
-              break;
-          }
-        });
+    connectivitySubscription = Connectivity()
+        .onConnectivityChanged
+        .listen((ConnectivityResult connectivityResult) {
+      if (connectivityResult == ConnectivityResult.none) {
+        setState(() => isInternetAvailable = false);
+        print('You are disconnected from the internet.');
+      } else {
+        setState(() => isInternetAvailable = true);
+        print('Data connection is available.');
+      }
+    });
 
     super.initState();
   }
@@ -85,7 +84,7 @@ class CustomerProfileState extends State<CustomerProfile>
   @override
   void dispose() {
     tabController.dispose();
-    dataConnectionCheckListener.cancel();
+    connectivitySubscription.cancel();
     super.dispose();
   }
 

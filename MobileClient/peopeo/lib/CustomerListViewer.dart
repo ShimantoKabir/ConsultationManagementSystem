@@ -255,6 +255,8 @@ class CustomerListViewerState extends State<CustomerListViewer> {
 
     MySharedPreferences.getStringValue("displayName").then((displayName) {
 
+      print("display name = $displayName");
+
       Firestore.instance
           .collection('notificationList')
           .add({

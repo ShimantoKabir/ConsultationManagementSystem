@@ -2,8 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:badges/badges.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:data_connection_checker/data_connection_checker.dart';
+import 'package:connectivity/connectivity.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
@@ -80,12 +81,76 @@ class MyHomePage extends StatefulWidget {
 }
 
 class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
-
   final FirebaseMessaging fm = FirebaseMessaging();
   int i = 0;
   DateFormat df = new DateFormat('dd-MM-yyyy hh:mm:ss a');
-  var dataConnectionCheckListener;
-  bool isInternetAvailable = false;
+  bool isInternetAvailable = true;
+  StreamSubscription<ConnectivityResult> connectivitySubscription;
+  StreamSubscription rsiSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addObserver(this);
+    fm.configure(onMessage: (Map<String, dynamic> message) async {
+      if (i % 2 == 0) {
+        print("onMessage: message = $message");
+        showNotification(context, message);
+      }
+      i++;
+    });
+
+    fm.requestNotificationPermissions(
+        const IosNotificationSettings(sound: true, badge: true, alert: true));
+
+    ReceiveSharingIntent.getInitialText().then((String uid) {
+      print("whan app not in memory => shared text $uid");
+      if (uid != null) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) {
+              return ConsultantProfile(uid: uid);
+            },
+          ),
+        );
+      }
+    });
+
+    rsiSubscription = ReceiveSharingIntent.getTextStream().listen((String uid) {
+      print("whan app in memory => shared text $uid");
+      if (uid != null) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) {
+              return ConsultantProfile(uid: uid);
+            },
+          ),
+        );
+      }
+    }, onError: (err) {
+      print("getLinkStream error: $err");
+    });
+
+    updateOnlineStatus();
+    Timer.periodic(Duration(minutes: 1), (timer) {
+      updateOnlineStatus();
+    });
+
+    MySharedPreferences.setBooleanValue("isUploadRunning", false);
+
+    connectivitySubscription = Connectivity()
+        .onConnectivityChanged
+        .listen((ConnectivityResult connectivityResult) {
+      if (connectivityResult == ConnectivityResult.none) {
+        setState(() => isInternetAvailable = false);
+        print('You are disconnected from the internet.');
+      } else {
+        setState(() => isInternetAvailable = true);
+        print('Data connection is available.');
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -156,13 +221,14 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
-                    SizedBox( width: 20, height: 20, child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
-                      strokeWidth: 1.0,
-                    )),
                     SizedBox(
-                        width: 10
-                    ),
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                          strokeWidth: 1.0,
+                        )),
+                    SizedBox(width: 10),
                     Text("Trying to connect internet...",
                         style: TextStyle(
                           fontSize: 17.0,
@@ -283,27 +349,25 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                           icon: Icon(Icons.calendar_today),
                           onPressed: () async {
                             if (isUserLoggedIn) {
-
-                              bool hasConnection = await DataConnectionChecker().hasConnection;
-
-                              if(hasConnection){
-
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (context) {
-                                      return PlanInfo(
-                                          uid: userInfo['uid'],
-                                          userType: userInfo['userType']);
-                                    },
-                                  ),
-                                );
-
-                              }else {
-
-                                Fluttertoast.showToast(msg: "No internet connection available.");
-
-                              }
-
+                              Connectivity()
+                                  .checkConnectivity()
+                                  .then((connectivityResult) {
+                                if (connectivityResult ==
+                                    ConnectivityResult.none) {
+                                  Fluttertoast.showToast(
+                                      msg: "No internet connection available.");
+                                } else {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (context) {
+                                        return PlanInfo(
+                                            uid: userInfo['uid'],
+                                            userType: userInfo['userType']);
+                                      },
+                                    ),
+                                  );
+                                }
+                              });
                             } else {
                               goToLoginPage();
                             }
@@ -368,7 +432,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
               MaterialPageRoute(
                 builder: (context) {
                   return MyFlutterWebView(
-                      title: "Calendar of [" + document['displayName'] + "]",
+                      title: "Calendar of " + document['displayName'],
                       url: calenderUrl);
                 },
               ),
@@ -439,7 +503,10 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                       shape: BoxShape.circle,
                       image: new DecorationImage(
                           fit: BoxFit.cover,
-                          image: isInternetAvailable ? NetworkImage(document['photoUrl']) : AssetImage("assets/images/demo_profile_pic.png")),
+                          image: isInternetAvailable
+                              ? NetworkImage(document['photoUrl'])
+                              : AssetImage(
+                                  "assets/images/demo_profile_pic.png")),
                     ),
                   ),
                   Expanded(
@@ -623,30 +690,36 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                               msg:
                                   "This expert didn't set his hourly rate yet!");
                         } else {
+                          bool isPortrait =
+                              MediaQuery.of(context).orientation ==
+                                  Orientation.portrait;
 
-                          showAlertDialog(context, "Preparing calender ..");
-                          bool hasConnection = await DataConnectionChecker().hasConnection;
-
-                          if(hasConnection){
-
-                            getTimeZone().then((tz) {
-                              reloadAuth(document, tz);
-                            }).catchError((er) {
-                              Navigator.of(context).pop();
-                              print("Time zone error $er");
-                              Fluttertoast.showToast(
-                                  msg: "Can't fetch time zone!");
+                          if (isPortrait) {
+                            showAlertDialog(context, "Preparing calender ..");
+                            Connectivity()
+                                .checkConnectivity()
+                                .then((connectivityResult) {
+                              if (connectivityResult ==
+                                  ConnectivityResult.none) {
+                                Navigator.of(context).pop();
+                                Fluttertoast.showToast(
+                                    msg: "No internet connection available!");
+                              } else {
+                                getTimeZone().then((tz) {
+                                  reloadAuth(document, tz);
+                                }).catchError((er) {
+                                  Navigator.of(context).pop();
+                                  print("Time zone error $er");
+                                  Fluttertoast.showToast(
+                                      msg: "Can't fetch time zone!");
+                                });
+                              }
                             });
-
-                          }else {
-
-                            setState(() {
-                              isInternetAvailable = false;
-                            });
-                            Navigator.of(context).pop();
+                          } else {
                             Fluttertoast.showToast(
-                                msg: "No internet connection available!");
-
+                                msg:
+                                    "Please change your app orientation to portrait!",
+                                toastLength: Toast.LENGTH_LONG);
                           }
                         }
                       } else {
@@ -864,56 +937,6 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     });
   }
 
-  @override
-  void initState() {
-    super.initState();
-
-    WidgetsBinding.instance.addObserver(this);
-    fm.configure(onMessage: (Map<String, dynamic> message) async {
-      if (i % 2 == 0) {
-        print("onMessage: message = $message");
-        showNotification(context, message);
-      }
-      i++;
-    });
-    fm.requestNotificationPermissions(
-        const IosNotificationSettings(sound: true, badge: true, alert: true));
-
-    ReceiveSharingIntent.getInitialText().then((String uid) {
-      print("Shared text $uid");
-      if (uid != null) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) {
-              return ConsultantProfile(uid: uid);
-            },
-          ),
-        );
-      }
-    });
-
-    updateOnlineStatus();
-    Timer.periodic(Duration(minutes: 1), (timer) {
-      updateOnlineStatus();
-    });
-
-    MySharedPreferences.setBooleanValue("isUploadRunning", false);
-
-    dataConnectionCheckListener =
-        DataConnectionChecker().onStatusChange.listen((status) {
-      switch (status) {
-        case DataConnectionStatus.connected:
-          setState(() => isInternetAvailable = true);
-          print('Data connection is available.');
-          break;
-        case DataConnectionStatus.disconnected:
-          setState(() => isInternetAvailable = false);
-          print('You are disconnected from the internet.');
-          break;
-      }
-    });
-  }
-
   Future<String> getTimeZone() async {
     String timeZone;
     try {
@@ -1091,7 +1114,6 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
 
   getProfilePic() {
     if (isUserLoggedIn) {
-
       return Container(
         height: 10.0,
         width: 10.0,
@@ -1119,10 +1141,12 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         decoration: new BoxDecoration(
           shape: BoxShape.circle,
           image: new DecorationImage(
-              fit: BoxFit.fill, image: isInternetAvailable ? NetworkImage(userInfo['photoUrl']) : AssetImage("assets/images/demo_profile_pic.png")),
+              fit: BoxFit.fill,
+              image: isInternetAvailable
+                  ? CachedNetworkImageProvider(userInfo['photoUrl'])
+                  : AssetImage("assets/images/demo_profile_pic.png")),
         ),
       );
-
     } else {
       return Container(
         height: 5.0,
@@ -1176,7 +1200,8 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
 
   @override
   void dispose() {
-    dataConnectionCheckListener.cancel();
+    connectivitySubscription.cancel();
+    rsiSubscription.cancel();
     super.dispose();
   }
 }

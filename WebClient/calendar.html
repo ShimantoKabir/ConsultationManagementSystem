@@ -23,11 +23,11 @@
 
         $(document).ready(function () {
 
-            let serverBaseUrl = "http://192.168.43.179:8080";
-            let webClientBaseUrl = "http://192.168.43.132/consultationmanagementsystem/webclient";
+            // let serverBaseUrl = "http://192.168.43.179:8080";
+            // let webClientBaseUrl = "http://192.168.43.132/consultationmanagementsystem/webclient";
 
-            // let serverBaseUrl = "http://3.20.119.226:8080";
-            // let webClientBaseUrl = "http://3.20.119.226/cms/index.html";
+            let serverBaseUrl = "http://3.20.119.226:8080";
+            let webClientBaseUrl = "http://3.20.119.226/cms/index.html";
 
             // alert configuration start
             $('#alertCloseBtn').click(function () {
@@ -38,33 +38,113 @@
                 $('#myAlert').hide();
             });
 
+            $('#alertConfirmNo').click(function () {
+                $('#myAlert').hide();
+            });
+
             function showAlert(data) {
 
                 $('#myAlert').show();
-                data.ntsTaBtn ? $('#alertTryAgainBtn').show() : $('#alertTryAgainBtn').hide();
+                data.ntsTaBtn ? $('#alertTryAgain').show() : $('#alertTryAgain').hide();
+                data.ntsCnfBtn ? $('#alertConfirm').show() : $('#alertConfirm').hide();
+                !data.ntsCnfBtn && !data.ntsTaBtn ? $('#emptyFoot').show() : $('#emptyFoot').hide();
                 $('#alertIcon').removeClass();
                 $('#alertIcon').addClass(data.bodyIcon);
                 $('#alertHeading').text(data.alertHeading);
                 $('#alertMsg').text(data.msg);
 
+                $("#alertConfirmYes").unbind("click").bind("click", function (e) {
+
+                    eventDelete(data.event);
+
+                });
+
+            }
+
+            function eventDelete(event) {
+
+                showAlert({
+                    msg: "Please wait....!",
+                    bodyIcon: 'fa fa-refresh fa-spin',
+                    ntsTaBtn: false,
+                    ntsCnfBtn: false,
+                    alertHeading: 'Loading',
+                });
+
+                let planData = {
+                    plan: {
+                        id: event.id
+                    }
+                };
+
+                $.ajax({
+                    url: serverBaseUrl+"/plan/delete",
+                    type: "POST",
+                    contentType: 'application/json',
+                    data: JSON.stringify(planData),
+                    success: function (s) {
+
+                        if (s.code === 404) {
+
+                            $('#eventPopUp').hide();
+                            showAlert({
+                                msg: s.msg,
+                                bodyIcon: 'fa fa-times-circle',
+                                ntsTaBtn: false,
+                                ntsCnfBtn: false,
+                                alertHeading: 'Error',
+                            })
+
+                        } else {
+
+                            location.reload();
+
+                        }
+
+                    },
+                    error: function (e) {
+
+                        $('#eventPopUp').hide();
+                        showAlert({
+                            msg: "Some thing went wrong !",
+                            bodyIcon: 'fa fa-times-circle',
+                            ntsTaBtn: false,
+                            ntsCnfBtn: false,
+                            alertHeading: 'Error',
+                        })
+                    }
+                })
             }
 
             showAlert({
                 msg: 'Checking url, please wait....!',
                 bodyIcon: 'fa fa-refresh fa-spin',
                 ntsTaBtn: false,
+                ntsCnfBtn: false,
                 alertHeading: 'Loading',
             });
 
             function getMinDiff(start,end) {
 
-            	let startDateTime = new Date(start);
-            	let endDateTime = new Date(end);
+                var difference = end.getTime() - start.getTime();
+                var min = Math.round(difference / 60000);
+                return min;
 
-            	var difference = endDateTime.getTime() - startDateTime.getTime();
-				var min = Math.round(difference / 60000);
+            }
 
-				return min;
+            function formatDate(d) {
+
+                let month = d.getMonth()+1;
+                let hour = (d.getHours() > 12 ? d.getHours() - 12 : d.getHours());
+                let s = (d.getHours() >= 12 ? "PM" : "AM");
+
+                let fd = d.getDate().toString().padStart(2, '0')+'-'+
+                        month.toString().padStart(2, '0')+'-'+
+                        d.getFullYear()+' '+
+                        hour.toString().padStart(2, '0')+':'+
+                        d.getMinutes().toString().padStart(2, '0')+':00 '+s;
+
+                return fd;
 
             }
 
@@ -159,7 +239,6 @@
 
                         } else {
 
-
                             console.log(JSON.stringify(s.planList));
 
                             for (let i = 0; i < s.planList.length; i++) {
@@ -195,6 +274,7 @@
                                 msg: s.msg,
                                 bodyIcon: 'fa fa-check-circle',
                                 ntsTaBtn: false,
+                                ntsCnfBtn: false,
                                 alertHeading: 'Success',
                             });
 
@@ -244,6 +324,7 @@
                                 msg: "Use [WEEK] or [DAY] view to create a schedule!",
                                 bodyIcon: 'fa fa-times-circle',
                                 ntsTaBtn: false,
+                                ntsCnfBtn: false,
                                 alertHeading: 'Warning',
                             })
 
@@ -265,52 +346,37 @@
                             let fromTime = start._i[3].toString().padStart(2, '0')+":"
                                 +start._i[4].toString().padStart(2, '0')+":"
                                 +start._i[5].toString().padStart(2, '0');
+
                             let toDate = $.fullCalendar.formatDate(end, "Y-MM-DD");
                             let toTime = end._i[3].toString().padStart(2, '0')+":"
                                 +end._i[4].toString().padStart(2, '0')+":"
                                 +end._i[5].toString().padStart(2, '0');
 
-                            $('#fromDate').val(fromDate);
-                            $('#fromTime').val(fromTime);
-                            $('#toDate').val(toDate);
-                            $('#toTime').val(toTime);
+                            let sdt = new Date(fromDate + " " + fromTime);
+                            let edt = new Date(toDate + " " + toTime);
+
+                            console.log(fromDate + " " + fromTime);
+
+                            let sdtStr = formatDate(sdt);
+                            let edtStr = formatDate(edt);
+
+                            $('#fromDate').val(sdtStr);
+                            $('#toDate').val(edtStr);
 
                             $("#eventBookBtn").unbind("click").bind("click", function (e) {
 
-                                let fd = $('#fromDate').val();
-                                let ft = $('#fromTime').val();
-                                let td = $('#toDate').val();
-                                let tt = $('#toTime').val();
+                                let minDiff = getMinDiff(sdt,edt);
                                 let tp = $('#topic').val();
 
-                                let minDiff = getMinDiff(fd+" "+ft,td+" "+tt);
-
-                                if(!ft){
-
-                                    showAlert({
-                                        msg: "Start time required!",
-                                        bodyIcon: 'fa fa-times-circle',
-                                        ntsTaBtn: false,
-                                        alertHeading: 'Warning',
-                                    })
-
-                                }else if(!tt){
-
-                                    showAlert({
-                                        msg: "End time required!",
-                                        bodyIcon: 'fa fa-times-circle',
-                                        ntsTaBtn: false,
-                                        alertHeading: 'Warning',
-                                    })
-
-                                }else if(!tp){
+                                if(!tp){
 
                                     showAlert({
                                         msg: "Topic required!",
                                         bodyIcon: 'fa fa-times-circle',
                                         ntsTaBtn: false,
+                                        ntsCnfBtn: false,
                                         alertHeading: 'Warning',
-                                    })
+                                    });
 
                                 }else {
 
@@ -318,12 +384,14 @@
                                         msg: "Please wait....!",
                                         bodyIcon: 'fa fa-refresh fa-spin',
                                         ntsTaBtn: false,
+                                        ntsCnfBtn: false,
                                         alertHeading: 'Loading',
                                     });
 
                                     let isChatDurationOk = chatDurationMinLimit <= minDiff;
+                                    console.log("is duration ok = "+isChatDurationOk);
                                     let d = new Date();
-                                    let currentDateTime = d.getDate()+"-"+(d.getMonth()+1)+"-"+d.getFullYear()+" "+d.toLocaleTimeString();
+                                    let currentDateTime = formatDate(d);
 
                                     let planData = {
                                         calendar: {
@@ -331,8 +399,6 @@
                                             conUid: conId,
                                             currentDateTime : currentDateTime,
                                             plan: {
-                                                startTime: new Date(fd + " " + ft),
-                                                endTime: new Date(td + " " + tt),
                                                 topic: $('#topic').val(),
                                                 cusUid: cusId,
                                                 conUid: conId,
@@ -340,7 +406,12 @@
                                                 hourlyRate: hourlyRate,
                                                 timeZone : timeZone,
                                                 isChatDurationOk : isChatDurationOk,
-                                                chatDurationMinLimit : chatDurationMinLimit
+                                                chatDurationMinLimit : chatDurationMinLimit,
+                                                fStartTime : sdtStr,
+                                                fEndTime : edtStr,
+                                                startTime : sdt,
+                                                endTime : edt,
+                                                createdDate : d
                                             }
                                         }
                                     };
@@ -359,6 +430,7 @@
                                                     msg: s.msg,
                                                     bodyIcon: 'fa fa-times-circle',
                                                     ntsTaBtn: false,
+                                                    ntsCnfBtn: false,
                                                     alertHeading: 'Error',
                                                 })
 
@@ -376,6 +448,7 @@
                                                 msg: "Some thing went wrong !",
                                                 bodyIcon: 'fa fa-times-circle',
                                                 ntsTaBtn: false,
+                                                ntsCnfBtn: false,
                                                 alertHeading: 'Error',
                                             })
 
@@ -400,11 +473,16 @@
                         let toDate = $.fullCalendar.formatDate(event.end, "Y-MM-DD");
                         let toTime = $.fullCalendar.formatDate(event.end, "HH:mm:ss");
 
-                        $('#fromDate').val(fromDate);
-                        $('#fromTime').val(fromTime);
-                        $('#toDate').val(toDate);
-                        $('#toTime').val(toTime);
+                        let sdt = new Date(fromDate + " " + fromTime);
+                        let edt = new Date(toDate + " " + toTime);
+
+                        let sdtStr = formatDate(sdt);
+                        let edtStr = formatDate(edt);
+
+                        $('#fromDate').val(sdtStr);
+                        $('#toDate').val(edtStr);
                         $('#topic').val(event.title);
+
                         $('#timeLeftToAcceptRequest > td').text(event.hourDiff+" Hour & "+
                             event.minuteDiff+" minute Left to accept the request!");
 
@@ -483,71 +561,30 @@
 
                         }
 
-                        function eventDelete(event) {
+                        $("#eventDeleteBtn").unbind("click").bind("click", function (e) {
 
                             showAlert({
-                                msg: "Please wait....!",
-                                bodyIcon: 'fa fa-refresh fa-spin',
+                                msg: 'Would you like to delete the schedule?',
+                                bodyIcon: 'fa fa-exclamation-circle',
                                 ntsTaBtn: false,
-                                alertHeading: 'Loading',
+                                ntsCnfBtn: true,
+                                alertHeading: 'Alert',
+                                event : event
                             });
 
-                            let planData = {
-                                plan: {
-                                    id: event.id
-                                }
-                            };
-
-                            $.ajax({
-                                url: serverBaseUrl+"/plan/delete",
-                                type: "POST",
-                                contentType: 'application/json',
-                                data: JSON.stringify(planData),
-                                success: function (s) {
-
-                                    if (s.code === 404) {
-
-                                        $('#eventPopUp').hide();
-                                        showAlert({
-                                            msg: s.msg,
-                                            bodyIcon: 'fa fa-times-circle',
-                                            ntsTaBtn: false,
-                                            alertHeading: 'Error',
-                                        })
-
-                                    } else {
-
-                                        location.reload();
-
-                                    }
-
-                                },
-                                error: function (e) {
-
-                                    $('#eventPopUp').hide();
-                                    showAlert({
-                                        msg: "Some thing went wrong !",
-                                        bodyIcon: 'fa fa-times-circle',
-                                        ntsTaBtn: false,
-                                        alertHeading: 'Error',
-                                    })
-
-                                }
-                            })
-                        }
-
-                        $("#eventDeleteBtn").unbind("click").bind("click", function (e) {
-                            let c = confirm("Would you like to delete the schedule?")
-                            if(c){
-                                eventDelete(event);
-                            }
                         });
 
                         $("#requestCancel").unbind("click").bind("click", function (e) {
-                            let c = confirm("Would you like to cancle the schedule?")
-                            if(c){
-                                eventDelete(event);
-                            }
+                            
+                            showAlert({
+                                msg: 'Would you like to cancle the schedule?',
+                                bodyIcon: 'fa fa-exclamation-circle',
+                                ntsTaBtn: false,
+                                ntsCnfBtn: true,
+                                alertHeading: 'Alert',
+                                event : event
+                            });
+
                         });
 
                         $("#requestAccept").unbind("click").bind("click", function (e) {
@@ -556,6 +593,7 @@
                                 msg: "Please wait....!",
                                 bodyIcon: 'fa fa-refresh fa-spin',
                                 ntsTaBtn: false,
+                                ntsCnfBtn: false,
                                 alertHeading: 'Loading',
                             });
 
@@ -579,6 +617,7 @@
                                             msg: s.msg,
                                             bodyIcon: 'fa fa-times-circle',
                                             ntsTaBtn: false,
+                                            ntsCnfBtn: false,
                                             alertHeading: 'Error',
                                         })
 
@@ -596,6 +635,7 @@
                                         msg: "Some thing went wrong !",
                                         bodyIcon: 'fa fa-times-circle',
                                         ntsTaBtn: false,
+                                        ntsCnfBtn: false,
                                         alertHeading: 'Error',
                                     })
 
@@ -656,11 +696,20 @@
 	                            </tbody>
 	                        </table>
 	                    </div>
-	                    <div class="my-div-foot">
+                        <div class="my-div-foot" id="emptyFoot" ></div>
+	                    <div class="my-div-foot" id="alertTryAgain" >
 	                        <div class="my-div-foot-left">
 	                            <button id="alertTryAgainBtn" class="my-btn">Try Again</button>
 	                        </div>
 	                    </div>
+                        <div class="my-div-foot" id="alertConfirm" >
+                            <div class="my-div-foot-left">
+                                <button id="alertConfirmYes" class="my-btn">Yes</button>
+                            </div>
+                            <div class="my-div-foot-right" >
+                                <button id="alertConfirmNo" class="my-btn">No</button>
+                            </div>
+                        </div>
 	                </div>
 	            </div>
 	        </div>
@@ -699,29 +748,15 @@
 	                            </tr>
 	                            <tr>
 	                                <td>
-	                                    <b>Start Date</b>
+	                                    <b>Start</b>
 	                                </td>
 	                                <td>
-	                                    <input readonly type="date" id="fromDate">
+	                                    <input readonly type="text" id="fromDate">
 	                                </td>
 	                            </tr>
 	                            <tr>
-	                                <td><b>Start Time</b></td>
-	                                <td>
-	                                    <input readonly type="time" id="fromTime">
-	                                </td>
-	                            </tr>
-	                            <tr>
-	                                <td><b>End Date</b></td>
-	                                <td><input readonly type="date" id="toDate"></td>
-	                            </tr>
-	                            <tr>
-	                                <td>
-	                                    <b>End Time</b>
-	                                </td>
-	                                <td>
-	                                    <input readonly type="time" id="toTime">
-	                                </td>
+	                                <td><b>End</b></td>
+	                                <td><input readonly type="text" id="toDate"></td>
 	                            </tr>
 	                            <tr>
 	                                <td colspan="2" id="requestAcceptStatus">

@@ -52,6 +52,8 @@ class NotificationViewerState extends State<NotificationViewer> {
                     'invitationSenderUid': f['invitationSenderUid'],
                     'seenStatus': f['seenStatus'],
                     'timeStamp': f['timeStamp'],
+                    'startTime': f['startTime'],
+                    'endTime': f['endTime'],
                     'docId': f.documentID
                   });
                 });
@@ -192,7 +194,7 @@ class NotificationViewerState extends State<NotificationViewer> {
     if (document['startTime'] == null) {
       return document['body'];
     } else {
-      return document['startTime'];
+      return "Start time ${document['startTime']}";
     }
   }
 
@@ -200,7 +202,7 @@ class NotificationViewerState extends State<NotificationViewer> {
     if (document['endTime'] == null) {
       return "";
     } else {
-      return document['endTime'];
+      return "End time ${document['endTime']}";
     }
   }
 }

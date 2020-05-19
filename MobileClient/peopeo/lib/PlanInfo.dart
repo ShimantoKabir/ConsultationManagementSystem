@@ -1,6 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:data_connection_checker/data_connection_checker.dart';
+import 'package:connectivity/connectivity.dart';
 import 'package:peopeo/Const.dart';
 import 'package:peopeo/HttpResponse.dart';
 import 'package:flutter/cupertino.dart';
@@ -11,7 +12,6 @@ import 'package:http/http.dart';
 import 'package:peopeo/MySharedPreferences.dart';
 import 'package:peopeo/MyWebView.dart';
 import 'package:side_header_list_view/side_header_list_view.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:peopeo/Chat.dart';
 import 'package:peopeo/Plan.dart';
 import 'package:intl/intl.dart';
@@ -29,12 +29,11 @@ class PlanInfo extends StatefulWidget {
 }
 
 class PlanInfoState extends State<PlanInfo> {
-
   String uid;
   int userType;
   DateFormat df = new DateFormat('dd-MM-yyyy hh:mm a');
   bool isInternetAvailable = true;
-  var dataConnectionCheckListener;
+  StreamSubscription<ConnectivityResult> connectivitySubscription;
 
   PlanInfoState({Key key, @required this.uid, @required this.userType});
 
@@ -42,19 +41,18 @@ class PlanInfoState extends State<PlanInfo> {
   void initState() {
     super.initState();
     print("uid = $uid and user type = $userType");
-    dataConnectionCheckListener =
-        DataConnectionChecker().onStatusChange.listen((status) {
-          switch (status) {
-            case DataConnectionStatus.connected:
-              setState(() => isInternetAvailable = true);
-              print('Data connection is available in consultant profile.');
-              break;
-            case DataConnectionStatus.disconnected:
-              setState(() => isInternetAvailable = false);
-              print('You are disconnected from the internet in consultant profile.');
-              break;
-          }
-        });
+
+    connectivitySubscription = Connectivity()
+        .onConnectivityChanged
+        .listen((ConnectivityResult connectivityResult) {
+      if (connectivityResult == ConnectivityResult.none) {
+        setState(() => isInternetAvailable = false);
+        print('You are disconnected from the internet.');
+      } else {
+        setState(() => isInternetAvailable = true);
+        print('Data connection is available.');
+      }
+    });
   }
 
   @override
@@ -143,32 +141,20 @@ class PlanInfoState extends State<PlanInfo> {
                     } else {
                       return Center(
                           child: Text(
-                            "[No schedules found]",
-                            style: TextStyle(
-                                fontSize: 20.0,
-                                color: Colors.red,
-                                fontFamily: 'Armata',
-                                fontWeight: FontWeight.bold),
-                          ));
+                        "[No schedules found]",
+                        style: TextStyle(
+                            fontSize: 20.0,
+                            color: Colors.red,
+                            fontFamily: 'Armata',
+                            fontWeight: FontWeight.bold),
+                      ));
                     }
                   } else {
-                    if(snapshot.data == null){
-                      return Center(
-                          child: Text(
-                            "[Couldn't fetch any schedule from server]",
-                            style: TextStyle(
-                                fontSize: 20.0,
-                                color: Colors.red,
-                                fontFamily: 'Armata',
-                                fontWeight: FontWeight.bold),
-                          ));
-                    }else {
-                      return Center(
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
-                        ),
-                      );
-                    }
+                    return Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                      ),
+                    );
                   }
                 }),
           ),
@@ -400,25 +386,23 @@ class PlanInfoState extends State<PlanInfo> {
                     fontFamily: 'Armata',
                     fontWeight: FontWeight.bold)),
             onPressed: () async {
+              Connectivity().checkConnectivity().then((connectivityResult) {
+                if (connectivityResult == ConnectivityResult.none) {
+                  Fluttertoast.showToast(
+                      msg: "No internat connection available.");
+                } else {
+                  final fStartTime = DateTime.parse(p.fStartTime);
+                  final fEndTime = DateTime.parse(p.fEndTime);
 
-              bool hasConnection = await DataConnectionChecker().hasConnection;
+                  int milliseconds =
+                      fEndTime.difference(fStartTime).inMilliseconds;
 
-              if(hasConnection){
-
-                final fStartTime = DateTime.parse(p.fStartTime);
-                final fEndTime = DateTime.parse(p.fEndTime);
-
-                int milliseconds = fEndTime.difference(fStartTime).inMilliseconds;
-
-                Duration timeDuration = Duration(milliseconds: milliseconds);
-                double chargeAmount =
-                    p.hourlyRate * (timeDuration.inMinutes / 60);
-                confirmPopUp(context, chargeAmount.toStringAsFixed(2), p);
-
-              }else {
-                Fluttertoast.showToast(msg: "No internat connection available.");
-              }
-
+                  Duration timeDuration = Duration(milliseconds: milliseconds);
+                  double chargeAmount =
+                      p.hourlyRate * (timeDuration.inMinutes / 60);
+                  confirmPopUp(context, chargeAmount.toStringAsFixed(2), p);
+                }
+              });
             },
           ),
         );
@@ -606,8 +590,7 @@ class PlanInfoState extends State<PlanInfo> {
 
   @override
   void dispose() {
-    dataConnectionCheckListener.cancel();
+    connectivitySubscription.cancel();
     super.dispose();
   }
-
 }

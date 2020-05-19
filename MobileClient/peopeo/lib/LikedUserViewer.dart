@@ -1,8 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:data_connection_checker/data_connection_checker.dart';
+import 'package:connectivity/connectivity.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
@@ -34,7 +35,6 @@ class LikedUserViewer extends StatefulWidget {
 }
 
 class LikedUserViewerState extends State<LikedUserViewer> {
-
   LikedUserViewerState(
       {Key key,
       @required this.uid,
@@ -45,23 +45,21 @@ class LikedUserViewerState extends State<LikedUserViewer> {
   String uid;
   int userType;
   bool isInternetAvailable = true;
-  var dataConnectionCheckListener;
+  StreamSubscription<ConnectivityResult> connectivitySubscription;
 
   @override
   void initState() {
-    dataConnectionCheckListener =
-        DataConnectionChecker().onStatusChange.listen((status) {
-          switch (status) {
-            case DataConnectionStatus.connected:
-              setState(() => isInternetAvailable = true);
-              print('Data connection is available in consultant profile.');
-              break;
-            case DataConnectionStatus.disconnected:
-              setState(() => isInternetAvailable = false);
-              print('You are disconnected from the internet in consultant profile.');
-              break;
-          }
-        });
+    connectivitySubscription = Connectivity()
+        .onConnectivityChanged
+        .listen((ConnectivityResult connectivityResult) {
+      if (connectivityResult == ConnectivityResult.none) {
+        setState(() => isInternetAvailable = false);
+        print('You are disconnected from the internet.');
+      } else {
+        setState(() => isInternetAvailable = true);
+        print('Data connection is available.');
+      }
+    });
     super.initState();
   }
 
@@ -319,25 +317,34 @@ class LikedUserViewerState extends State<LikedUserViewer> {
                         Fluttertoast.showToast(
                             msg: "This expert didn't set his hourly rate yet!");
                       } else {
-                        showAlertDialog(context, "Preparing calender ..");
+                        bool isPortrait = MediaQuery.of(context).orientation ==
+                            Orientation.portrait;
 
-                        bool hasConnection = await DataConnectionChecker().hasConnection;
-
-                        if(hasConnection){
-
-                          getTimeZone().then((tz) {
-                            reloadAuth(context, document, tz);
-                          }).catchError((er) {
-                            Navigator.of(context).pop();
-                            print("Time zone error $er");
-                            Fluttertoast.showToast(msg: "Can't fetch time zone!");
+                        if (isPortrait) {
+                          showAlertDialog(context, "Preparing calender ..");
+                          Connectivity()
+                              .checkConnectivity()
+                              .then((connectivityResult) {
+                            if (connectivityResult == ConnectivityResult.none) {
+                              Navigator.of(context).pop();
+                              Fluttertoast.showToast(
+                                  msg: "No internat connection available.");
+                            } else {
+                              getTimeZone().then((tz) {
+                                reloadAuth(context, document, tz);
+                              }).catchError((er) {
+                                Navigator.of(context).pop();
+                                print("Time zone error $er");
+                                Fluttertoast.showToast(
+                                    msg: "Can't fetch time zone!");
+                              });
+                            }
                           });
-
-                        }else {
-
-                          Navigator.of(context).pop();
-                          Fluttertoast.showToast(msg: "No internat connection available.");
-
+                        } else {
+                          Fluttertoast.showToast(
+                              msg:
+                                  "Please change your app orientation to portrait!",
+                              toastLength: Toast.LENGTH_LONG);
                         }
                       }
                     },
@@ -444,7 +451,7 @@ class LikedUserViewerState extends State<LikedUserViewer> {
             MaterialPageRoute(
               builder: (context) {
                 return MyFlutterWebView(
-                    title: "Calendar of [" + document['displayName'] + "]",
+                    title: "Calendar of " + document['displayName'],
                     url: calenderUrl);
               },
             ),
@@ -585,8 +592,7 @@ class LikedUserViewerState extends State<LikedUserViewer> {
 
   @override
   void dispose() {
-    dataConnectionCheckListener.cancel();
+    connectivitySubscription.cancel();
     super.dispose();
   }
-
 }

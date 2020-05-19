@@ -4,7 +4,7 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:data_connection_checker/data_connection_checker.dart';
+import 'package:connectivity/connectivity.dart';
 import 'package:peopeo/MySharedPreferences.dart';
 import 'package:peopeo/PlanInfo.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -51,7 +51,6 @@ class Chat extends StatefulWidget {
 }
 
 class ChatState extends State<Chat> with TickerProviderStateMixin {
-
   ChatState(
       {Key key,
       @required this.peerId,
@@ -90,7 +89,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
   int chargedMinutes = 0;
   DateTime reviewAndRatingShowDateTime;
   bool isInternetAvailable = true;
-  var dataConnectionCheckListener;
+  StreamSubscription<ConnectivityResult> connectivitySubscription;
 
   final TextEditingController textEditingController =
       new TextEditingController();
@@ -261,20 +260,17 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
     focusNode.addListener(onFocusChange);
     readLocal();
 
-    dataConnectionCheckListener =
-        DataConnectionChecker().onStatusChange.listen((status) {
-          switch (status) {
-            case DataConnectionStatus.connected:
-              setState(() => isInternetAvailable = true);
-              print('Data connection is available.');
-              break;
-            case DataConnectionStatus.disconnected:
-              setState(() => isInternetAvailable = false);
-              print('You are disconnected from the internet.');
-              break;
-          }
-        });
-
+    connectivitySubscription = Connectivity()
+        .onConnectivityChanged
+        .listen((ConnectivityResult connectivityResult) {
+      if (connectivityResult == ConnectivityResult.none) {
+        setState(() => isInternetAvailable = false);
+        print('You are disconnected from the internet.');
+      } else {
+        setState(() => isInternetAvailable = true);
+        print('Data connection is available.');
+      }
+    });
   }
 
   void onFocusChange() {
@@ -800,7 +796,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                           height: 20,
                           child: CircularProgressIndicator(
                             valueColor:
-                            AlwaysStoppedAnimation<Color>(Colors.red),
+                                AlwaysStoppedAnimation<Color>(Colors.red),
                             strokeWidth: 1.0,
                           )),
                       SizedBox(width: 10),
@@ -813,8 +809,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                           ))
                     ],
                   ),
-                )
-            )));
+                ))));
   }
 
   Widget buildSticker() {
@@ -1231,16 +1226,15 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                       fontFamily: 'Armata',
                       fontWeight: FontWeight.bold)),
               onPressed: () async {
-
-                bool hasConnection = await DataConnectionChecker().hasConnection;
-                if(hasConnection){
-
-                  sendMsgContent(cusContinueMsg, 0);
-                  getClientToken(amount, p.id);
-
-                }else {
-                  Fluttertoast.showToast(msg: "No internat connection available.");
-                }
+                Connectivity().checkConnectivity().then((connectivityResult) {
+                  if (connectivityResult == ConnectivityResult.none) {
+                    Fluttertoast.showToast(
+                        msg: "No internat connection available.");
+                  } else {
+                    sendMsgContent(cusContinueMsg, 0);
+                    getClientToken(amount, p.id);
+                  }
+                });
               },
             ),
           ],
@@ -1387,79 +1381,63 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
     });
   }
 
-  @override
-  void dispose() {
-    if (controller.status == AnimationStatus.reverse) {
-      controller.dispose();
-    }
-    dataConnectionCheckListener.cancel();
-    super.dispose();
-  }
-
   Future<void> sendMsgContent(String content, int type) async {
-
-    bool hasConnection = await DataConnectionChecker().hasConnection;
-
-    if(hasConnection){
-
-      textEditingController.clear();
-
-      var gcrDocumentReference =
-      Firestore.instance.collection('messages').document(groupChatId);
-
-      gcrDocumentReference.setData({
-        'groupChatId': groupChatId,
-      });
-
-      var covDocumentReference = gcrDocumentReference
-          .collection('conversations')
-          .document(DateTime.now().millisecondsSinceEpoch.toString());
-
-      var obj;
-
-      if (type == 3) {
-        obj = {
-          'idFrom': id,
-          'idTo': peerId,
-          'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
-          'content': content,
-          'type': type,
-          'isReviewAndRatingShowedUp': 0
-        };
-      } else if (type == 4) {
-        obj = {
-          'idFrom': id,
-          'idTo': peerId,
-          'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
-          'content': content,
-          'type': type,
-          'isPaymentCompleteAfterFreeMinuteGone': 0
-        };
+    Connectivity().checkConnectivity().then((connectivityResult) {
+      if (connectivityResult == ConnectivityResult.none) {
+        Fluttertoast.showToast(msg: "No internet connection available!");
       } else {
-        obj = {
-          'idFrom': id,
-          'idTo': peerId,
-          'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
-          'content': content,
-          'type': type,
-          'isReviewAndRatingShowedUp': -1
-        };
+        textEditingController.clear();
+
+        var gcrDocumentReference =
+            Firestore.instance.collection('messages').document(groupChatId);
+
+        gcrDocumentReference.setData({
+          'groupChatId': groupChatId,
+        });
+
+        var covDocumentReference = gcrDocumentReference
+            .collection('conversations')
+            .document(DateTime.now().millisecondsSinceEpoch.toString());
+
+        var obj;
+
+        if (type == 3) {
+          obj = {
+            'idFrom': id,
+            'idTo': peerId,
+            'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
+            'content': content,
+            'type': type,
+            'isReviewAndRatingShowedUp': 0
+          };
+        } else if (type == 4) {
+          obj = {
+            'idFrom': id,
+            'idTo': peerId,
+            'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
+            'content': content,
+            'type': type,
+            'isPaymentCompleteAfterFreeMinuteGone': 0
+          };
+        } else {
+          obj = {
+            'idFrom': id,
+            'idTo': peerId,
+            'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
+            'content': content,
+            'type': type,
+            'isReviewAndRatingShowedUp': -1
+          };
+        }
+
+        Firestore.instance.runTransaction((transaction) async {
+          await transaction.set(covDocumentReference, obj);
+        });
+
+        listScrollController.animateTo(0.0,
+            duration: Duration(milliseconds: 300), curve: Curves.easeOut);
       }
-
-      Firestore.instance.runTransaction((transaction) async {
-        await transaction.set(covDocumentReference, obj);
-      });
-
-      listScrollController.animateTo(0.0,
-          duration: Duration(milliseconds: 300), curve: Curves.easeOut);
-
-    }else {
-
-      Fluttertoast.showToast(
-          msg: "No internet connection available!");
-
-    }
-
+    });
   }
 
   void checkPaymentStatus(int id, bool isCalledFromTimerPeriodic) async {
@@ -1556,4 +1534,12 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
     );
   }
 
+  @override
+  void dispose() {
+    if (controller.status == AnimationStatus.reverse) {
+      controller.dispose();
+    }
+    connectivitySubscription.cancel();
+    super.dispose();
+  }
 }

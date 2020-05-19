@@ -1,8 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:data_connection_checker/data_connection_checker.dart';
+import 'package:connectivity/connectivity.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
@@ -32,11 +33,10 @@ class ConsultantProfile extends StatefulWidget {
 
 class ConsultantProfileState extends State<ConsultantProfile>
     with TickerProviderStateMixin {
-
   String uid;
   bool needToShowEditButton = false;
   bool isInternetAvailable = true;
-  var dataConnectionCheckListener;
+  StreamSubscription<ConnectivityResult> connectivitySubscription;
 
   ConsultantProfileState({Key key, @required this.uid});
 
@@ -64,27 +64,17 @@ class ConsultantProfileState extends State<ConsultantProfile>
 
     super.initState();
 
-    dataConnectionCheckListener =
-        DataConnectionChecker().onStatusChange.listen((status) {
-          switch (status) {
-            case DataConnectionStatus.connected:
-              setState(() => isInternetAvailable = true);
-              print('Data connection is available in consultant profile.');
-              break;
-            case DataConnectionStatus.disconnected:
-              setState(() => isInternetAvailable = false);
-              print('You are disconnected from the internet in consultant profile.');
-              break;
-          }
-        });
-
-  }
-
-  @override
-  void dispose() {
-    tabController.dispose();
-    dataConnectionCheckListener.cancel();
-    super.dispose();
+    connectivitySubscription = Connectivity()
+        .onConnectivityChanged
+        .listen((ConnectivityResult connectivityResult) {
+      if (connectivityResult == ConnectivityResult.none) {
+        setState(() => isInternetAvailable = false);
+        print('You are disconnected from the internet.');
+      } else {
+        setState(() => isInternetAvailable = true);
+        print('Data connection is available.');
+      }
+    });
   }
 
   @override
@@ -225,17 +215,24 @@ class ConsultantProfileState extends State<ConsultantProfile>
                                                         "likedUserIdList")
                                                     .snapshots(),
                                                 builder: (context, snapshot) {
-
                                                   if (snapshot.hasData) {
                                                     String like;
 
-                                                    if (snapshot.data.documents.length > 0) {
-                                                      if (snapshot.data.documents.length ==
+                                                    if (snapshot.data.documents
+                                                            .length >
+                                                        0) {
+                                                      if (snapshot
+                                                              .data
+                                                              .documents
+                                                              .length ==
                                                           1) {
                                                         like = "1 Like";
                                                       } else {
-                                                        like = snapshot.data.documents.length
-                                                            .toString() +
+                                                        like = snapshot
+                                                                .data
+                                                                .documents
+                                                                .length
+                                                                .toString() +
                                                             " Likes";
                                                       }
                                                     } else {
@@ -245,18 +242,19 @@ class ConsultantProfileState extends State<ConsultantProfile>
                                                     return Text(like,
                                                         style: TextStyle(
                                                           fontSize: 12.0,
-                                                          fontWeight: FontWeight.w600,
+                                                          fontWeight:
+                                                              FontWeight.w600,
                                                           fontFamily: 'Armata',
                                                         ));
                                                   } else {
                                                     return Text('0 Like',
                                                         style: TextStyle(
                                                           fontSize: 12.0,
-                                                          fontWeight: FontWeight.w600,
+                                                          fontWeight:
+                                                              FontWeight.w600,
                                                           fontFamily: 'Armata',
                                                         ));
                                                   }
-
                                                 },
                                               )
                                             ],
@@ -305,42 +303,61 @@ class ConsultantProfileState extends State<ConsultantProfile>
                                                 side: BorderSide(
                                                     color: Colors.red)),
                                             onPressed: () async {
-                                              MySharedPreferences
-                                                      .getStringValue(
-                                                          "userInfo")
-                                                  .then((ui) async {
-                                                var userInfo = jsonDecode(ui);
+                                              bool isPortrait =
+                                                  MediaQuery.of(context)
+                                                          .orientation ==
+                                                      Orientation.portrait;
+                                              print(
+                                                  "is portrait = $isPortrait");
 
-                                                print(
-                                                    "spUid = ${userInfo['uid']}, uid $uid, user type ${userInfo['userType']}");
+                                              if (isPortrait) {
+                                                MySharedPreferences
+                                                        .getStringValue(
+                                                            "userInfo")
+                                                    .then((ui) async {
+                                                  var userInfo = jsonDecode(ui);
 
-                                                showAlertDialog(context,
-                                                    "Preparing calender ..");
+                                                  print(
+                                                      "spUid = ${userInfo['uid']}, uid $uid, user type ${userInfo['userType']}");
 
-                                                bool hasConnection = await DataConnectionChecker().hasConnection;
+                                                  showAlertDialog(context,
+                                                      "Preparing calender ..");
 
-                                                if(hasConnection){
-
-                                                  getTimeZone().then((tz) {
-                                                    reloadAuth(
-                                                        context, tz, userInfo);
-                                                  }).catchError((er) {
-                                                    Navigator.of(context).pop();
-                                                    print("Time zone error $er");
-                                                    Fluttertoast.showToast(
-                                                        msg:
-                                                        "Can't fetch time zone!");
+                                                  Connectivity()
+                                                      .checkConnectivity()
+                                                      .then(
+                                                          (connectivityResult) {
+                                                    if (connectivityResult ==
+                                                        ConnectivityResult
+                                                            .none) {
+                                                      Navigator.of(context)
+                                                          .pop();
+                                                      Fluttertoast.showToast(
+                                                          msg:
+                                                              "No internet connection available.");
+                                                    } else {
+                                                      getTimeZone().then((tz) {
+                                                        reloadAuth(context, tz,
+                                                            userInfo);
+                                                      }).catchError((er) {
+                                                        Navigator.of(context)
+                                                            .pop();
+                                                        print(
+                                                            "Time zone error $er");
+                                                        Fluttertoast.showToast(
+                                                            msg:
+                                                                "Can't fetch time zone!");
+                                                      });
+                                                    }
                                                   });
-
-                                                }else {
-
-                                                  Navigator.of(context).pop();
-                                                  Fluttertoast.showToast(
-                                                      msg:"No internet connection available.");
-
-                                                }
-
-                                              });
+                                                });
+                                              } else {
+                                                Fluttertoast.showToast(
+                                                    msg:
+                                                        "Please change your app orientation to portrait!",
+                                                    toastLength:
+                                                        Toast.LENGTH_LONG);
+                                              }
                                             },
                                             color: Colors.red,
                                             textColor: Colors.white,
@@ -474,49 +491,52 @@ class ConsultantProfileState extends State<ConsultantProfile>
                                 children: <Widget>[
                                   showPictureInGridView('im'),
                                   showPictureInGridView('vd'),
-                                  isInternetAvailable ?
-                                  FutureBuilder(
-                                    future: Firestore.instance
-                                        .collection('userInfoList')
-                                        .document(uid)
-                                        .get(),
-                                    builder: (BuildContext context,
-                                        AsyncSnapshot<DocumentSnapshot>
-                                            snapshot) {
-                                      if (snapshot.hasData) {
-                                        return showReviewAndRating(
-                                            snapshot.data);
-                                      } else {
-                                        return Wrap(
+                                  isInternetAvailable
+                                      ? FutureBuilder(
+                                          future: Firestore.instance
+                                              .collection('userInfoList')
+                                              .document(uid)
+                                              .get(),
+                                          builder: (BuildContext context,
+                                              AsyncSnapshot<DocumentSnapshot>
+                                                  snapshot) {
+                                            if (snapshot.hasData) {
+                                              return showReviewAndRating(
+                                                  snapshot.data);
+                                            } else {
+                                              return Wrap(
+                                                children: <Widget>[
+                                                  Padding(
+                                                    padding:
+                                                        EdgeInsets.all(15.0),
+                                                    child: Center(
+                                                      child: Text(
+                                                          "No review and rating available!"),
+                                                    ),
+                                                  )
+                                                ],
+                                              );
+                                            }
+                                          },
+                                        )
+                                      : Wrap(
                                           children: <Widget>[
                                             Padding(
                                               padding: EdgeInsets.all(15.0),
                                               child: Center(
                                                 child: Text(
-                                                    "No review and rating available!"),
+                                                    "[No internet connection available]",
+                                                    style: TextStyle(
+                                                      fontSize: 15.0,
+                                                      color: Colors.red,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      fontFamily: 'Armata',
+                                                    )),
                                               ),
                                             )
                                           ],
-                                        );
-                                      }
-                                    },
-                                  ) : Wrap(
-                                    children: <Widget>[
-                                      Padding(
-                                        padding: EdgeInsets.all(15.0),
-                                        child: Center(
-                                          child: Text(
-                                              "[No internet connection available]",
-                                              style: TextStyle(
-                                                fontSize: 15.0,
-                                                color: Colors.red,
-                                                fontWeight: FontWeight.bold,
-                                                fontFamily: 'Armata',
-                                              )),
-                                        ),
-                                      )
-                                    ],
-                                  )
+                                        )
                                 ],
                               ),
                             )
@@ -534,34 +554,32 @@ class ConsultantProfileState extends State<ConsultantProfile>
                 }
               }),
           bottomNavigationBar: Visibility(
-            visible: !isInternetAvailable,
-            child: Container(
-              color: Colors.white,
-              height: 50.0,
-              alignment: Alignment.center,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        valueColor:
-                        AlwaysStoppedAnimation<Color>(Colors.red),
-                        strokeWidth: 1.0,
-                      )),
-                  SizedBox(width: 10),
-                  Text("Trying to connect internet...",
-                      style: TextStyle(
-                        fontSize: 17.0,
-                        color: Colors.red,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Armata',
-                      ))
-                ],
-              ),
-            )
-          ),
+              visible: !isInternetAvailable,
+              child: Container(
+                color: Colors.white,
+                height: 50.0,
+                alignment: Alignment.center,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                          strokeWidth: 1.0,
+                        )),
+                    SizedBox(width: 10),
+                    Text("Trying to connect internet...",
+                        style: TextStyle(
+                          fontSize: 17.0,
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Armata',
+                        ))
+                  ],
+                ),
+              )),
           floatingActionButton: Visibility(
             visible: needToShowEditButton,
             child: FloatingActionButton(
@@ -668,7 +686,7 @@ class ConsultantProfileState extends State<ConsultantProfile>
           MaterialPageRoute(
             builder: (context) {
               return MyFlutterWebView(
-                  title: "Calendar of [" + ui['displayName'] + "]",
+                  title: "Calendar of " + ui['displayName'],
                   url: calenderUrl);
             },
           ),
@@ -928,4 +946,10 @@ class ConsultantProfileState extends State<ConsultantProfile>
         (Route<dynamic> route) => false);
   }
 
+  @override
+  void dispose() {
+    connectivitySubscription.cancel();
+    tabController.dispose();
+    super.dispose();
+  }
 }

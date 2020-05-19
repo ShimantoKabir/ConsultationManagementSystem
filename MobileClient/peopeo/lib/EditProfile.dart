@@ -16,6 +16,7 @@ import 'package:peopeo/MySharedPreferences.dart';
 import 'package:peopeo/VideoPlayerScreen.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:uuid/uuid.dart';
+import 'package:video_player/video_player.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
 class EditProfile extends StatefulWidget {
@@ -61,6 +62,9 @@ class EditProfileState extends State<EditProfile> {
   String email;
 
   final flutterVideoCompress = FlutterVideoCompress();
+  Subscription subscription;
+  int videoDuration = 0;
+  DocumentReference videoDr;
 
   @override
   void initState() {
@@ -95,6 +99,38 @@ class EditProfileState extends State<EditProfile> {
         print("is upload running = $isUploadRunning");
       });
     });
+
+    subscription = flutterVideoCompress
+        .compressProgress$.subscribe((p) {
+          String status = p.toString();
+        if(status.contains("time")){
+          int timeIndex = status.indexOf("time");
+          String timeString = status.substring(timeIndex+5,timeIndex+16);
+          List timeSplit = timeString.split(":");
+          if(timeSplit.length == 3 && !timeString.contains("-")){
+
+            print("time string = $timeString");
+
+            int hourInSec = int.tryParse(timeSplit[0]) * 60 * 60;
+            int minInSec = int.tryParse(timeSplit[1]) * 60;
+//            String tmpSec = timeSplit[2].toString().isEmpty ? "01.01" : timeSplit[2];
+//            print("tmpSec = ${timeSplit[2].toString()}");
+            int sec = double.tryParse(timeSplit[2]).floor();
+            int totalSec = hourInSec + minInSec + sec;
+            print("totalSec = $totalSec, hourInSec = $hourInSec, minInSec $minInSec, sec = $sec");
+
+            if(videoDuration != null && videoDr != null){
+              double compressProgress = (totalSec / videoDuration) * 100;
+              print("compress progress = $compressProgress");
+              int pro = ((compressProgress * 0.48) + 2).round();
+              print("compress progress round = $pro");
+              videoDr.updateData({'progress': pro});
+            }
+
+          }
+        }
+    });
+
   }
 
   @override
@@ -174,7 +210,7 @@ class EditProfileState extends State<EditProfile> {
                                               .then((pickedFile) {
                                             if (pickedFile == null) {
                                               Fluttertoast.showToast(
-                                                  msg: "No image selectd.");
+                                                  msg: "No image selected.");
                                             } else {
                                               showAlertDialog(context,
                                                   "Image uploading please wait...!");
@@ -508,6 +544,10 @@ class EditProfileState extends State<EditProfile> {
                                                           .trim(),
                                               'hashTag': getHashTag()
                                             }).then((val) {
+
+                                              print("display name = ${displayNameTECtl.text.trim()}");
+                                              MySharedPreferences.setStringValue("displayName", displayNameTECtl.text.trim());
+
                                               Navigator.of(context,
                                                       rootNavigator: true)
                                                   .pop();
@@ -571,6 +611,10 @@ class EditProfileState extends State<EditProfile> {
                                                           .trim(),
                                               'hashTag': getHashTag()
                                             }).then((val) {
+
+                                              print("display name = ${displayNameTECtl.text.trim()}");
+                                              MySharedPreferences.setStringValue("displayName", displayNameTECtl.text.trim());
+
                                               Navigator.of(context,
                                                       rootNavigator: true)
                                                   .pop();
@@ -767,7 +811,7 @@ class EditProfileState extends State<EditProfile> {
 
           dr.get().then((doc) {
             if (doc.exists) {
-              dr.updateData({'progress': ((x * 0.8) + 20).round()});
+              dr.updateData({'progress': ((x * 0.5) + 50).round()});
               if (x.round() == 100) {
                 MySharedPreferences.setBooleanValue("isUploadRunning", false);
               }
@@ -873,11 +917,21 @@ class EditProfileState extends State<EditProfile> {
                           msg: "Video uploading limit has been finished!");
                     } else {
                       String uuid = new Uuid().v1();
-
                       // step 1. pick video from device
                       FilePicker.getFile(type: FileType.video)
                           .then((pickedFile) {
                         if (pickedFile != null) {
+
+                          print("picked video file = $pickedFile");
+                          VideoPlayerController controller = new VideoPlayerController.file(pickedFile);
+                          controller.initialize().then((initData){
+
+                            print("video duratin = ${controller.value.duration.inSeconds.toString()}");
+                            videoDuration = controller.value.duration.inSeconds;
+                            videoDr = cr.document(uuid);
+
+                          });
+
                           MySharedPreferences.setBooleanValue(
                               "isUploadRunning", true);
 
@@ -900,7 +954,7 @@ class EditProfileState extends State<EditProfile> {
                                     imageFormat: format,
                                     quality: quality)
                                 .then((thmImg) {
-                              cr.document(uuid).updateData({'progress': 5});
+                              cr.document(uuid).updateData({'progress': 1});
 
                               setState(() {
                                 fileType = 'image';
@@ -914,13 +968,14 @@ class EditProfileState extends State<EditProfile> {
                                   .then((thmUrl) {
                                 // step 5. update doc by thm url and thm name
                                 cr.document(uuid).updateData({
-                                  'progress': 10,
+                                  'progress': 2,
                                   'thmUrl': thmUrl,
                                   'thmPath': "images/" + thmName,
                                 }).then((val) {
                                   print("thm uploaded. video upload started");
 
                                   // step 6. compress video
+
                                   flutterVideoCompress
                                       .compressVideo(pickedFile.path,
                                           quality: VideoQuality.HighestQuality,
@@ -929,7 +984,7 @@ class EditProfileState extends State<EditProfile> {
                                     print("cmpd file = ${compressVideo.path}");
                                     cr
                                         .document(uuid)
-                                        .updateData({'progress': 20});
+                                        .updateData({'progress': 50});
 
                                     setState(() {
                                       fileType = 'video';
@@ -958,7 +1013,6 @@ class EditProfileState extends State<EditProfile> {
                               msg: "No file has been selected!");
                         }
 
-                        print("picked video file = $pickedFile");
                       });
                     }
                   });
@@ -1274,4 +1328,11 @@ class EditProfileState extends State<EditProfile> {
       }
     });
   }
+
+  @override
+  void dispose() {
+    super.dispose();
+    subscription.unsubscribe();
+  }
+
 }

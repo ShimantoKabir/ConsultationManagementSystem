@@ -29,6 +29,7 @@ Future<AuthResult> signInWithGoogle() async {
 
 Future<AuthResult> signInWithFacebook() async {
   var facebookLogin = new FacebookLogin();
+  facebookLogin.loginBehavior = FacebookLoginBehavior.webViewOnly;
   var res = await facebookLogin.logIn(['email']);
   if (res.status == FacebookLoginStatus.loggedIn) {
     final AuthCredential credential = FacebookAuthProvider.getCredential(
