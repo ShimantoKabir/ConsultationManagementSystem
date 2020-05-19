@@ -142,40 +142,6 @@ public class AuthDaoImp implements AuthDao {
                 // 1. don't fetch passed date plan
                 // 2. don't fetch those plan which don't accept by expert's and 24 hour's left after created
 
-
-                // SELECT
-                //   p.id AS id,
-                //   p.topic AS topic,
-                //   p.start_time AS start_time,
-                //   p.end_time AS end_time,
-                //   p.is_accept_by_con AS is_accept_by_con,
-                //   p.payment_trans_id AS payment_trans_id,
-                //   p.free_minutes_for_new_customer AS free_minutes_for_new_customer,
-                //   p.cus_uid AS cus_uid,
-                //   p.con_uid AS con_uid,
-                //   p.created_date AS created_date,
-                //   DATE_ADD(p.created_date, INTERVAL 24 HOUR) AS od_added_cd,
-                //   p.time_diff AS time_diff,
-                //   NOW() AS cur_date_time,
-                //   IF(
-                //     p.time_diff < '00:00:00',
-                //     TRUE,
-                //     FALSE
-                //   ) AS iabc_time_passed,
-                //   HOUR(p.time_diff) AS hour_diff,
-                //   MINUTE(p.time_diff) AS minute_diff
-                // FROM
-                //   (SELECT
-                //     *,
-                //     CAST(TIMEDIFF(
-                //       DATE_ADD(created_date, INTERVAL 1 DAY),
-                //       NOW()
-                //     ) AS CHAR) AS time_diff
-                //   FROM
-                //     plan
-                //   WHERE DATE(start_time) >= CURDATE()
-                //     AND con_uid = "C6fcMPmT5UTda1Vj04AkfWABl522") AS p
-
                 String planFetchingSql = "SELECT \n" +
                         "  p.id AS id,\n" +
                         "  p.topic AS topic,\n" +
@@ -199,8 +165,8 @@ public class AuthDaoImp implements AuthDao {
                         "  (SELECT \n" +
                         "    *,\n" +
                         "    CAST(TIMEDIFF(\n" +
-                        "      DATE_ADD(created_date, INTERVAL 1 DAY),\n" +
-                        "      NOW()\n" +
+                        "      DATE_ADD(CONVERT_TZ(created_date,'UTC',time_zone), INTERVAL 1 DAY),\n" +
+                        "      CONVERT_TZ(NOW(),'UTC',time_zone)\n" +
                         "    ) AS CHAR) AS time_diff \n" +
                         "  FROM\n" +
                         "    plan \n" +

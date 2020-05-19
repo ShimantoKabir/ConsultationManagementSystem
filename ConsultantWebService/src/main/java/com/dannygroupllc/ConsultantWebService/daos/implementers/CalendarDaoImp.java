@@ -44,9 +44,7 @@ public class CalendarDaoImp implements CalendarDao {
 
             Date curDateTime = sdf.parse(c.getCurrentDateTime());
             Date startDateTime = sdf.parse(c.getPlan().getfStartTime());
-            Date endDateTime = sdf.parse(c.getPlan().getfEndTime());
             System.out.println(getClass().getName()+".createEvent cur date time = "+curDateTime);
-            System.out.println(getClass().getName()+".createEvent start time = "+c.getPlan().getStartTime());
 
             // if current date time before plan start time
             if (curDateTime.before(startDateTime)) {
@@ -117,7 +115,7 @@ public class CalendarDaoImp implements CalendarDao {
                     plan.setStartTime(p.getStartTime());
                     plan.setTopic(p.getTopic());
                     plan.setTimeZone(p.getTimeZone());
-                    plan.setCreatedDate(sdf.parse(c.getCurrentDateTime()));
+                    plan.setCreatedDate(p.getCreatedDate());
                     entityManager.persist(plan);
 
                     calendarRes.setCode(200);
@@ -219,7 +217,7 @@ public class CalendarDaoImp implements CalendarDao {
                                 plan.setTopic(p.getTopic());
                                 plan.setAreCusConHaveChatted(false);
                                 plan.setTimeZone(p.getTimeZone());
-                                plan.setCreatedDate(sdf.parse(c.getCurrentDateTime()));
+                                plan.setCreatedDate(p.getCreatedDate());
                                 entityManager.persist(plan);
 
                                 Notification notification = new Notification();

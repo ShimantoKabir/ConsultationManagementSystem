@@ -46,23 +46,50 @@ public class PlanDaoImp implements PlanDao {
 
         try {
 
-            String planSelectSql = "SELECT * FROM plan WHERE id = :id";
+            String planSelectSql = ""
+                    + "SELECT "
+                    + "   cus_uid, "
+                    + "   con_uid, "
+                    + "   topic, "
+                    + "   DATE_FORMAT(CONVERT_TZ(start_time, 'UTC', time_zone), '%Y-%m-%d %T') AS f_start_time, "
+                    + "   DATE_FORMAT(CONVERT_TZ(end_time, 'UTC', time_zone), '%Y-%m-%d %T') AS f_end_time "
+                    + "FROM "
+                    + "   plan "
+                    + "WHERE "
+                    + "   id = :id";
 
-            Query planSelectQry = entityManager.createNativeQuery(planSelectSql, Plan.class);
+            Query planSelectQry = entityManager.createNativeQuery(planSelectSql);
             planSelectQry.setParameter("id", p.getId());
-            List<Plan> planList = planSelectQry.getResultList();
+            List<Object[]> results = planSelectQry.getResultList();
 
-            if (planList.size() > 0) {
+            if (results.size() > 0) {
 
-                Plan plan = planList.get(0);
+                Plan plan = new Plan();
+                plan.setCusUid((String) results.get(0)[0]);
+                plan.setConUid((String) results.get(0)[1]);
+                plan.setTopic((String) results.get(0)[2]);
+                plan.setfStartTime((String) results.get(0)[3]);
+                plan.setfEndTime((String) results.get(0)[4]);
 
-                Notification notification = new Notification();
-                notification.setUid(plan.getCusUid());
-                notification.setTitle("Booking Request Cancellation");
-                notification.setBody("Topic: " + plan.getTopic() + ", Start Time: " + plan.getStartTime().toString()
-                        + ", End Time: " + plan.getEndTime());
+                Notification cusNoti = new Notification();
+                cusNoti.setUid(plan.getCusUid());
+                cusNoti.setTitle("Booking Request Cancellation");
+                cusNoti.setBody("Topic [" + plan.getTopic() + "], Start Time [" + plan.getfStartTime()
+                        + "], End Time [" + plan.getfEndTime()+"]");
+                cusNoti.setStartTime(plan.getfStartTime());
+                cusNoti.setEndTime(plan.getfEndTime());
 
-                NotificationSender.send(notification);
+                NotificationSender.send(cusNoti);
+
+                Notification conNoti = new Notification();
+                conNoti.setUid(plan.getConUid());
+                conNoti.setTitle("Booking Request Cancellation");
+                conNoti.setBody("Topic [" + plan.getTopic() + "], Start Time [" + plan.getfStartTime()
+                        + "], End Time [" + plan.getfEndTime()+"]");
+                conNoti.setStartTime(plan.getfStartTime());
+                conNoti.setEndTime(plan.getfEndTime());
+
+                NotificationSender.send(conNoti);
 
             }
 
@@ -190,7 +217,8 @@ public class PlanDaoImp implements PlanDao {
 
         try {
 
-            Date curDateTime = new Date();
+            sdf.setTimeZone(TimeZone.getTimeZone(p.getTimeZone()));
+            Date curDateTime = sdf.parse(sdf.format(new Date()));
 
             String planListSql;
 
@@ -214,7 +242,7 @@ public class PlanDaoImp implements PlanDao {
                         "  p.created_date AS created_date, \n" +
                         "  DATE_FORMAT(CONVERT_TZ(p.start_time,'UTC',p.time_zone),'%Y-%m-%d %T') AS f_start_time, \n" +
                         "  DATE_FORMAT(CONVERT_TZ(p.end_time,'UTC',p.time_zone),'%Y-%m-%d %T') AS f_end_time, \n" +
-                        "  SUBDATE(p.start_time,INTERVAL 30 MINUTE) AS before_start_time \n" +
+                        "  SUBDATE(CONVERT_TZ(p.start_time,'UTC',p.time_zone),INTERVAL 30 MINUTE) AS before_start_time \n" +
                         "FROM\n" +
                         "  plan AS p\n" +
                         "WHERE con_uid = :conUid AND cus_uid IS NOT NULL\n" +
@@ -239,7 +267,7 @@ public class PlanDaoImp implements PlanDao {
                         "  p.created_date AS created_date, \n" +
                         "  DATE_FORMAT(CONVERT_TZ(p.start_time,'UTC',p.time_zone),'%Y-%m-%d %T') AS f_start_time, \n" +
                         "  DATE_FORMAT(CONVERT_TZ(p.end_time,'UTC',p.time_zone),'%Y-%m-%d %T') AS f_end_time, \n" +
-                        "  SUBDATE(p.start_time,INTERVAL 30 MINUTE) AS before_start_time \n" +
+                        "  SUBDATE(CONVERT_TZ(p.start_time,'UTC',p.time_zone),INTERVAL 30 MINUTE) AS before_start_time \n" +
                         "FROM\n" +
                         "  plan AS p \n" +
                         "WHERE cus_uid = :cusUid \n" +
