@@ -51,8 +51,8 @@ public class PlanDaoImp implements PlanDao {
                     + "   cus_uid, "
                     + "   con_uid, "
                     + "   topic, "
-                    + "   DATE_FORMAT(CONVERT_TZ(start_time, 'UTC', time_zone), '%Y-%m-%d %T') AS f_start_time, "
-                    + "   DATE_FORMAT(CONVERT_TZ(end_time, 'UTC', time_zone), '%Y-%m-%d %T') AS f_end_time "
+                    + "   DATE_FORMAT(CONVERT_TZ(start_time, 'UTC', time_zone), '%Y-%m-%d %r') AS f_start_time, "
+                    + "   DATE_FORMAT(CONVERT_TZ(end_time, 'UTC', time_zone), '%Y-%m-%d %r') AS f_end_time "
                     + "FROM "
                     + "   plan "
                     + "WHERE "
@@ -74,8 +74,8 @@ public class PlanDaoImp implements PlanDao {
                 Notification cusNoti = new Notification();
                 cusNoti.setUid(plan.getCusUid());
                 cusNoti.setTitle("Booking Request Cancellation");
-                cusNoti.setBody("Topic [" + plan.getTopic() + "], Start Time [" + plan.getfStartTime()
-                        + "], End Time [" + plan.getfEndTime()+"]");
+                cusNoti.setBody("Topic " + plan.getTopic() + ", start time " + plan.getfStartTime()
+                        + ", end time " + plan.getfEndTime());
                 cusNoti.setStartTime(plan.getfStartTime());
                 cusNoti.setEndTime(plan.getfEndTime());
 
@@ -84,8 +84,8 @@ public class PlanDaoImp implements PlanDao {
                 Notification conNoti = new Notification();
                 conNoti.setUid(plan.getConUid());
                 conNoti.setTitle("Booking Request Cancellation");
-                conNoti.setBody("Topic [" + plan.getTopic() + "], Start Time [" + plan.getfStartTime()
-                        + "], End Time [" + plan.getfEndTime()+"]");
+                conNoti.setBody("Topic " + plan.getTopic() + ", start time " + plan.getfStartTime()
+                        + ", end time " + plan.getfEndTime());
                 conNoti.setStartTime(plan.getfStartTime());
                 conNoti.setEndTime(plan.getfEndTime());
 
@@ -123,12 +123,12 @@ public class PlanDaoImp implements PlanDao {
         try {
 
             String planSelectSql = "SELECT \n" +
-                    "  p.cus_uid AS cus_uid,\n" +
-                    "  p.topic AS topic,\n" +
-                    "  p.start_time AS start_time,\n" +
-                    "  p.end_time AS end_time,\n" +
-                    "  IF(p.time_diff < '00:00:00', 'y', 'n') AS is_booking_acceptance_time_passed,\n" +
-                    "  HOUR(p.time_diff) AS hour_diff,\n" +
+                    "  p.cus_uid AS cus_uid, \n" +
+                    "  p.topic AS topic, \n" +
+                    "  DATE_FORMAT(CONVERT_TZ(p.start_time, 'UTC', p.time_zone), '%Y-%m-%d %r') AS f_start_time, \n" +
+                    "  DATE_FORMAT(CONVERT_TZ(p.end_time, 'UTC', p.time_zone), '%Y-%m-%d %r') AS f_end_time, \n" +
+                    "  IF(p.time_diff < '00:00:00', 'y', 'n') AS is_booking_acceptance_time_passed, \n" +
+                    "  HOUR(p.time_diff) AS hour_diff, \n" +
                     "  MINUTE(p.time_diff) AS minute_diff \n" +
                     "FROM\n" +
                     "  (SELECT \n" +
@@ -153,8 +153,8 @@ public class PlanDaoImp implements PlanDao {
 
                 np.setCusUid((String) results.get(0)[0]);
                 np.setTopic((String) results.get(0)[1]);
-                np.setStartTime((Date) results.get(0)[2]);
-                np.setEndTime((Date) results.get(0)[3]);
+                np.setfStartTime((String) results.get(0)[2]);
+                np.setfEndTime((String) results.get(0)[3]);
                 np.setIsBookingAcceptanceTimePassed((String) results.get(0)[4]);
                 np.setHourDiff(((BigInteger) results.get(0)[5]).intValue());
                 np.setMinuteDiff(((BigInteger) results.get(0)[6]).intValue());
@@ -181,12 +181,12 @@ public class PlanDaoImp implements PlanDao {
                 Notification notification = new Notification();
                 notification.setUid(np.getCusUid());
                 notification.setTitle("Booking Request Acceptation");
-                notification.setBody("Topic: " + np.getTopic()
-                        + ", Start Time: " + sdf.format(np.getStartTime())
-                        + ", End Time: " + sdf.format(np.getEndTime()));
+                notification.setBody("Topic " + np.getTopic()
+                        + ", start time " + np.getfStartTime()
+                        + ", end time " + np.getfEndTime());
 
-                notification.setStartTime(sdf.format(np.getStartTime()));
-                notification.setEndTime(sdf.format(np.getEndTime()));
+                notification.setStartTime(np.getfStartTime());
+                notification.setEndTime(np.getfEndTime());
                 NotificationSender.send(notification);
 
             } else {
@@ -658,8 +658,8 @@ public class PlanDaoImp implements PlanDao {
 
             String chatCancelSql = ""
                     + "SELECT "
-                    + "  t.start_time, "
-                    + "  t.end_time, "
+                    + "  DATE_FORMAT(t.start_time, '%Y-%m-%d %r') AS f_start_time, "
+                    + "  DATE_FORMAT(t.end_time, '%Y-%m-%d %r') AS f_end_time, "
                     + "  t.st, "
                     + "  t.is_free_min_available, "
                     + "  t.is_payment_complete, "
@@ -668,18 +668,21 @@ public class PlanDaoImp implements PlanDao {
                     + "  t.is_accept_by_con "
                     + "FROM "
                     + "(SELECT "
-                    + "  CONVERT_TZ(start_time, 'UTC', time_zone) AS start_time, "
+                    + "  CONVERT_TZ(start_time, 'UTC',time_zone) AS start_time, "
                     + "  CONVERT_TZ(end_time, 'UTC', time_zone) AS end_time, "
-                    + "  DATE_SUB(start_time, INTERVAL 28 MINUTE) AS st, "
+                    + "  DATE_SUB(CONVERT_TZ(start_time,'UTC',time_zone), INTERVAL 28 MINUTE) AS st, "
                     + "  IF(free_minutes_for_new_customer IS NULL,'no','yes') AS is_free_min_available, "
                     + "  IF(payment_trans_id IS NULL,'no','yes') AS is_payment_complete, "
                     + "  cus_uid, "
                     + "  con_uid, "
-                    + "  is_accept_by_con "
+                    + "  is_accept_by_con, "
+                    + "  time_zone "
                     + "FROM "
                     + "  plan) AS t "
-                    + "WHERE t.is_accept_by_con IS TRUE AND t.st BETWEEN NOW() "
-                    + "  AND DATE_ADD(NOW(), INTERVAL 1 MINUTE)";
+                    + "WHERE t.is_accept_by_con IS TRUE AND t.st BETWEEN CONVERT_TZ(NOW(), 'UTC',t.time_zone) "
+                    + "  AND DATE_ADD(CONVERT_TZ(NOW(), 'UTC', t.time_zone), INTERVAL 1 MINUTE)";
+
+            // System.out.println(getClass().getName()+".remindToUser: chat cancel sql = "+chatCancelSql);
 
             Query chatCancelQry = entityManager.createNativeQuery(chatCancelSql);
             List<Object[]> chatCancelQryList = chatCancelQry.getResultList();
@@ -687,8 +690,8 @@ public class PlanDaoImp implements PlanDao {
             for (Object[] objects : chatCancelQryList) {
 
                 Plan p = new Plan();
-                p.setStartTime((Date) objects[0]);
-                p.setEndTime((Date) objects[1]);
+                p.setfStartTime((String) objects[0]);
+                p.setfEndTime((String) objects[1]);
                 String isFreeMinAvailable = (String) objects[3];
                 String isPaymentComplete = (String) objects[4];
                 p.setCusUid((String) objects[5]);
@@ -701,30 +704,27 @@ public class PlanDaoImp implements PlanDao {
                     Notification nForCus = new Notification();
                     nForCus.setUid(p.getCusUid());
                     nForCus.setTitle("Chat Session Canceled");
-                    nForCus.setBody("You did not make payment. Chat session at "+sdf.format(p.getStartTime())+" is canceled");
-                    nForCus.setStartTime(sdf.format(p.getStartTime()));
-                    nForCus.setEndTime(sdf.format(p.getEndTime()));
-
+                    nForCus.setBody("You did not make payment. Chat session at "+p.getfStartTime()+" is canceled");
+                    nForCus.setStartTime(p.getfStartTime());
+                    nForCus.setEndTime(p.getfEndTime());
                     NotificationSender.send(nForCus);
 
                     Notification nForCon = new Notification();
                     nForCon.setUid(p.getConUid());
                     nForCon.setTitle("Chat Session Canceled");
-                    nForCon.setBody("Customer did not make payment. Chat session at "+sdf.format(p.getStartTime())+" is canceled");
-                    nForCon.setStartTime(sdf.format(p.getStartTime()));
-                    nForCon.setEndTime(sdf.format(p.getEndTime()));
-
+                    nForCon.setBody("Customer did not make payment. Chat session at "+p.getfStartTime()+" is canceled");
+                    nForCon.setStartTime(p.getfStartTime());
+                    nForCon.setEndTime(p.getfEndTime());
                     NotificationSender.send(nForCon);
 
                 }
 
             }
 
-
             String reminderSql = ""
                     + "SELECT "
-                    + "	t.start_time, "
-                    + "	t.end_time, "
+                    + " DATE_FORMAT(t.start_time, '%Y-%m-%d %r') AS f_start_time, "
+                    + " DATE_FORMAT(t.end_time, '%Y-%m-%d %r') AS f_end_time, "
                     + "	t.st, "
                     + "	t.is_free_min_available, "
                     + "	t.is_payment_complete, "
@@ -733,52 +733,55 @@ public class PlanDaoImp implements PlanDao {
                     + "	t.is_accept_by_con "
                     + "FROM "
                     + "(SELECT "
-                    + "  CONVERT_TZ(start_time, 'UTC', time_zone) AS start_time, "
+                    + "  CONVERT_TZ(start_time, 'UTC',time_zone ) AS start_time, "
                     + "  CONVERT_TZ(end_time, 'UTC', time_zone) AS end_time, "
-                    + "  DATE_SUB(start_time, INTERVAL 1 HOUR) AS st, "
+                    + "  DATE_SUB(CONVERT_TZ(start_time,'UTC',time_zone), INTERVAL 28 MINUTE) AS st, "
                     + "  IF(free_minutes_for_new_customer IS NULL,'no','yes') AS is_free_min_available, "
                     + "  IF(payment_trans_id IS NULL,'no','yes') AS is_payment_complete, "
                     + "  cus_uid, "
                     + "  con_uid, "
-                    + "  is_accept_by_con "
+                    + "  is_accept_by_con, "
+                    + "  time_zone "
                     + "FROM "
                     + "  plan) AS t "
-                    + "WHERE t.is_accept_by_con IS TRUE AND t.st BETWEEN NOW() "
-                    + "  AND DATE_ADD(NOW(), INTERVAL 1 MINUTE)";
+                    + "WHERE t.is_accept_by_con IS TRUE AND t.st BETWEEN CONVERT_TZ(NOW(), 'UTC', t.time_zone) "
+                    + "  AND DATE_ADD(CONVERT_TZ(NOW(), 'UTC',t.time_zone), INTERVAL 1 MINUTE)";
+
+            // System.out.println(getClass().getName()+".remindToUser: reminder sql = "+reminderSql);
 
             Query reminderQry = entityManager.createNativeQuery(reminderSql);
             List<Object[]> reminderList = reminderQry.getResultList();
 
             for (Object[] objects : reminderList) {
 
+                System.out.println(getClass().getName()+".remindToUser: reminder triggering ....");
+
                 Plan p = new Plan();
-                p.setStartTime((Date) objects[0]);
-                p.setEndTime((Date) objects[1]);
+                p.setfStartTime((String) objects[0]);
+                p.setfEndTime((String) objects[1]);
                 String isFreeMinAvailable = (String) objects[3];
                 String isPaymentComplete = (String) objects[4];
                 p.setCusUid((String) objects[5]);
                 p.setConUid((String) objects[6]);
 
-                System.out.println(getClass().getName() + ".remindPlanToUser: Plan" + gson.toJson(p));
+                System.out.println(getClass().getName() + ".remindPlanToUser: plan" + gson.toJson(p));
 
                 Notification nForCus = new Notification();
                 nForCus.setUid(p.getCusUid());
                 nForCus.setTitle("Reminder");
-                nForCus.setBody("You have a chat session which will start Time: " + sdf.format(p.getStartTime())
-                        + " and end time: " + sdf.format(p.getEndTime()));
-                nForCus.setStartTime(sdf.format(p.getStartTime()));
-                nForCus.setEndTime(sdf.format(p.getEndTime()));
-
+                nForCus.setBody("You have a chat session which will start time " + p.getfStartTime()
+                        + " and end time " + p.getEndTime());
+                nForCus.setStartTime(p.getfStartTime());
+                nForCus.setEndTime(p.getfEndTime());
                 NotificationSender.send(nForCus);
 
                 Notification nForCon = new Notification();
                 nForCon.setUid(p.getConUid());
                 nForCon.setTitle("Reminder");
-                nForCon.setBody("You have a chat session which will start Time: " + sdf.format(p.getStartTime())
-                        + ", End Time: " + sdf.format(p.getEndTime()));
-                nForCon.setStartTime(sdf.format(p.getStartTime()));
-                nForCon.setEndTime(sdf.format(p.getEndTime()));
-
+                nForCon.setBody("You have a chat session which will start time " + p.getfStartTime()
+                        + " end time " + p.getfEndTime());
+                nForCon.setStartTime(p.getfStartTime());
+                nForCon.setEndTime(p.getfEndTime());
                 NotificationSender.send(nForCon);
 
                 if (isFreeMinAvailable.equals("no") && isPaymentComplete.equals("no")) {
@@ -786,10 +789,10 @@ public class PlanDaoImp implements PlanDao {
                     Notification nForPayment = new Notification();
                     nForPayment.setUid(p.getCusUid());
                     nForPayment.setTitle("Payment Reminder");
-                    nForPayment.setBody("You didn't complete your payment for the chat session, which will start on "+sdf.format(p.getStartTime())+", Please complete your payment before 30 minute.");
-                    nForPayment.setStartTime(sdf.format(p.getStartTime()));
-                    nForPayment.setEndTime(sdf.format(p.getEndTime()));
-
+                    nForPayment.setBody("You didn't complete your payment for the chat session, which will start on "
+                            +p.getfStartTime()+", please complete your payment before 30 minute.");
+                    nForPayment.setStartTime(p.getfStartTime());
+                    nForPayment.setEndTime(p.getfEndTime());
                     NotificationSender.send(nForPayment);
 
                 }
