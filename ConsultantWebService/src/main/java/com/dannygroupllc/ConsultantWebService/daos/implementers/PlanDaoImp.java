@@ -217,9 +217,6 @@ public class PlanDaoImp implements PlanDao {
 
         try {
 
-            sdf.setTimeZone(TimeZone.getTimeZone(p.getTimeZone()));
-            Date curDateTime = sdf.parse(sdf.format(new Date()));
-
             String planListSql;
 
             System.out.println(getClass().getName() + ".getAllPlanByUser: TimeZone = " + p.getTimeZone());
@@ -242,12 +239,14 @@ public class PlanDaoImp implements PlanDao {
                         "  p.created_date AS created_date, \n" +
                         "  DATE_FORMAT(CONVERT_TZ(p.start_time,'UTC',p.time_zone),'%Y-%m-%d %T') AS f_start_time, \n" +
                         "  DATE_FORMAT(CONVERT_TZ(p.end_time,'UTC',p.time_zone),'%Y-%m-%d %T') AS f_end_time, \n" +
-                        "  SUBDATE(CONVERT_TZ(p.start_time,'UTC',p.time_zone),INTERVAL 30 MINUTE) AS before_start_time \n" +
+                        "  SUBDATE(CONVERT_TZ(p.start_time,'UTC',p.time_zone),INTERVAL 30 MINUTE) AS before_start_time, \n" +
+                        "  CONVERT_TZ(NOW(),'UTC',p.time_zone) AS cur_date_time \n" +
                         "FROM\n" +
                         "  plan AS p\n" +
                         "WHERE con_uid = :conUid AND cus_uid IS NOT NULL\n" +
                         "  AND DATE(CONVERT_TZ(end_time,'UTC',time_zone)) >= DATE(CONVERT_TZ(NOW(),'UTC',time_zone))" +
-                        "  AND is_accept_by_con IS TRUE";
+                        "  AND is_accept_by_con IS TRUE" +
+                        "  ORDER BY p.start_time";
 
                 // plan for customer
             } else {
@@ -267,12 +266,14 @@ public class PlanDaoImp implements PlanDao {
                         "  p.created_date AS created_date, \n" +
                         "  DATE_FORMAT(CONVERT_TZ(p.start_time,'UTC',p.time_zone),'%Y-%m-%d %T') AS f_start_time, \n" +
                         "  DATE_FORMAT(CONVERT_TZ(p.end_time,'UTC',p.time_zone),'%Y-%m-%d %T') AS f_end_time, \n" +
-                        "  SUBDATE(CONVERT_TZ(p.start_time,'UTC',p.time_zone),INTERVAL 30 MINUTE) AS before_start_time \n" +
+                        "  SUBDATE(CONVERT_TZ(p.start_time,'UTC',p.time_zone),INTERVAL 30 MINUTE) AS before_start_time, \n" +
+                        "  CONVERT_TZ(NOW(),'UTC',p.time_zone) AS cur_date_time \n" +
                         "FROM\n" +
                         "  plan AS p \n" +
                         "WHERE cus_uid = :cusUid \n" +
                         "  AND DATE(CONVERT_TZ(end_time,'UTC',time_zone)) >= DATE(CONVERT_TZ(NOW(),'UTC',time_zone))" +
-                        "  AND is_accept_by_con IS TRUE";
+                        "  AND is_accept_by_con IS TRUE" +
+                        "  ORDER BY p.start_time";
 
             }
 
@@ -292,17 +293,20 @@ public class PlanDaoImp implements PlanDao {
             for (Object[] result : results) {
 
                 // start time sub 30 min
-                Date stSubThirtyMin = (Date) result[14];
                 String paymentTransId = (String) result[9];
+                Date stSubThirtyMin = (Date) result[14];
+                Date now = (Date) result[15];
 
                 // example : cur date time 7.00 | (start_date_time (7.50) - 30 min ) = 7.20
                 // if current date time after start time sub 30 min
 
-                System.out.println(getClass().getName() + ".getAllPlanByUser stSubThirtyMin " + stSubThirtyMin);
+                System.out.println(getClass().getName() + ".getAllPlanByUser: stSubThirtyMin " + stSubThirtyMin);
+                System.out.println(getClass().getName() + ".getAllPlanByUser: now " + now);
+                System.out.println(getClass().getName() + ".getAllPlanByUser: paymentTransId " + paymentTransId);
 
                 // if stSubThirtyMin cross
                 // then only add paid plan
-                if (curDateTime.after(stSubThirtyMin)) {
+                if (now.after(stSubThirtyMin)) {
 
                     if (paymentTransId != null) {
 
@@ -658,8 +662,8 @@ public class PlanDaoImp implements PlanDao {
 
             String chatCancelSql = ""
                     + "SELECT "
-                    + "  DATE_FORMAT(t.start_time, '%Y-%m-%d %r') AS f_start_time, "
-                    + "  DATE_FORMAT(t.end_time, '%Y-%m-%d %r') AS f_end_time, "
+                    + "  DATE_FORMAT(t.start_time, '%d-%m-%Y %r') AS f_start_time, "
+                    + "  DATE_FORMAT(t.end_time, '%d-%m-%Y %r') AS f_end_time, "
                     + "  t.st, "
                     + "  t.is_free_min_available, "
                     + "  t.is_payment_complete, "
@@ -723,8 +727,8 @@ public class PlanDaoImp implements PlanDao {
 
             String reminderSql = ""
                     + "SELECT "
-                    + " DATE_FORMAT(t.start_time, '%Y-%m-%d %r') AS f_start_time, "
-                    + " DATE_FORMAT(t.end_time, '%Y-%m-%d %r') AS f_end_time, "
+                    + " DATE_FORMAT(t.start_time, '%d-%m-%Y %r') AS f_start_time, "
+                    + " DATE_FORMAT(t.end_time, '%d-%m-%Y %r') AS f_end_time, "
                     + "	t.st, "
                     + "	t.is_free_min_available, "
                     + "	t.is_payment_complete, "
