@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_webview_plugin/flutter_webview_plugin.dart';
+import 'package:peopeo/MySharedPreferences.dart';
 
 class MyFlutterWebView extends StatefulWidget {
   final String title;
@@ -28,6 +29,8 @@ class MyFlutterWebViewState extends State<MyFlutterWebView> {
   @override
   void initState() {
     super.initState();
+    print("need to pop up notification = [no] in web view");
+    MySharedPreferences.setBooleanValue("needToPopUpNoti", false);
   }
 
   @override

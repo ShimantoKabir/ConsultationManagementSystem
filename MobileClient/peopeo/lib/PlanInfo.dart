@@ -82,10 +82,13 @@ class PlanInfoState extends State<PlanInfo> {
                           String st = df.format(
                               DateTime.parse(snapshot.data[index].fStartTime));
                           return Container(
+                              margin: EdgeInsets.fromLTRB(0.0,5.0,0.0,0.0),
+                              padding: EdgeInsets.all(3.0),
+                              color: Colors.red,
                               child: Text(st.substring(0, 10),
                                   style: TextStyle(
                                       fontSize: 15.0,
-                                      color: Colors.black,
+                                      color: Colors.white,
                                       fontFamily: 'Armata',
                                       fontWeight: FontWeight.bold)));
                         },
@@ -113,14 +116,14 @@ class PlanInfoState extends State<PlanInfo> {
                                           fontWeight: FontWeight.bold)),
                                   getPeerDisplayName(snapshot.data[index]),
                                   Text(
-                                      "Start Time " +
+                                      "Start time " +
                                           st.substring(11, st.length),
                                       style: TextStyle(
                                           color: Colors.black,
                                           fontFamily: 'Armata',
                                           fontWeight: FontWeight.normal)),
                                   Text(
-                                      "End Time " + et.substring(11, et.length),
+                                      "End time " + et.substring(11, et.length),
                                       style: TextStyle(
                                           color: Colors.black,
                                           fontFamily: 'Armata',
@@ -133,8 +136,9 @@ class PlanInfoState extends State<PlanInfo> {
                           );
                         },
                         hasSameHeader: (int a, int b) {
-                          return snapshot.data[a].fStartTime.substring(0, 9) ==
-                              snapshot.data[b].fStartTime.substring(0, 9);
+                          print("date = ${snapshot.data[a].fStartTime.substring(0, 10)}");
+                          return snapshot.data[a].fStartTime.substring(0, 10) ==
+                              snapshot.data[b].fStartTime.substring(0, 10);
                         },
                         itemExtend: null,
                       );
@@ -254,6 +258,10 @@ class PlanInfoState extends State<PlanInfo> {
                   url: url,
                 )))
         .whenComplete(() {
+
+      print("need to pop up notification = [yes] in plan info go for payment");
+      MySharedPreferences.setBooleanValue("needToPopUpNoti", true);
+
       MySharedPreferences.getBooleanValue('isPaymentSuccessful')
           .then((isPaymentSuccessful) {
         if (isPaymentSuccessful) {
@@ -280,7 +288,7 @@ class PlanInfoState extends State<PlanInfo> {
   }
 
   showPaymentButtonOrChatButton(Plan p) {
-    String buttonText = "Start Chat";
+    String buttonText = "start chat";
 
     // handle consultant
     if (userType == 2) {
@@ -319,7 +327,7 @@ class PlanInfoState extends State<PlanInfo> {
                 int wm = subStartTime.difference(DateTime.now()).inMilliseconds;
                 int waitMinutes = ((wm / 1000) / 60).round();
                 Fluttertoast.showToast(
-                    msg: "Wait $waitMinutes minute's to enter the caht room!");
+                    msg: "Wait $waitMinutes minutess to enter the chat room!");
               }
 
               if (DateTime.now().isAfter(fEndTime)) {
@@ -337,7 +345,7 @@ class PlanInfoState extends State<PlanInfo> {
                   scheduleOk = false;
                   Fluttertoast.showToast(
                       msg:
-                          "This customer has free minute and it's gone, so we recomandad him to create a new schedule!");
+                          "This customer has free minute and it's gone, we recomandad him to create a new schedule!");
                 }
               }
 
@@ -420,8 +428,6 @@ class PlanInfoState extends State<PlanInfo> {
                     fontFamily: 'Armata',
                     fontWeight: FontWeight.bold)),
             onPressed: () {
-              int fm = p.freeMinutesForNewCustomer;
-              // print("free minute = $fm");
 
               final fStartTime = DateTime.parse(p.fStartTime);
               final fEndTime = DateTime.parse(p.fEndTime);
@@ -440,7 +446,7 @@ class PlanInfoState extends State<PlanInfo> {
                 int wm = subStartTime.difference(DateTime.now()).inMilliseconds;
                 int waitMinutes = ((wm / 1000) / 60).round();
                 Fluttertoast.showToast(
-                    msg: "Wait $waitMinutes minute's to enter the caht room!");
+                    msg: "Wait $waitMinutes minutes to enter the chat room!");
               }
 
               if (DateTime.now().isAfter(fEndTime)) {
@@ -448,19 +454,15 @@ class PlanInfoState extends State<PlanInfo> {
                 Fluttertoast.showToast(msg: "Chat sesssion has been ended!");
               }
 
-              // print("scheduleOk = $scheduleOk");
-
               if (p.freeMinutesForNewCustomer != null) {
                 final DateTime pDateTime = fStartTime
                     .add(Duration(minutes: p.freeMinutesForNewCustomer));
-
-                // print("adding time after free minutes = $pDateTime");
 
                 if (DateTime.now().isAfter(pDateTime)) {
                   scheduleOk = false;
                   Fluttertoast.showToast(
                       msg:
-                          "Your free minut's is gone, we recomand you to book a new schedule!");
+                          "Your free minutes is gone, we recomand you to book a new schedule!");
                 }
               }
 
@@ -573,17 +575,15 @@ class PlanInfoState extends State<PlanInfo> {
       head = "Customer";
     }
 
-    // print("Peer id $uid");
-
     return FutureBuilder(
         future:
             Firestore.instance.collection("userInfoList").document(uid).get(),
         builder:
             (BuildContext context, AsyncSnapshot<DocumentSnapshot> snapshot) {
           if (snapshot.hasData) {
-            return Text("$head [${snapshot.data.data['displayName']}]");
+            return Text("$head ${snapshot.data.data['displayName']}");
           } else {
-            return Text("$head [Not found]");
+            return Text("...");
           }
         });
   }

@@ -50,6 +50,7 @@ class MyApp extends StatelessWidget {
           future: MySharedPreferences.getStringValue("userInfo"),
           builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
             if (snapshot.hasData) {
+
               isUserLoggedIn = true;
               userInfo = jsonDecode(snapshot.data);
               print("uid = ${userInfo['uid']}");
@@ -81,6 +82,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
+
   final FirebaseMessaging fm = FirebaseMessaging();
   int i = 0;
   DateFormat df = new DateFormat('dd-MM-yyyy hh:mm:ss a');
@@ -92,11 +94,25 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   void initState() {
     super.initState();
 
+    print("need to pop up notification = [yes] in main");
+    MySharedPreferences.setBooleanValue("needToPopUpNoti", true);
+
     WidgetsBinding.instance.addObserver(this);
     fm.configure(onMessage: (Map<String, dynamic> message) async {
       if (i % 2 == 0) {
         print("onMessage: message = $message");
-        showNotification(context, message);
+        MySharedPreferences.getBooleanValue("needToPopUpNoti").then((needToPopUpNoti){
+
+          if(needToPopUpNoti){
+
+            print("need to pop up notification = [yes] in main init state");
+            showNotification(context, message);
+
+          }else {
+            print("need to pop up notification = [no] in main init state");
+          }
+
+        });
       }
       i++;
     });
@@ -436,7 +452,13 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                       url: calenderUrl);
                 },
               ),
-            );
+            ).whenComplete((){
+
+              print("need to pop up notification = [yes] in main calendre button");
+              MySharedPreferences.setBooleanValue("needToPopUpNoti", true);
+
+            });
+
           } else {
             Navigator.of(context).pop();
             Fluttertoast.showToast(msg: "Something went woring!");

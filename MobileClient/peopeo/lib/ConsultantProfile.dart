@@ -690,7 +690,12 @@ class ConsultantProfileState extends State<ConsultantProfile>
                   url: calenderUrl);
             },
           ),
-        );
+        ).whenComplete((){
+
+          print("need to pop up notification = [yes] in oonsultant profile");
+          MySharedPreferences.setBooleanValue("needToPopUpNoti", true);
+
+        });
       } else {
         Navigator.of(context).pop();
         Fluttertoast.showToast(msg: "Something went woring!");

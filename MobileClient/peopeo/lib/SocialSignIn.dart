@@ -15,6 +15,7 @@ final FirebaseAuth auth = FirebaseAuth.instance;
 final GoogleSignIn googleSignIn = GoogleSignIn();
 final databaseReference = Firestore.instance;
 SharedPreferences prefs;
+String facebookAccessToken;
 
 Future<AuthResult> signInWithGoogle() async {
   final GoogleSignInAccount googleSignInAccount = await googleSignIn.signIn();
@@ -31,6 +32,9 @@ Future<AuthResult> signInWithFacebook() async {
   var facebookLogin = new FacebookLogin();
   facebookLogin.loginBehavior = FacebookLoginBehavior.webViewOnly;
   var res = await facebookLogin.logIn(['email']);
+
+  facebookAccessToken = res.accessToken.token;
+
   if (res.status == FacebookLoginStatus.loggedIn) {
     final AuthCredential credential = FacebookAuthProvider.getCredential(
       accessToken: res.accessToken.token,
@@ -58,18 +62,35 @@ Future<Response> setUserCredential(
     print("new user");
     await prefs.setString('displayName', user.displayName);
     await prefs.setString('photoUrl', user.photoUrl);
+    String photoUrl;
+
+    if(facebookAccessToken != null){
+
+      print("facebook access token = $facebookAccessToken");
+      final graphResponse = await get(
+          'https://graph.facebook.com/v2.12/me?fields=picture.height(961)&access_token=$facebookAccessToken');
+
+      final profile = jsonDecode(graphResponse.body);
+
+      photoUrl = profile["picture"]["data"]["url"];
+
+    }else {
+
+      photoUrl = user.photoUrl;
+
+    }
 
     var ui = {
       'uid' : user.uid,
       'email' : user.email,
       'userType' : data['userType'],
       'displayName' : user.displayName,
-      'photoUrl' : user.photoUrl
+      'photoUrl' : photoUrl
     };
 
     MySharedPreferences.setStringValue('userInfo',jsonEncode(ui));
 
-    return createUser(user, data['userType'], data['token']);
+    return createUser(user,data,photoUrl);
 
   }else{
 
@@ -100,7 +121,7 @@ Future<Response> setUserCredential(
 
 }
 
-Future<Response> createUser(FirebaseUser user, int ut, String token) async {
+Future<Response> createUser(FirebaseUser user,Map<String, dynamic> data,String photoUrl) async {
   
   String hashTag = user.displayName;
   hashTag = (user.email != null) ?  hashTag + user.email : hashTag;
@@ -115,15 +136,15 @@ Future<Response> createUser(FirebaseUser user, int ut, String token) async {
     'displayName': user.displayName,
     'email': user.email,
     'phoneNumber': user.phoneNumber,
-    'photoUrl': user.photoUrl,
+    'photoUrl': photoUrl,
     'uid': user.uid,
-    'userType': ut,
+    'userType': data['userType'],
     'hourlyRate': null,
     'like': null,
     'shortDescription': null,
     'longDescription': null,
     'freeMinutesForNewCustomer': null,
-    'fcmRegistrationToken': token,
+    'fcmRegistrationToken': data['token'],
     'rating': null,
     'hashTag': hashTag,
     'coronavirusExperience' : null,

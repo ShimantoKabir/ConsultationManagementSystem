@@ -51,6 +51,7 @@ class Chat extends StatefulWidget {
 }
 
 class ChatState extends State<Chat> with TickerProviderStateMixin {
+
   ChatState(
       {Key key,
       @required this.peerId,
@@ -112,6 +113,9 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
     super.initState();
     Screen.keepOn(true);
 
+    print("need to pop up notification = [no] in chat");
+    MySharedPreferences.setBooleanValue("needToPopUpNoti", false);
+
     groupChatId = '';
     imageUrl = '';
     isLoading = false;
@@ -170,17 +174,17 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
 
         // logic for start time ticker
         if (!isTimeTickerRunning && dateTimeNow.isAfter(startDateTime)) {
-          int m = calculateDuration(endDateTime, dateTimeNow);
+          int passedAwayMinutes = calculateDuration(dateTimeNow, startDateTime);
+          int chatDuration = totalChatDuration - passedAwayMinutes;
           print('Time ticker started!');
           isTimeTickerRunning = true;
-          startTimeTicker(controller, m);
+          startTimeTicker(controller, chatDuration);
         }
 
         // logic for review and rating
         if (!isReviewAndRatingShowedUp && dateTimeNow.isAfter(endDateTime)) {
           print('Review and rating showed up!');
           isReviewAndRatingShowedUp = true;
-          print("hi test 7");
           reviewAndRatingPopUp();
         }
 
@@ -206,6 +210,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
           int chatDuration = detectedChatDuration - passedAwayMinutes;
           isTimeTickerRunning = true;
           startTimeTicker(controller, chatDuration);
+
         }
 
         // logic for show up payment ui
@@ -249,7 +254,6 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
             !isReviewAndRatingShowedUp &&
             controller.isDismissed &&
             dateTimeNow.isAfter(reviewAndRatingShowDateTime)) {
-          print("hi test 1");
           reviewAndRatingPopUp();
           print('Show popup for review and rating in time tiker block!');
           isReviewAndRatingShowedUp = true;
@@ -709,7 +713,6 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                         "$displayName has ended the chat session.", 3);
                     isReviewAndRatingShowedUp = true;
                     controller.stop();
-                    print("hi test 3");
                     reviewAndRatingPopUp();
                   })
             ],
@@ -1161,9 +1164,11 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
           context,
           MaterialPageRoute(
               builder: (context) => PlanInfo(userType: userType, uid: uid)));
-
       print(response.body.toString());
     } else {
+      this.dispose();
+      print("need to pop up notification = [yes] in chat when finish");
+      MySharedPreferences.setBooleanValue("needToPopUpNoti", true);
       Navigator.of(context).popUntil((route) => route.isFirst);
       Navigator.pushReplacement(
           context,
@@ -1215,7 +1220,6 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                 needToShowPaymentUi = false;
                 Navigator.of(context).pop();
                 controller.stop();
-                print("hi test 4");
                 reviewAndRatingPopUp();
               },
             ),
@@ -1374,7 +1378,6 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
           sendMsgContent("Customer payment unsuccessful!", 3);
           isReviewAndRatingShowedUp = true;
           controller.stop();
-          print("hi test 5");
           reviewAndRatingPopUp();
         }
       });
@@ -1382,9 +1385,14 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
   }
 
   Future<void> sendMsgContent(String content, int type) async {
+
+    print("check timmer status = ${controller.status}");
+
     Connectivity().checkConnectivity().then((connectivityResult) {
       if (connectivityResult == ConnectivityResult.none) {
         Fluttertoast.showToast(msg: "No internet connection available!");
+      } else if(controller.isDismissed){
+        Fluttertoast.showToast(msg: "You can only send message when time ticker is running!");
       } else {
         textEditingController.clear();
 
@@ -1473,7 +1481,6 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
         isReviewAndRatingShowedUp = true;
         Navigator.of(context).pop();
         controller.stop();
-        print("hi test 6");
         reviewAndRatingPopUp();
       }
     } else {
@@ -1482,18 +1489,20 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
   }
 
   actionAfterFreeMinutesGone(BuildContext context) {
-    print("Id of cus leave after free minute's gone $idOfCusLeaveMsg");
+
+    print("Id of cus leave after free minutes gone $idOfCusLeaveMsg");
     print("Id of cus payment success after free minute's gone"
         " $idOfCusSuccessPaymentMsg");
 
-    if (idOfCusLeaveMsg != null && !isReviewAndRatingShowedUp) {
+    if (idOfCusLeaveMsg != null &&
+        !isReviewAndRatingShowedUp
+        && plan.freeMinutesForNewCustomer != null) {
       Firestore.instance
           .collection('messages')
           .document(groupChatId)
           .collection('conversations')
           .document(idOfCusLeaveMsg)
           .updateData(<String, dynamic>{'isReviewAndRatingShowedUp': 1});
-      print("hi test 2");
       reviewAndRatingPopUp();
       controller.stop();
       isReviewAndRatingShowedUp = true;

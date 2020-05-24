@@ -185,6 +185,7 @@ class LoginPageState extends State<LoginPage> {
       splashColor: Colors.grey,
       onPressed: () {
         signInWithFacebook().then((val) {
+          print("after facebook auth success = $val");
           if (val.additionalUserInfo.isNewUser) {
             setState(() {
               needToShowUserTypeCheckBox = true;
@@ -220,11 +221,14 @@ class LoginPageState extends State<LoginPage> {
                 Fluttertoast.showToast(
                     msg: "Something went wrong, please try again!");
               });
+
             }).catchError((err) {
               Navigator.pop(context);
               Fluttertoast.showToast(
                   msg: "Something went wrong, please try again!");
             });
+
+
           }
         }).catchError((err) {
           Fluttertoast.showToast(msg: "Something went wrong, please try again!");
