@@ -126,7 +126,7 @@ public class CalendarDaoImp implements CalendarDao {
                 } else {
 
                     // COMMENT OUT BEFORE APP GOES LIVE
-                    curDateTime = DateUtils.addHours(curDateTime,1);
+                    // curDateTime = DateUtils.addHours(curDateTime,1);
 
                     if (curDateTime.before(startDateTime)) {
 
