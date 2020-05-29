@@ -1,20 +1,21 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity/connectivity.dart';
-import 'package:peopeo/Const.dart';
-import 'package:peopeo/HttpResponse.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart';
+import 'package:intl/intl.dart';
+import 'package:peopeo/Chat.dart';
+import 'package:peopeo/Const.dart';
+import 'package:peopeo/HttpResponse.dart';
 import 'package:peopeo/MySharedPreferences.dart';
 import 'package:peopeo/MyWebView.dart';
-import 'package:side_header_list_view/side_header_list_view.dart';
-import 'package:peopeo/Chat.dart';
 import 'package:peopeo/Plan.dart';
-import 'package:intl/intl.dart';
+import 'package:side_header_list_view/side_header_list_view.dart';
 
 class PlanInfo extends StatefulWidget {
   final String uid;
@@ -82,7 +83,7 @@ class PlanInfoState extends State<PlanInfo> {
                           String st = df.format(
                               DateTime.parse(snapshot.data[index].fStartTime));
                           return Container(
-                              margin: EdgeInsets.fromLTRB(0.0,5.0,0.0,0.0),
+                              margin: EdgeInsets.fromLTRB(0.0, 5.0, 0.0, 0.0),
                               padding: EdgeInsets.all(3.0),
                               color: Colors.red,
                               child: Text(st.substring(0, 10),
@@ -136,7 +137,8 @@ class PlanInfoState extends State<PlanInfo> {
                           );
                         },
                         hasSameHeader: (int a, int b) {
-                          print("date = ${snapshot.data[a].fStartTime.substring(0, 10)}");
+                          print(
+                              "date = ${snapshot.data[a].fStartTime.substring(0, 10)}");
                           return snapshot.data[a].fStartTime.substring(0, 10) ==
                               snapshot.data[b].fStartTime.substring(0, 10);
                         },
@@ -225,67 +227,68 @@ class PlanInfoState extends State<PlanInfo> {
     }
   }
 
-  void getClientToken(String amount, int planId) async {
-    String url = serverBaseUrl + '/pg/get-client-token';
-    Map<String, String> headers = {"Content-type": "application/json"};
-    var request = {'customerId': uid};
+//  void getClientToken(String amount, int planId) async {
+//    String url = serverBaseUrl + '/pg/get-client-token';
+//    Map<String, String> headers = {"Content-type": "application/json"};
+//    var request = {'customerId': uid};
+//
+//    Response response =
+//        await post(url, headers: headers, body: json.encode(request));
+//
+//    if (response.statusCode == 200) {
+//      // checking if server returns an OK response, then parse the JSON.
+//      // print(HttpResponse.fromJson(json.decode(response.body)).clientToken);
+//
+//      String clientToken =
+//          HttpResponse.fromJson(json.decode(response.body)).clientToken;
+//
+//      reloadAuth(clientToken, amount, planId);
+//    } else {
+//      // If that response was not OK, throw an error.
+//      throw Exception('Failed to load post');
+//    }
+//  }
 
-    Response response =
-        await post(url, headers: headers, body: json.encode(request));
-
-    if (response.statusCode == 200) {
-      // checking if server returns an OK response, then parse the JSON.
-      // print(HttpResponse.fromJson(json.decode(response.body)).clientToken);
-
-      String clientToken =
-          HttpResponse.fromJson(json.decode(response.body)).clientToken;
-
-      reloadAuth(clientToken, amount, planId);
-    } else {
-      // If that response was not OK, throw an error.
-      throw Exception('Failed to load post');
-    }
-  }
-
-  void goBrowserForPayment(String aid) async {
-    String url = webClientBaseUrl + '/payment.html?aid=' + aid + "&uid=" + uid;
-
-    Navigator.of(context, rootNavigator: true).pop();
-    Navigator.of(context)
-        .push(MaterialPageRoute(
-            builder: (BuildContext context) => MyWebView(
-                  title: "Payment",
-                  url: url,
-                )))
-        .whenComplete(() {
-
-      print("need to pop up notification = [yes] in plan info go for payment");
-      MySharedPreferences.setBooleanValue("needToPopUpNoti", true);
-
-      MySharedPreferences.getBooleanValue('isPaymentSuccessful')
-          .then((isPaymentSuccessful) {
-        if (isPaymentSuccessful) {
-          Fluttertoast.showToast(
-              msg: "Payment successful!",
-              toastLength: Toast.LENGTH_LONG,
-              gravity: ToastGravity.BOTTOM,
-              timeInSecForIosWeb: 1,
-              backgroundColor: Colors.green,
-              textColor: Colors.white,
-              fontSize: 16.0);
-        } else {
-          Fluttertoast.showToast(
-              msg: "Payment unsuccessful!",
-              toastLength: Toast.LENGTH_LONG,
-              gravity: ToastGravity.BOTTOM,
-              timeInSecForIosWeb: 1,
-              backgroundColor: Colors.red,
-              textColor: Colors.white,
-              fontSize: 16.0);
-        }
-      });
-    });
-  }
+//  void goBrowserForPayment(String aid) async {
+//
+//    String url = webClientBaseUrl + '/payment.html?aid=' + aid + "&uid=" + uid;
+//
+//    Navigator.of(context, rootNavigator: true).pop();
+//    Navigator.of(context)
+//        .push(MaterialPageRoute(
+//            builder: (BuildContext context) => MyWebView(
+//                  title: "Payment",
+//                  url: url,
+//                )))
+//        .whenComplete(() {
+//
+//      print("need to pop up notification = [yes] in plan info go for payment");
+//      MySharedPreferences.setBooleanValue("needToPopUpNoti", true);
+//
+//      MySharedPreferences.getBooleanValue('isPaymentSuccessful')
+//          .then((isPaymentSuccessful) {
+//        if (isPaymentSuccessful) {
+//          Fluttertoast.showToast(
+//              msg: "Payment successful!",
+//              toastLength: Toast.LENGTH_LONG,
+//              gravity: ToastGravity.BOTTOM,
+//              timeInSecForIosWeb: 1,
+//              backgroundColor: Colors.green,
+//              textColor: Colors.white,
+//              fontSize: 16.0);
+//        } else {
+//          Fluttertoast.showToast(
+//              msg: "Payment unsuccessful!",
+//              toastLength: Toast.LENGTH_LONG,
+//              gravity: ToastGravity.BOTTOM,
+//              timeInSecForIosWeb: 1,
+//              backgroundColor: Colors.red,
+//              textColor: Colors.white,
+//              fontSize: 16.0);
+//        }
+//      });
+//    });
+//  }
 
   showPaymentButtonOrChatButton(Plan p) {
     String buttonText = "start chat";
@@ -399,6 +402,7 @@ class PlanInfoState extends State<PlanInfo> {
                   Fluttertoast.showToast(
                       msg: "No internat connection available.");
                 } else {
+                  // working ...
                   final fStartTime = DateTime.parse(p.fStartTime);
                   final fEndTime = DateTime.parse(p.fEndTime);
 
@@ -428,7 +432,6 @@ class PlanInfoState extends State<PlanInfo> {
                     fontFamily: 'Armata',
                     fontWeight: FontWeight.bold)),
             onPressed: () {
-
               final fStartTime = DateTime.parse(p.fStartTime);
               final fEndTime = DateTime.parse(p.fEndTime);
 
@@ -530,7 +533,9 @@ class PlanInfoState extends State<PlanInfo> {
                       fontWeight: FontWeight.bold)),
               onPressed: () {
                 Navigator.of(context).pop();
-                getClientToken(amount, p.id);
+                // start working
+                // getClientToken(amount, p.id);
+                redirectToPayment(amount, p);
               },
             )
           ],
@@ -539,29 +544,29 @@ class PlanInfoState extends State<PlanInfo> {
     );
   }
 
-  void reloadAuth(String clientToken, String amount, int planId) async {
-    String url = serverBaseUrl + '/auth/reload';
-    Map<String, String> headers = {"Content-type": "application/json"};
-    var request = {
-      'auth': {
-        'uId': uid,
-        'amount': amount,
-        'clientToken': clientToken,
-        'planId': planId
-      }
-    };
-
-    Response response =
-        await post(url, headers: headers, body: json.encode(request));
-
-    if (response.statusCode == 200) {
-      String aid = HttpResponse.fromJson(json.decode(response.body)).aid;
-      goBrowserForPayment(aid);
-      // print(response.body.toString());
-    } else {
-      throw Exception('Failed to load post');
-    }
-  }
+//  void reloadAuth(String clientToken, String amount, int planId) async {
+//    String url = serverBaseUrl + '/auth/reload';
+//    Map<String, String> headers = {"Content-type": "application/json"};
+//    var request = {
+//      'auth': {
+//        'uId': uid,
+//        'amount': amount,
+//        'clientToken': clientToken,
+//        'planId': planId
+//      }
+//    };
+//
+//    Response response =
+//        await post(url, headers: headers, body: json.encode(request));
+//
+//    if (response.statusCode == 200) {
+//      String aid = HttpResponse.fromJson(json.decode(response.body)).aid;
+//      goBrowserForPayment(aid);
+//      // print(response.body.toString());
+//    } else {
+//      throw Exception('Failed to load post');
+//    }
+//  }
 
   getPeerDisplayName(Plan data) {
     String uid;
@@ -592,5 +597,70 @@ class PlanInfoState extends State<PlanInfo> {
   void dispose() {
     connectivitySubscription.cancel();
     super.dispose();
+  }
+
+  void redirectToPayment(String amount, Plan p) {
+    Firestore.instance
+        .collection("userInfoList")
+        .document(p.cusUid)
+        .get()
+        .then((d) {
+      String payPalEmail;
+      if (d.data['paypalEmail'] == null) {
+        payPalEmail = "null";
+      } else {
+        payPalEmail = d.data['paypalEmail'];
+      }
+
+      print("paypal email = $payPalEmail");
+
+      String url = webClientBaseUrl +
+          '/payment.html?amount=' +
+          amount +
+          "&plan-id=" +
+          p.id.toString() +
+          "&paypal-email=" +
+          payPalEmail +
+          "&con-uid=" +
+          p.conUid;
+
+      print("payment url = $url");
+
+      Navigator.of(context, rootNavigator: true).pop();
+      Navigator.of(context)
+          .push(MaterialPageRoute(
+              builder: (BuildContext context) => MyWebView(
+                    title: "Payment",
+                    url: url,
+                  )))
+          .whenComplete(() {
+        print(
+            "need to pop up notification = [yes] in plan info go for payment");
+        MySharedPreferences.setBooleanValue("needToPopUpNoti", true);
+
+        MySharedPreferences.getBooleanValue('isPaymentSuccessful')
+            .then((isPaymentSuccessful) {
+          if (isPaymentSuccessful) {
+            Fluttertoast.showToast(
+                msg: "Payment successful!",
+                toastLength: Toast.LENGTH_LONG,
+                gravity: ToastGravity.BOTTOM,
+                timeInSecForIosWeb: 1,
+                backgroundColor: Colors.green,
+                textColor: Colors.white,
+                fontSize: 16.0);
+          } else {
+            Fluttertoast.showToast(
+                msg: "Payment unsuccessful!",
+                toastLength: Toast.LENGTH_LONG,
+                gravity: ToastGravity.BOTTOM,
+                timeInSecForIosWeb: 1,
+                backgroundColor: Colors.red,
+                textColor: Colors.white,
+                fontSize: 16.0);
+          }
+        });
+      });
+    });
   }
 }

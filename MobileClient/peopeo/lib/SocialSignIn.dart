@@ -1,11 +1,9 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_native_timezone/flutter_native_timezone.dart';
-import 'package:peopeo/Const.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_facebook_login/flutter_facebook_login.dart';
+import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart';
 import 'package:peopeo/MySharedPreferences.dart';
@@ -45,7 +43,7 @@ Future<AuthResult> signInWithFacebook() async {
   }
 }
 
-Future<Response> setUserCredential(
+Future<bool> setUserCredential(
     AuthResult authResult,Map<String, dynamic> data) async {
 
   prefs = await SharedPreferences.getInstance();
@@ -121,7 +119,7 @@ Future<Response> setUserCredential(
 
 }
 
-Future<Response> createUser(FirebaseUser user,Map<String, dynamic> data,String photoUrl) async {
+Future<bool> createUser(FirebaseUser user,Map<String, dynamic> data,String photoUrl) async {
   
   String hashTag = user.displayName;
   hashTag = (user.email != null) ?  hashTag + user.email : hashTag;
@@ -152,26 +150,27 @@ Future<Response> createUser(FirebaseUser user,Map<String, dynamic> data,String p
     'lastOnlineAt' : DateTime.now(),
     'timeZone' : timeZone
   });
-  return createCustomerInBrainTree(user);
+
+  return Future.value(true);
+  // return createCustomerInBrainTree(user);
 }
 
-Future<Response> createCustomerInBrainTree(FirebaseUser user) async {
-  String url = serverBaseUrl + '/pg/create-customer';
-  Map<String, String> headers = {"Content-type": "application/json"};
-  var request = {
-    'userInfo': {
-      'firstName': user.displayName,
-      'email': user.email,
-      'phone': user.phoneNumber,
-      'customerId': user.uid
-    }
-  };
-  Response response =
-      await post(url, headers: headers, body: json.encode(request));
-  print(response.body);
-  return response;
-}
-
+//Future<Response> createCustomerInBrainTree(FirebaseUser user) async {
+//  String url = serverBaseUrl + '/pg/create-customer';
+//  Map<String, String> headers = {"Content-type": "application/json"};
+//  var request = {
+//    'userInfo': {
+//      'firstName': user.displayName,
+//      'email': user.email,
+//      'phone': user.phoneNumber,
+//      'customerId': user.uid
+//    }
+//  };
+//  Response response =
+//      await post(url, headers: headers, body: json.encode(request));
+//  print(response.body);
+//  return response;
+//}
 
 Future<bool> logOut() async {
 

@@ -7,9 +7,9 @@ import com.dannygroupllc.ConsultantWebService.models.Plan;
 import com.dannygroupllc.ConsultantWebService.pojos.Notification;
 import com.dannygroupllc.ConsultantWebService.pojos.Response;
 import com.google.gson.Gson;
-import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
+
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import javax.servlet.http.HttpServletRequest;
@@ -223,13 +223,13 @@ public class CalendarDaoImp implements CalendarDao {
                                 Notification notification = new Notification();
                                 notification.setUid(c.getConUid());
                                 notification.setTitle("Booking Request");
-
-                                notification.setBody("Topic [" + p.getTopic()+"], Start Time ["+
-                                        p.getfStartTime()+"], End Time ["+
-                                        p.getfEndTime()+"]");
-
+                                notification.setBody("Topic " + p.getTopic()+", start time "+
+                                        p.getfStartTime()+", end time "+
+                                        p.getfEndTime());
                                 notification.setStartTime(p.getfStartTime());
                                 notification.setEndTime(p.getfEndTime());
+                                notification.setTopic(p.getTopic());
+                                notification.setType(1);
                                 NotificationSender.send(notification);
 
                                 calendarRes.setCode(200);

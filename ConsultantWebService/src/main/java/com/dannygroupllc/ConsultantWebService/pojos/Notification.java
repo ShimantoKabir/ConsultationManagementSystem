@@ -10,8 +10,26 @@ public class Notification {
     public String startTime;
     public String endTime;
     public Long timeStamp;
+    public Integer type;
+    public String topic;
 
     public Notification() {}
+
+    public String getTopic() {
+        return topic;
+    }
+
+    public void setTopic(String topic) {
+        this.topic = topic;
+    }
+
+    public Integer getType() {
+        return type;
+    }
+
+    public void setType(Integer type) {
+        this.type = type;
+    }
 
     public Long getTimeStamp() {
         return timeStamp;

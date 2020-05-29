@@ -1,18 +1,25 @@
-package com.dannygroupllc.ConsultantWebService.processors;
+package com.dannygroupllc.ConsultantWebService.payment;
 
 import com.braintreegateway.*;
 import com.dannygroupllc.ConsultantWebService.models.Auth;
 import com.dannygroupllc.ConsultantWebService.pojos.Request;
 import com.dannygroupllc.ConsultantWebService.pojos.Response;
 import com.dannygroupllc.ConsultantWebService.pojos.UserInfo;
+import com.google.gson.Gson;
+import com.paypal.payouts.*;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Query;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import com.paypal.http.HttpResponse;
 
 public class PaymentGatewayPro {
 
@@ -163,6 +170,57 @@ public class PaymentGatewayPro {
 
         return response;
 
+    }
+
+    public Response payout(Request request, EntityManagerFactory entityManagerFactory) {
+
+        System.out.println(getClass().getName()+".payout = Called");
+
+        Response response = new Response();
+
+        try {
+            createPayout(request);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return response;
+
+    }
+
+    private PayoutsPostRequest buildRequestBody(Request request) {
+        List<PayoutItem> items = new ArrayList<>();
+
+        PayoutItem payoutItem = new PayoutItem();
+        payoutItem.senderItemId("sender_item_id");
+        payoutItem.note("note");
+        payoutItem.receiver(request.getEmail());
+        payoutItem.amount(new Currency().currency("USD").value(request.getAmount()));
+
+        items.add(payoutItem);
+
+        CreatePayoutRequest payoutBatch = new CreatePayoutRequest()
+                .senderBatchHeader(new SenderBatchHeader()
+                        .senderBatchId("batch_id_" + RandomStringUtils.randomAlphanumeric(7))
+                        .emailMessage("Congratulation you have received a payment.")
+                        .emailSubject("Congratulation! Payment received.")
+                        .note("Enjoy your payout!!")
+                        .recipientType("EMAIL"))
+                .items(items);
+
+        return new PayoutsPostRequest()
+                .requestBody(payoutBatch);
+    }
+
+    HttpResponse<CreatePayoutResponse> createPayout(Request request) throws IOException {
+
+        PayoutsPostRequest payoutsPostRequest = buildRequestBody(request);
+
+        HttpResponse<CreatePayoutResponse> response = PayPalClient.client.execute(payoutsPostRequest);
+        System.out.println("Response Body:");
+        System.out.println(getClass().getName()+".buildRequestBody: "+new Gson().toJson(response));
+
+        return response;
     }
 
 }

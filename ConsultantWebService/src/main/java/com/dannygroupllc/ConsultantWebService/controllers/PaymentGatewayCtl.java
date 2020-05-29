@@ -2,7 +2,7 @@ package com.dannygroupllc.ConsultantWebService.controllers;
 
 import com.dannygroupllc.ConsultantWebService.pojos.Request;
 import com.dannygroupllc.ConsultantWebService.pojos.Response;
-import com.dannygroupllc.ConsultantWebService.processors.PaymentGatewayPro;
+import com.dannygroupllc.ConsultantWebService.payment.PaymentGatewayPro;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -41,5 +41,11 @@ public class PaymentGatewayCtl {
 
     }
 
+    @PostMapping("/payout")
+    public Response payout(@RequestBody Request request){
+
+        return new PaymentGatewayPro().payout(request,entityManagerFactory);
+
+    }
 
 }

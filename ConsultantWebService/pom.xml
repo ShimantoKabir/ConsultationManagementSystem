@@ -82,6 +82,12 @@
             <version>2.10.5</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.paypal.sdk</groupId>
+            <artifactId>payouts-sdk</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+
     </dependencies>
 
     <build>

@@ -15,8 +15,26 @@ public class Request {
     public Auth auth;
     public Calendar calendar;
     public Plan plan;
+    public String email;
+    public String amount;
 
     public Request() {}
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getAmount() {
+        return amount;
+    }
+
+    public void setAmount(String amount) {
+        this.amount = amount;
+    }
 
     public Plan getPlan() {
         return plan;
