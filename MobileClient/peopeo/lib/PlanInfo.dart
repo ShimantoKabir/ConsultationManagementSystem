@@ -600,66 +600,49 @@ class PlanInfoState extends State<PlanInfo> {
   }
 
   void redirectToPayment(String amount, Plan p) {
-    Firestore.instance
-        .collection("userInfoList")
-        .document(p.cusUid)
-        .get()
-        .then((d) {
-      String payPalEmail;
-      if (d.data['paypalEmail'] == null) {
-        payPalEmail = "null";
-      } else {
-        payPalEmail = d.data['paypalEmail'];
-      }
+    String url = webClientBaseUrl +
+        '/payment.html?amount=' +
+        amount +
+        "&plan-id=" +
+        p.id.toString() +
+        "&con-uid=" +
+        p.conUid;
 
-      print("paypal email = $payPalEmail");
+    print("payment url = $url");
 
-      String url = webClientBaseUrl +
-          '/payment.html?amount=' +
-          amount +
-          "&plan-id=" +
-          p.id.toString() +
-          "&paypal-email=" +
-          payPalEmail +
-          "&con-uid=" +
-          p.conUid;
+    Navigator.of(context, rootNavigator: true).pop();
 
-      print("payment url = $url");
+    Navigator.of(context)
+        .push(MaterialPageRoute(
+            builder: (BuildContext context) => MyWebView(
+                  title: "Payment",
+                  url: url,
+                )))
+        .whenComplete(() {
+      print("need to pop up notification = [yes] in plan info go for payment");
+      MySharedPreferences.setBooleanValue("needToPopUpNoti", true);
 
-      Navigator.of(context, rootNavigator: true).pop();
-      Navigator.of(context)
-          .push(MaterialPageRoute(
-              builder: (BuildContext context) => MyWebView(
-                    title: "Payment",
-                    url: url,
-                  )))
-          .whenComplete(() {
-        print(
-            "need to pop up notification = [yes] in plan info go for payment");
-        MySharedPreferences.setBooleanValue("needToPopUpNoti", true);
-
-        MySharedPreferences.getBooleanValue('isPaymentSuccessful')
-            .then((isPaymentSuccessful) {
-          if (isPaymentSuccessful) {
-            Fluttertoast.showToast(
-                msg: "Payment successful!",
-                toastLength: Toast.LENGTH_LONG,
-                gravity: ToastGravity.BOTTOM,
-                timeInSecForIosWeb: 1,
-                backgroundColor: Colors.green,
-                textColor: Colors.white,
-                fontSize: 16.0);
-          } else {
-            Fluttertoast.showToast(
-                msg: "Payment unsuccessful!",
-                toastLength: Toast.LENGTH_LONG,
-                gravity: ToastGravity.BOTTOM,
-                timeInSecForIosWeb: 1,
-                backgroundColor: Colors.red,
-                textColor: Colors.white,
-                fontSize: 16.0);
-          }
-        });
+      MySharedPreferences.getBooleanValue('isPaymentSuccessful')
+          .then((isPaymentSuccessful) {
+        if (isPaymentSuccessful) {
+          Fluttertoast.showToast(
+              msg: "Payment successful!",
+              toastLength: Toast.LENGTH_LONG,
+              gravity: ToastGravity.BOTTOM,
+              timeInSecForIosWeb: 1,
+              backgroundColor: Colors.green,
+              textColor: Colors.white,
+              fontSize: 16.0);
+        } else {
+          Fluttertoast.showToast(
+              msg: "Payment unsuccessful!",
+              toastLength: Toast.LENGTH_LONG,
+              gravity: ToastGravity.BOTTOM,
+              timeInSecForIosWeb: 1,
+              backgroundColor: Colors.red,
+              textColor: Colors.white,
+              fontSize: 16.0);
+        }
       });
     });
   }

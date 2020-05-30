@@ -29,6 +29,11 @@ public class Plan {
     public String ip;
     public String modifiedBy;
     public Date createdDate;
+    public String checkOutId;
+    public Date checkOutCreatedDate;
+    public String checkOutStatus;
+    public String payOutBatchId;
+    public String payOutBatchStatus;
 
     @Transient
     public Integer userType;
@@ -73,6 +78,46 @@ public class Plan {
     public Integer chatDurationMinLimit;
 
     public Plan() {}
+
+    public Date getCheckOutCreatedDate() {
+        return checkOutCreatedDate;
+    }
+
+    public void setCheckOutCreatedDate(Date checkOutCreatedDate) {
+        this.checkOutCreatedDate = checkOutCreatedDate;
+    }
+
+    public String getPayOutBatchId() {
+        return payOutBatchId;
+    }
+
+    public void setPayOutBatchId(String payOutBatchId) {
+        this.payOutBatchId = payOutBatchId;
+    }
+
+    public String getPayOutBatchStatus() {
+        return payOutBatchStatus;
+    }
+
+    public void setPayOutBatchStatus(String payOutBatchStatus) {
+        this.payOutBatchStatus = payOutBatchStatus;
+    }
+
+    public String getCheckOutStatus() {
+        return checkOutStatus;
+    }
+
+    public void setCheckOutStatus(String checkOutStatus) {
+        this.checkOutStatus = checkOutStatus;
+    }
+
+    public String getCheckOutId() {
+        return checkOutId;
+    }
+
+    public void setCheckOutId(String checkOutId) {
+        this.checkOutId = checkOutId;
+    }
 
     public Integer getChatDurationMinLimit() {
         return chatDurationMinLimit;

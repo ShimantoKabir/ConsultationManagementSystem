@@ -31,6 +31,7 @@ class MyWebViewState extends State<MyWebView> {
   @override
   void initState() {
     super.initState();
+    print("payment web view url = $url");
     print("need to pop up notification = [no] in my web view for payment");
     MySharedPreferences.setBooleanValue("needToPopUpNoti", false);
   }

@@ -15,4 +15,5 @@ public interface PlanService {
     public Plan changeAreCusConHaveChattedStatus(HttpServletRequest httpServletRequest, Plan plan);
     public Plan checkPaymentStatus(Plan plan);
     public Plan remindToUser();
+    public Plan updateCheckOutStatus(Plan plan);
 }

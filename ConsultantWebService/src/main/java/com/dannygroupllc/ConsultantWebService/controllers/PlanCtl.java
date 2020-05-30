@@ -141,6 +141,18 @@ public class PlanCtl {
 
     }
 
+    @PostMapping("/update-check-out-status")
+    public Response updateCheckOutStatus(@RequestBody Request request, HttpServletRequest httpServletRequest){
+
+        Response response = new Response();
+
+        Plan plan = planService.updateCheckOutStatus(request.getPlan());
+        response.setMsg(plan.getMsg());
+        response.setCode(plan.getCode());
+        return response;
+
+    }
+
     @GetMapping("/remind-to-user")
     public Response remindToUser(){
 

@@ -130,6 +130,33 @@
             $('#myAlert').hide();
         }
 
+        function updateCheckOutStatus(checkOutData) {
+            
+            $.ajax({
+                url: serverBaseUrl + "/plan/update-check-out-status",
+                type: "POST",
+                contentType: 'application/json',
+                data: JSON.stringify(checkOutData),
+                success: function (s) {
+                    console.log("success to update checkout = ",JSON.stringify(s));
+                    redirectBack("true");
+                },
+                error: function (e) {
+                    console.log("error to update checout = ",JSON.stringify(e));
+                    redirectBack("true");
+                }
+            });
+
+        }
+
+        function redirectBack(isPaymentSuccess) {
+            $('#myAlert').hide();
+            let link = document.createElement('a');
+            link.href = webClientBaseUrl+"/index.html?paymentstatus="+isPaymentSuccess;
+            document.body.appendChild(link);
+            link.click();
+        }
+
         showAlert({
             msg: 'Please wait....!',
             bodyIcon: 'fa fa-refresh fa-spin',
@@ -146,7 +173,7 @@
 
         if (urlParameters.has('amount') &&
             urlParameters.has('plan-id') &&
-            urlParameters.has('paypal-email')) {
+            urlParameters.has('con-uid')) {
 
             amount = urlParameters.get('amount');
             planId = urlParameters.get('plan-id');
@@ -315,62 +342,85 @@
               });
             },
             onApprove: function(data, actions) {
-            
-              console.log(JSON.stringify(data));
-              console.log(JSON.stringify(actions));
 
-              return actions.order.capture().then(function(details) {
-                console.log(JSON.stringify(details));
-              });
+                showAlert({
+                    msg: 'Please wait....!',
+                    bodyIcon: 'fa fa-refresh fa-spin',
+                    ntsTaBtn: false,
+                    alertHeading: 'Loading',
+                });
+                    
+                console.log("onApprove data = ",JSON.stringify(data));
+                console.log("onApprove actions = ",JSON.stringify(actions));
 
-                // if status is completed
-                if (true) {
+                return actions.order.capture().then(function(details) {
 
-                    var docRef = db.collection("userInfoList").doc(conUid);
-                    docRef.get().then(function(doc) {
-
-                        var d = new Date();
-
-                        if (doc.data().payPalEmail == "null") {
-
-                            db.collection("notificationList").add({
-                                body : "Please give us your paypal email address if you don't have paypal account give us any valid email address.",
-                                fcmRegistrationToken : doc.data().fcmRegistrationToken
-                                uid : conUid
-                                timeStamp : d.getTime(),
-                                title : "Email Required For Payment",
-                                type : 7, 
-                                seenStatus : 0,
-                                amount : amount
-                            });
-
-                        }else {
-
-                            let payoutData = {
-                                email : doc.data().payPalEmail,
-                                amount : amount
-                            };
-
-                            $.ajax({
-                                url: serverBaseUrl + "/pg/payout",
-                                type: "POST",
-                                contentType: 'application/json',
-                                data: JSON.stringify(payoutData),
-                                success: function (s) {
-                                    console.log(JSON.stringify(s));
-                                },
-                                error: function (e) {
-
-                                    console.log(JSON.stringify(e));
-
-                                }
-                            })
-
+                    let req = {
+                        plan : {
+                            id : planId,
+                            checkOutId : details.id,
+                            checkOutStatus : details.status,
+                            checkOutCreatedDate : new Date(details.create_time),
                         }
+                    };
 
-                    });
+                    if (details.status == "COMPLETED") {
 
-                }
+                        var docRef = db.collection("userInfoList").doc(conUid);
+                        docRef.get().then(function(doc) {
+
+                            var d = new Date();
+                            
+                            if (doc.data().payPalEmail) {
+
+                                let payoutData = {
+                                    email : doc.data().payPalEmail,
+                                    amount : amount
+                                };
+
+                                $.ajax({
+                                    url: serverBaseUrl + "/pg/payout",
+                                    type: "POST",
+                                    contentType: 'application/json',
+                                    data: JSON.stringify(payoutData),
+                                    success: function (s) {
+                                        console.log("ok to udt checkout if email = ",JSON.stringify(s));
+                                        updateCheckOutStatus(req);
+                                    },
+                                    error: function (e) {
+                                        console.log("er to udt checkout if email = ",JSON.stringify(e));
+                                        updateCheckOutStatus(req);
+                                    }
+                                });
+
+                            }else {
+
+                                db.collection("notificationList").add({
+                                    body : "Please give us your paypal email address if you don't have paypal account give us any valid email address.",
+                                    fcmRegistrationToken : doc.data().fcmRegistrationToken,
+                                    uid : conUid,
+                                    timeStamp : d.getTime(),
+                                    title : "Email Required For Payment",
+                                    type : 7, 
+                                    seenStatus : 0,
+                                    amount : amount
+                                }).then(function(s) {
+                                    console.log("ok to send noti if not email = ",JSON.stringify(s));
+                                    updateCheckOutStatus(req);
+                                }).catch(function(e) {
+                                    console.log("er to send noti if not email = ",JSON.stringify(e));
+                                    updateCheckOutStatus(req);
+                                });
+
+                            }
+
+                        });
+
+                    }else{
+                        redirectBack("false");
+                    }
+
+                });
 
             }
         }).render('#paypal-button-container');

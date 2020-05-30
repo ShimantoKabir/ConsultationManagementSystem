@@ -685,7 +685,8 @@ public class PlanDaoImp implements PlanDao {
                     + "  cus_uid, "
                     + "  con_uid, "
                     + "  is_accept_by_con, "
-                    + "  time_zone "
+                    + "  time_zone, "
+                    + "  topic "
                     + "FROM "
                     + "  plan) AS t "
                     + "WHERE t.is_accept_by_con IS TRUE AND t.st BETWEEN CONVERT_TZ(NOW(), 'UTC',t.time_zone) "
@@ -756,7 +757,8 @@ public class PlanDaoImp implements PlanDao {
                     + "  cus_uid, "
                     + "  con_uid, "
                     + "  is_accept_by_con, "
-                    + "  time_zone "
+                    + "  time_zone, "
+                    + "  topic "
                     + "FROM "
                     + "  plan) AS t "
                     + "WHERE t.is_accept_by_con IS TRUE AND t.st BETWEEN CONVERT_TZ(NOW(), 'UTC', t.time_zone) "
@@ -837,6 +839,46 @@ public class PlanDaoImp implements PlanDao {
 
     }
 
+    @Override
+    public Plan updateCheckOutStatus(Plan p) {
+
+        Plan planRes = new Plan();
+        System.out.println(getClass().getName() + ".updateCheckOutStatus: plan = " + gson.toJson(p));
+
+        try {
+
+            String checkOutUpdateSql = ""
+                    + "UPDATE PLAN "
+                    + "SET    check_out_id = :checkOutId, "
+                    + "       check_out_status = :checkOutStatus, "
+                    + "       check_out_created_date = :checkOutCreatedDate "
+                    + "WHERE  id = :id;";
+
+            Query planSelectQry = entityManager.createNativeQuery(checkOutUpdateSql, Plan.class);
+            planSelectQry.setParameter("id", p.getId());
+            planSelectQry.setParameter("checkOutId", p.getCheckOutId());
+            planSelectQry.setParameter("checkOutStatus", p.getCheckOutStatus());
+            planSelectQry.setParameter("checkOutCreatedDate", p.getCheckOutCreatedDate());
+            planSelectQry.executeUpdate();
+
+            planRes.setCode(200);
+            planRes.setMsg("Checkout status updated successfully!");
+            System.out.println(getClass().getName() + ".updateCheckOutStatus: status = "+p.getCheckOutStatus());
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+            System.out.println(getClass().getName() + ".updateCheckOutStatus : exception = " + e.getMessage());
+            e.printStackTrace();
+            planRes.setCode(404);
+            planRes.setMsg(e.getMessage());
+
+        }
+
+        return planRes;
+
+    }
+
     private void updateOnlineStatus() {
 
         try{
@@ -871,6 +913,8 @@ public class PlanDaoImp implements PlanDao {
         }
 
     }
+
+
 
 }
 
