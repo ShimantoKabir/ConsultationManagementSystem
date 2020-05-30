@@ -857,12 +857,12 @@ public class PlanDaoImp implements PlanDao {
                     + "WHERE "
                     + "	id = :id ";
 
-            Query planSelectQry = entityManager.createNativeQuery(checkOutUpdateSql);
-            planSelectQry.setParameter("id", p.getId());
-            planSelectQry.setParameter("checkOutId", p.getCheckOutId());
-            planSelectQry.setParameter("checkOutStatus", p.getCheckOutStatus());
-            planSelectQry.setParameter("checkOutCreatedDate", p.getCheckOutCreatedDate());
-            planSelectQry.executeUpdate();
+            Query checkOutUpdateQry = entityManager.createNativeQuery(checkOutUpdateSql);
+            checkOutUpdateQry.setParameter("id", p.getId());
+            checkOutUpdateQry.setParameter("checkOutId", p.getCheckOutId());
+            checkOutUpdateQry.setParameter("checkOutStatus", p.getCheckOutStatus());
+            checkOutUpdateQry.setParameter("checkOutCreatedDate", p.getCheckOutCreatedDate());
+            checkOutUpdateQry.executeUpdate();
 
             planRes.setCode(200);
             planRes.setMsg("Checkout status updated successfully!");
