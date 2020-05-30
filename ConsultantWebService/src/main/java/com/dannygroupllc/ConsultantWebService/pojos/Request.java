@@ -17,8 +17,17 @@ public class Request {
     public Plan plan;
     public String email;
     public String amount;
+    public Integer planId;
 
     public Request() {}
+
+    public Integer getPlanId() {
+        return planId;
+    }
+
+    public void setPlanId(Integer planId) {
+        this.planId = planId;
+    }
 
     public String getEmail() {
         return email;

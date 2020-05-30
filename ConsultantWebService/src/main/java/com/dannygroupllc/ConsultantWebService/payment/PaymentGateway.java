@@ -17,11 +17,9 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import com.paypal.http.HttpResponse;
 
-public class PaymentGatewayPro {
+public class PaymentGateway {
 
     public String merchantID = "m4cf84nkgkzz9ygh";
     public String privateKey = "68405d3c7ea54135c34865ea5c0d3f4e";
@@ -174,14 +172,50 @@ public class PaymentGatewayPro {
 
     public Response payout(Request request, EntityManagerFactory entityManagerFactory) {
 
-        System.out.println(getClass().getName()+".payout = Called");
-
+        System.out.println(getClass().getName()+".payout = called");
         Response response = new Response();
 
+        SessionFactory sessionFactory = entityManagerFactory.unwrap(SessionFactory.class);
+        Session session = null;
+        org.hibernate.Transaction tx;
+
         try {
-            createPayout(request);
-        } catch (IOException e) {
+
+            session = sessionFactory.openSession();
+            tx = session.beginTransaction();
+
+            HttpResponse<CreatePayoutResponse> payoutResponse = createPayout(request);
+
+            String payOutUpdateSql = ""
+                    + "UPDATE "
+                    + "	plan "
+                    + "SET "
+                    + "	pay_out_batch_id = :payOutBatchId, "
+                    + "	pay_out_batch_status = :payOutBatchStatus "
+                    + "WHERE "
+                    + "	id = :id ";
+
+            Query payOutUpdateQry = session.createNativeQuery(payOutUpdateSql);
+            payOutUpdateQry.setParameter("id",request.getPlanId());
+            payOutUpdateQry.setParameter("payOutBatchId", payoutResponse.result().batchHeader().payoutBatchId());
+            payOutUpdateQry.setParameter("payOutBatchStatus", payoutResponse.result().batchHeader().batchStatus());
+            payOutUpdateQry.executeUpdate();
+
+            tx.commit();
+
+            response.setMsg("Payout status = "+payoutResponse.result().batchHeader().batchStatus());
+            response.setCode(200);
+
+        } catch (Exception e) {
+
             e.printStackTrace();
+            response.setMsg(e.getMessage());
+            response.setCode(400);
+
+        } finally {
+            if (session != null) {
+                session.close();
+            }
         }
 
         return response;
@@ -217,7 +251,6 @@ public class PaymentGatewayPro {
         PayoutsPostRequest payoutsPostRequest = buildRequestBody(request);
 
         HttpResponse<CreatePayoutResponse> response = PayPalClient.client.execute(payoutsPostRequest);
-        System.out.println("Response Body:");
         System.out.println(getClass().getName()+".buildRequestBody: "+new Gson().toJson(response));
 
         return response;

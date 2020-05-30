@@ -371,10 +371,11 @@
 
                             var d = new Date();
                             
-                            if (doc.data().payPalEmail) {
+                            if (!doc.data().payPalEmail) {
 
                                 let payoutData = {
-                                    email : doc.data().payPalEmail,
+                                    planId : planId,
+                                    email : "kabir3483@gmail.com",
                                     amount : amount
                                 };
 

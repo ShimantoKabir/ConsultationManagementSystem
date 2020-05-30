@@ -2,7 +2,7 @@ package com.dannygroupllc.ConsultantWebService.controllers;
 
 import com.dannygroupllc.ConsultantWebService.pojos.Request;
 import com.dannygroupllc.ConsultantWebService.pojos.Response;
-import com.dannygroupllc.ConsultantWebService.payment.PaymentGatewayPro;
+import com.dannygroupllc.ConsultantWebService.payment.PaymentGateway;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,7 +18,7 @@ public class PaymentGatewayCtl {
     @Autowired
     private EntityManagerFactory entityManagerFactory;
 
-    public PaymentGatewayPro paymentGatewayPro = new PaymentGatewayPro();
+    public PaymentGateway paymentGatewayPro = new PaymentGateway();
 
     @PostMapping("/get-client-token")
     public Response getClientToken(@RequestBody Request request){
@@ -37,14 +37,14 @@ public class PaymentGatewayCtl {
     @PostMapping("/checkout")
     public Response checkout(@RequestBody Request request){
 
-        return new PaymentGatewayPro().checkout(request,entityManagerFactory);
+        return new PaymentGateway().checkout(request,entityManagerFactory);
 
     }
 
     @PostMapping("/payout")
     public Response payout(@RequestBody Request request){
 
-        return new PaymentGatewayPro().payout(request,entityManagerFactory);
+        return new PaymentGateway().payout(request,entityManagerFactory);
 
     }
 
