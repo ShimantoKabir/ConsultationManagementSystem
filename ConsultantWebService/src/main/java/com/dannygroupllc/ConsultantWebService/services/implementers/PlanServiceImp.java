@@ -65,6 +65,7 @@ public class PlanServiceImp implements PlanService {
     }
 
     @Override
+    @Transactional
     public Plan updateCheckOutStatus(Plan plan) {
         return planDao.updateCheckOutStatus(plan);
     }
