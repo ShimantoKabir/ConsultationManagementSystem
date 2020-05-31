@@ -49,6 +49,7 @@ public class CalendarCtl {
         System.out.println(getClass().getName()+".getSchedule: plan list ="+gson.toJson(calendar));
         response.setMsg(calendar.getMsg());
         response.setCode(calendar.getCode());
+        response.setPlanList(calendar.getPlanList());
 
         return response;
 

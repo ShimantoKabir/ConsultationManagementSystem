@@ -626,11 +626,11 @@ class ConsultantProfileState extends State<ConsultantProfile>
 
   getFreeMinutesForNewCustomer(document) {
     if (document['freeMinutesForNewCustomer'] == null) {
-      return "[No free minute's for new customer]";
+      return "[No free minutes for new customer]";
     } else {
       return "[" +
           document['freeMinutesForNewCustomer'].toString() +
-          " minute's free for new customer]";
+          " minutes free for new customer]";
     }
   }
 

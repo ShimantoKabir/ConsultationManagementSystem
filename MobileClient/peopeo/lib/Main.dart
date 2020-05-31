@@ -397,7 +397,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   }
 
   // working
-  void reloadAuth(DocumentSnapshot document, String tz) async {
+  void redirectCalender(DocumentSnapshot document, String tz) async {
 
     if (userInfo['userType'] == 1) {
       int hr = document['hourlyRate'];
@@ -408,68 +408,42 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         fm = document['freeMinutesForNewCustomer'];
       }
 
-      print("fm $fm");
+      print("fm = $fm");
 
       if (hr == null) {
         Fluttertoast.showToast(msg: "This user didn't set hourly rate yet!");
       } else {
-        String url = serverBaseUrl + '/auth/reload';
-        Map<String, String> headers = {"Content-type": "application/json"};
-        var request = {
-          'auth': {'uId': userInfo['uid']}
-        };
 
-        Response response =
-            await post(url, headers: headers, body: json.encode(request));
+        String calenderUrl = webClientBaseUrl +
+            "/calendar.html?conid=" +
+            conId +
+            "&cusid=" +
+            userInfo['uid'] +
+            "&hourly-rate=" +
+            hr.toString() +
+            "&free-minutes=" +
+            fm.toString() +
+            "&time-zone=" +
+            tz;
 
-        print("calendar preparing response = ${response.body.toString()}");
+        print("calender url = $calenderUrl");
 
-        if (response.statusCode == 200) {
-          HttpResponse httpResponse =
-              HttpResponse.fromJson(json.decode(response.body));
+        Navigator.of(context).pop();
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) {
+              return MyFlutterWebView(
+                  title: "Calendar of " + document['displayName'],
+                  url: calenderUrl);
+            },
+          ),
+        ).whenComplete((){
 
-          if (httpResponse.code == 200) {
-            String calenderUrl = webClientBaseUrl +
-                "/calendar.html?aid=" +
-                httpResponse.aid +
-                "&conid=" +
-                conId +
-                "&cusid=" +
-                userInfo['uid'] +
-                "&hourly-rate=" +
-                hr.toString() +
-                "&free-minutes=" +
-                fm.toString() +
-                "&time-zone=" +
-                tz;
+          print("need to pop up notification = [yes] in main calendre button");
+          MySharedPreferences.setBooleanValue("needToPopUpNoti", true);
 
-            print("calender url = $calenderUrl");
+        });
 
-            Navigator.of(context).pop();
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) {
-                  return MyFlutterWebView(
-                      title: "Calendar of " + document['displayName'],
-                      url: calenderUrl);
-                },
-              ),
-            ).whenComplete((){
-
-              print("need to pop up notification = [yes] in main calendre button");
-              MySharedPreferences.setBooleanValue("needToPopUpNoti", true);
-
-            });
-
-          } else {
-            Navigator.of(context).pop();
-            Fluttertoast.showToast(msg: "Something went woring!");
-          }
-        } else {
-          Navigator.of(context).pop();
-          Fluttertoast.showToast(msg: "Something went woring!");
-          throw Exception('Failed to load post');
-        }
       }
     } else {
       Navigator.of(context).pop();
@@ -732,7 +706,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                 getTimeZone().then((tz) {
 
                                   // working ...
-                                  reloadAuth(document, tz);
+                                  redirectCalender(document, tz);
 
 
                                 }).catchError((er) {
