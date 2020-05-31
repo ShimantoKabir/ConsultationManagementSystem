@@ -21,7 +21,6 @@ class NotificationViewerState extends State<NotificationViewer> {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
     return Scaffold(
         appBar: new AppBar(
           iconTheme: IconThemeData(color: Colors.black),
@@ -54,6 +53,8 @@ class NotificationViewerState extends State<NotificationViewer> {
                     'timeStamp': f['timeStamp'],
                     'startTime': f['startTime'],
                     'endTime': f['endTime'],
+                    'topic': f['topic'],
+                    'type': f['type'],
                     'docId': f.documentID
                   });
                 });
@@ -99,13 +100,39 @@ class NotificationViewerState extends State<NotificationViewer> {
         leading: document['seenStatus'] == 1
             ? Icon(Icons.notifications, size: 40.0)
             : Icon(Icons.notifications_none, size: 40.0),
-        title: Text(document['title']),
+        title: Text(document['title'],
+            style: getTextStyle(Colors.red, FontWeight.bold)),
         subtitle: Wrap(
+          // 1 = booking request (start time, end time, topic, body , title)
+          // 2 = booking request cancellation (start time, end time, topic, body , title)
+          // 3 = booking request acceptation (start time, end time, topic, body , title)
+          // 4 = chat session reminder (start time, end time, topic, body , title)
+          // 5 = payment reminder (start time, end time, topic, body , title)
+          // 6 = expert send invitation to customer (title, body, invitation sender id)
+          // 7 = payment received (title, body, amount, email, plan id)
+
           children: <Widget>[
-            Text(getStartTime(document)),
-            Text(getEndTime(document)),
+            Text(document['body'],
+                style: getTextStyle(Colors.black, FontWeight.normal)),
             Visibility(
-              visible: document['invitationSenderUid'] != null,
+              visible: document['type'] == 1 ||
+                  document['type'] == 2 ||
+                  document['type'] == 3 ||
+                  document['type'] == 4 ||
+                  document['type'] == 5,
+              child: Wrap(
+                children: <Widget>[
+                  Text(document['topic'] == null ? "Empty" : document['topic'],
+                      style: getTextStyle(Colors.grey, FontWeight.normal)),
+                  Text(document['startTime'] == null ? "Empty" : document['startTime'],
+                      style: getTextStyle(Colors.grey, FontWeight.normal)),
+                  Text(document['endTime']  == null ? "Empty" : document['endTime'],
+                      style: getTextStyle(Colors.grey, FontWeight.normal)),
+                ],
+              ),
+            ),
+            Visibility(
+              visible: document['type'] == 6,
               child: OutlineButton(
                 onPressed: () async {
                   Navigator.push(
@@ -119,6 +146,16 @@ class NotificationViewerState extends State<NotificationViewer> {
                   );
                 },
                 child: Text("See My Profile".toUpperCase(),
+                    style: TextStyle(fontSize: 14)),
+              ),
+            ),
+            Visibility(
+              visible: document['type'] == 7,
+              child: OutlineButton(
+                onPressed: () async {
+
+                },
+                child: Text("Set Paypal Email Address".toUpperCase(),
                     style: TextStyle(fontSize: 14)),
               ),
             )
@@ -204,5 +241,10 @@ class NotificationViewerState extends State<NotificationViewer> {
     } else {
       return "End time ${document['endTime']}";
     }
+  }
+
+  TextStyle getTextStyle(Color color, FontWeight fontWeight) {
+    return TextStyle(
+        color: color, fontFamily: 'Armata', fontWeight: fontWeight);
   }
 }

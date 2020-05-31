@@ -4,6 +4,7 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import javax.persistence.*;
 import java.util.Date;
+import java.util.List;
 
 @Entity
 public class Calendar {
@@ -28,7 +29,18 @@ public class Calendar {
     @Transient
     public String currentDateTime;
 
+    @Transient
+    public List<Plan> planList;
+
     public Calendar() {}
+
+    public List<Plan> getPlanList() {
+        return planList;
+    }
+
+    public void setPlanList(List<Plan> planList) {
+        this.planList = planList;
+    }
 
     public String getCurrentDateTime() {
         return currentDateTime;

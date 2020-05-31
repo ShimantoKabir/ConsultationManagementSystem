@@ -25,4 +25,9 @@ public class CalendarServiceImp implements CalendarService {
     public Calendar createEvent(HttpServletRequest httpServletRequest, Calendar calendar) {
         return calendarDao.createEvent(httpServletRequest,calendar);
     }
+
+    @Override
+    public Calendar getSchedule(HttpServletRequest httpServletRequest, Calendar calendar) {
+        return calendarDao.getSchedule(httpServletRequest,calendar);
+    }
 }

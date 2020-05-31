@@ -396,7 +396,9 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     );
   }
 
+  // working
   void reloadAuth(DocumentSnapshot document, String tz) async {
+
     if (userInfo['userType'] == 1) {
       int hr = document['hourlyRate'];
       int fm = 0;
@@ -728,7 +730,11 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                     msg: "No internet connection available!");
                               } else {
                                 getTimeZone().then((tz) {
+
+                                  // working ...
                                   reloadAuth(document, tz);
+
+
                                 }).catchError((er) {
                                   Navigator.of(context).pop();
                                   print("Time zone error $er");

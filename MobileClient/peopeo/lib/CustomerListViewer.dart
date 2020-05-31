@@ -266,7 +266,8 @@ class CustomerListViewerState extends State<CustomerListViewer> {
         'uid' : document['uid'],
         'seenStatus' : 0,
         'invitationSenderUid' : uid,
-        'timeStamp' : DateTime.now().millisecondsSinceEpoch
+        'timeStamp' : DateTime.now().millisecondsSinceEpoch,
+        'type' : 6
       }).then((res){
 
         Navigator.of(context, rootNavigator: true).pop();

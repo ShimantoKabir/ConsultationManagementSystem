@@ -39,4 +39,19 @@ public class CalendarCtl {
 
     }
 
+    @PostMapping("/get-schedule")
+    public Response getSchedule(@RequestBody Request request, HttpServletRequest httpServletRequest){
+
+        Response response = new Response();
+
+        Calendar calendar = calendarService.getSchedule(httpServletRequest,request.getCalendar());
+
+        System.out.println(getClass().getName()+".getSchedule: plan list ="+gson.toJson(calendar));
+        response.setMsg(calendar.getMsg());
+        response.setCode(calendar.getCode());
+
+        return response;
+
+    }
+
 }

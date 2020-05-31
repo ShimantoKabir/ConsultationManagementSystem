@@ -23,7 +23,7 @@
 
         $(document).ready(function () {
 
-            let serverBaseUrl = "http://192.168.43.179:8080";
+            let serverBaseUrl = "http://192.168.43.132:8080";
             let webClientBaseUrl = "http://192.168.43.132/consultationmanagementsystem/webclient";
 
             // let serverBaseUrl = "http://3.20.119.226:8080";
@@ -148,7 +148,6 @@
 
             }
 
-            let aId = null;
             let conId = null;
             let cusId = null;
             let isUrlOk = true;
@@ -160,16 +159,6 @@
             let chatDurationMinLimit = 20;
 
             let urlParameters = new URLSearchParams(window.location.search);
-
-            if (urlParameters.has('aid')) {
-
-                aId = urlParameters.get('aid');
-
-            } else {
-
-                isUrlOk = false;
-
-            }
 
             if (urlParameters.has('conid')) {
 
@@ -215,31 +204,35 @@
                 $('#eventBookBtn').text("Save");
             }
 
-            let authData = {
-                auth: {
-                    aId: aId,
-                    uId: cusId === null ? conId : cusId,
-                    conUid: conId,
-                    timeZone : timeZone
+            let calendarData = {
+                calendar: {
+                    conUid: conId
                 }
             };
 
             if (isUrlOk) {
 
                 $.ajax({
-                    url: serverBaseUrl+"/auth/check",
+                    url: serverBaseUrl+"/calendar/get-schedule",
                     type: "POST",
                     contentType: 'application/json',
-                    data: JSON.stringify(authData),
+                    data: JSON.stringify(calendarData),
                     success: function (s) {
 
                         if (s.code === 404) {
 
-                            window.location.replace(webClientBaseUrl)
+                            showAlert({
+                                msg: s.msg,
+                                bodyIcon: 'fa fa-times-circle',
+                                ntsTaBtn: false,
+                                ntsCnfBtn: false,
+                                alertHeading: 'Alert',
+                            });
 
                         } else {
 
-                            console.log(JSON.stringify(s.planList));
+                            $('#myAlert').hide();
+                            console.log(JSON.stringify(s));
 
                             for (let i = 0; i < s.planList.length; i++) {
 
@@ -270,29 +263,33 @@
 
                             }
 
-                            showAlert({
-                                msg: s.msg,
-                                bodyIcon: 'fa fa-check-circle',
-                                ntsTaBtn: false,
-                                ntsCnfBtn: false,
-                                alertHeading: 'Success',
-                            });
-
-                            showCalender();
-
                         }
+
+                        showCalender();
 
                     },
                     error: function (e) {
 
-                        window.location.replace(webClientBaseUrl)
+                        showAlert({
+                            msg: "Some thing went wrong!",
+                            bodyIcon: 'fa fa-times-circle',
+                            ntsTaBtn: false,
+                            ntsCnfBtn: false,
+                            alertHeading: 'Error',
+                        });
 
                     }
                 })
 
             } else {
 
-                window.location.replace(webClientBaseUrl)
+                showAlert({
+                    msg: "Calendar initialization error!",
+                    bodyIcon: 'fa fa-times-circle',
+                    ntsTaBtn: false,
+                    ntsCnfBtn: false,
+                    alertHeading: 'Error',
+                });
 
             }
 

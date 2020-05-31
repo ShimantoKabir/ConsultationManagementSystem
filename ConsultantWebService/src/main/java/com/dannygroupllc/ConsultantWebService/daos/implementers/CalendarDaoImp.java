@@ -2,6 +2,7 @@ package com.dannygroupllc.ConsultantWebService.daos.implementers;
 
 import com.dannygroupllc.ConsultantWebService.Utility.NotificationSender;
 import com.dannygroupllc.ConsultantWebService.daos.interfaces.CalendarDao;
+import com.dannygroupllc.ConsultantWebService.models.Auth;
 import com.dannygroupllc.ConsultantWebService.models.Calendar;
 import com.dannygroupllc.ConsultantWebService.models.Plan;
 import com.dannygroupllc.ConsultantWebService.pojos.Notification;
@@ -15,6 +16,7 @@ import javax.persistence.Query;
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigInteger;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
@@ -473,6 +475,131 @@ public class CalendarDaoImp implements CalendarDao {
             res.setCode(404);
 
         }
+    }
+
+    @Override
+    public Calendar getSchedule(HttpServletRequest httpServletRequest, Calendar c) {
+
+        Calendar res = new Calendar();
+
+        try {
+
+            System.out.println(getClass().getName() + ".getSchedule : conUid = " + c.getConUid());
+
+            // common sense
+            // ============
+            // 1. no customer can't create a plan in future date
+            // 2. start time will never less then plan created date
+            // 3. if chat session has been passed then we don't have to worry about weather it accept by expert's
+            // or not
+
+            // logic
+            // =====
+            // 1. don't fetch passed date plan
+            // 2. don't fetch those plan which don't accept by expert's and 24 hour's left after created
+
+            String planFetchingSql = "SELECT \n" +
+                    "  p.id AS id,\n" +
+                    "  p.topic AS topic,\n" +
+                    "  DATE_FORMAT(CONVERT_TZ(start_time,'UTC',time_zone),'%Y-%m-%d %T') AS f_start_time,\n" +
+                    "  DATE_FORMAT(CONVERT_TZ(end_time,'UTC',time_zone),'%Y-%m-%d %T') AS f_end_time,\n" +
+                    "  p.is_accept_by_con AS is_accept_by_con,\n" +
+                    "  p.payment_trans_id AS payment_trans_id,\n" +
+                    "  p.free_minutes_for_new_customer AS free_minutes_for_new_customer,\n" +
+                    "  p.cus_uid AS cus_uid,\n" +
+                    "  p.con_uid AS con_uid,\n" +
+                    "  IF(\n" +
+                    "    p.time_diff < '00:00:00',\n" +
+                    "    'y',\n" +
+                    "    'n'\n" +
+                    "  ) AS is_booking_acceptance_time_passed,\n" +
+                    "  HOUR(p.time_diff) AS hour_diff,\n" +
+                    "  MINUTE(p.time_diff) AS minute_diff, \n" +
+                    "  DATE_FORMAT(DATE_SUB(CONVERT_TZ(start_time,'UTC',time_zone),INTERVAL 5 MINUTE),'%Y-%m-%d %T') AS before_padding, \n" +
+                    "  DATE_FORMAT(DATE_ADD(CONVERT_TZ(end_time,'UTC',time_zone),INTERVAL 5 MINUTE),'%Y-%m-%d %T') AS after_padding \n" +
+                    "FROM\n" +
+                    "  (SELECT \n" +
+                    "    *,\n" +
+                    "    CAST(TIMEDIFF(\n" +
+                    "      DATE_ADD(CONVERT_TZ(created_date,'UTC',time_zone), INTERVAL 1 DAY),\n" +
+                    "      CONVERT_TZ(NOW(),'UTC',time_zone)\n" +
+                    "    ) AS CHAR) AS time_diff \n" +
+                    "  FROM\n" +
+                    "    plan \n" +
+                    "  WHERE CONVERT_TZ(start_time,'UTC',time_zone) >= CONVERT_TZ(NOW(),'UTC',time_zone) \n" +
+                    "    AND con_uid = :conUid) AS p ";
+
+            Query planFetchingQry = entityManager.createNativeQuery(planFetchingSql);
+            planFetchingQry.setParameter("conUid", c.getConUid());
+            List<Object[]> results = planFetchingQry.getResultList();
+
+            List<Plan> rPlanList = new ArrayList<>();
+
+            for (Object[] result : results) {
+
+                Plan np = new Plan();
+                Plan bp = new Plan();
+                Plan ap = new Plan();
+                String isBookingAcceptanceTimePassed = (String) result[9];
+
+                if (isBookingAcceptanceTimePassed.equalsIgnoreCase("n")){
+
+                    bp.setId(0);
+                    bp.setTopic("--");
+                    bp.setfStartTime((String) result[12]);
+                    bp.setfEndTime((String) result[2]);
+                    rPlanList.add(bp);
+
+                    np.setId((Integer) result[0]);
+                    np.setTopic((String) result[1]);
+                    np.setfStartTime((String) result[2]);
+                    np.setfEndTime((String) result[3]);
+                    np.setAcceptByCon((Boolean) result[4]);
+                    np.setPaymentTransId((String) result[5]);
+                    np.setFreeMinutesForNewCustomer((Integer) result[6]);
+                    np.setCusUid((String) result[7]);
+                    np.setConUid((String) result[8]);
+                    np.setHourDiff(((BigInteger) result[10]).intValue());
+                    np.setMinuteDiff(((BigInteger) result[11]).intValue());
+                    rPlanList.add(np);
+
+                    ap.setId(0);
+                    ap.setTopic("--");
+                    ap.setfStartTime((String) result[3]);
+                    ap.setfEndTime((String) result[13]);
+                    rPlanList.add(ap);
+
+                }
+
+            }
+
+            System.out.println(getClass().getName() + ".check plan list size = " + rPlanList.size());
+
+            if (rPlanList.size() > 0){
+
+                res.setPlanList(rPlanList);
+                res.setCode(200);
+                res.setMsg("Schedule found!");
+
+            }else {
+
+                res.setPlanList(rPlanList);
+                res.setCode(404);
+                res.setMsg("No schedule found!");
+
+            }
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+            res.setCode(404);
+            res.setMsg(e.getMessage());
+            System.out.println(getClass().getName()+".getSchedule: exception "+e.getMessage());
+
+        }
+
+        return res;
+
     }
 
 }

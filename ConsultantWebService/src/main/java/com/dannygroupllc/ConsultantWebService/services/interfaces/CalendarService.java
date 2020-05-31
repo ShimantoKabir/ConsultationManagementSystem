@@ -7,5 +7,5 @@ import javax.servlet.http.HttpServletRequest;
 public interface CalendarService {
 
     public Calendar createEvent(HttpServletRequest httpServletRequest,Calendar calendar);
-
+    public Calendar getSchedule(HttpServletRequest httpServletRequest, Calendar calendar);
 }
