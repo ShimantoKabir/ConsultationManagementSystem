@@ -11,26 +11,21 @@
     <link rel="stylesheet" href="css/main.css"/>
     <link rel="stylesheet" 
     	href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <!--<link rel="stylesheet" href="css/fontawesome.css"/>-->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Armata"/>
+
 
     <script src="js/jquery.js"></script>
     <script src="js/jquery-ui.js"></script>
     <script src="js/moment.js"></script>
     <script src="js/full-calendar.js"></script>
-    <script src="js/fab.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.14.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.14.1/firebase-analytics.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.14.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.14.1/firebase-firestore.js"></script>
+    <script src="js/main.js"></script>
     <script>
 
         $(document).ready(function () {
-
-            // let serverBaseUrl = "http://192.168.43.132:8080";
-            // let webClientBaseUrl = "http://192.168.43.132/consultationmanagementsystem/webclient";
-            
-            let serverBaseUrl = "http://192.168.43.179:8080";
-            let webClientBaseUrl = "http://192.168.43.132/consultationmanagementsystem/webclient";
-
-            // let serverBaseUrl = "http://3.20.119.226:8080";
-            // let webClientBaseUrl = "http://3.20.119.226/cms/index.html";
 
             // alert configuration start
             $('#alertCloseBtn').click(function () {
@@ -45,12 +40,22 @@
                 $('#myAlert').hide();
             });
 
+            $("#afterActionBtn").unbind("click").bind("click", function (e) {
+
+                location.reload();
+
+            });
+
             function showAlert(data) {
 
                 $('#myAlert').show();
                 data.ntsTaBtn ? $('#alertTryAgain').show() : $('#alertTryAgain').hide();
                 data.ntsCnfBtn ? $('#alertConfirm').show() : $('#alertConfirm').hide();
-                !data.ntsCnfBtn && !data.ntsTaBtn ? $('#emptyFoot').show() : $('#emptyFoot').hide();
+                data.ntsActBtn ? $('#afterAction').show() : $('#afterAction').hide();
+
+                !data.ntsCnfBtn && !data.ntsTaBtn && !data.ntsActBtn ? 
+                $('#emptyFoot').show() : $('#emptyFoot').hide();
+
                 $('#alertIcon').removeClass();
                 $('#alertIcon').addClass(data.bodyIcon);
                 $('#alertHeading').text(data.alertHeading);
@@ -71,6 +76,7 @@
                     bodyIcon: 'fa fa-refresh fa-spin',
                     ntsTaBtn: false,
                     ntsCnfBtn: false,
+                    ntsActBtn : false,
                     alertHeading: 'Loading',
                 });
 
@@ -95,12 +101,20 @@
                                 bodyIcon: 'fa fa-times-circle',
                                 ntsTaBtn: false,
                                 ntsCnfBtn: false,
+                                ntsActBtn : false,
                                 alertHeading: 'Error',
                             })
 
                         } else {
 
-                            location.reload();
+                            showAlert({
+                                msg: "Deleted successfully!",
+                                bodyIcon: 'fa fa-check-circle',
+                                ntsTaBtn: false,
+                                ntsCnfBtn: false,
+                                ntsActBtn : true,
+                                alertHeading: 'Success',
+                            });
 
                         }
 
@@ -113,6 +127,7 @@
                             bodyIcon: 'fa fa-times-circle',
                             ntsTaBtn: false,
                             ntsCnfBtn: false,
+                            ntsActBtn : false,
                             alertHeading: 'Error',
                         })
                     }
@@ -124,6 +139,7 @@
                 bodyIcon: 'fa fa-refresh fa-spin',
                 ntsTaBtn: false,
                 ntsCnfBtn: false,
+                ntsActBtn : false,
                 alertHeading: 'Loading',
             });
 
@@ -229,46 +245,71 @@
                                 bodyIcon: 'fa fa-times-circle',
                                 ntsTaBtn: false,
                                 ntsCnfBtn: false,
+                                ntsActBtn : false,
                                 alertHeading: 'Alert',
                             });
 
+                            showCalender();
+
                         } else {
 
-                            $('#myAlert').hide();
                             console.log(JSON.stringify(s));
 
                             for (let i = 0; i < s.planList.length; i++) {
 
-                                let color = '';
+                                var docRef = db.collection("userInfoList").doc(s.planList[i].uid);
+                                docRef.get().then(function(doc) {
 
-                                if(s.planList[i].id !== 0){
-                                    color = s.planList[i].cusUid == null ? "blue" : s.planList[i].isAcceptByCon ? "green" : "red";
-                                }
+                                    let color = '';
 
-                                events.push({
-                                    id: s.planList[i].id,
-                                    title: s.planList[i].topic,
-                                    start: s.planList[i].fStartTime,
-                                    end: s.planList[i].fEndTime,
-                                    color: color,
-                                    isAcceptByCon: s.planList[i].isAcceptByCon,
-                                    paymentTransId: s.planList[i].paymentTransId == null ? null : s.planList[i]
-                                        .paymentTransId,
-                                    freeMinutesForNewCustomer: s.planList[i].freeMinutesForNewCustomer == null ? 0 :
-                                        s.planList[i].freeMinutesForNewCustomer,
-                                    hourlyRate: s.planList[i].hourlyRate,
-                                    cusUid: s.planList[i].cusUid == null ? null : s.planList[i].cusUid,
-                                    conUid: s.planList[i].conUid == null ? null : s.planList[i].conUid,
-                                    hourDiff: s.planList[i].hourDiff,
-                                    minuteDiff: s.planList[i].minuteDiff,
-                                    pos : i
-                                })
+                                    if(s.planList[i].id !== 0){
+                                        color = s.planList[i].cusUid == null ? 
+                                        "blue" : s.planList[i].isAcceptByCon ? "green" : "red";
+                                    }
+ 
+                                    let title = null;
+                                    if(s.planList[i].id == 0){
+                                        title = "--";
+                                    }else {
+
+                                        if(cusId == null){
+                                            title = "Expert name "+doc.data().displayName+". Topic "+s.planList[i].
+                                            topic+".";
+                                        }else {
+                                            title = "Customer name "+doc.data().displayName+". Topic "+s.planList[i].topic+".";
+                                        }
+
+                                    }
+
+                                    events.push({
+                                        id: s.planList[i].id,
+                                        title: title,
+                                        start: s.planList[i].fStartTime,
+                                        end: s.planList[i].fEndTime,
+                                        color: color,
+                                        isAcceptByCon: s.planList[i].isAcceptByCon,
+                                        paymentTransId: s.planList[i].paymentTransId == null ? null : s.planList[i]
+                                            .paymentTransId,
+                                        freeMinutesForNewCustomer: s.planList[i].freeMinutesForNewCustomer == null ? 0 :
+                                            s.planList[i].freeMinutesForNewCustomer,
+                                        hourlyRate: s.planList[i].hourlyRate,
+                                        cusUid: s.planList[i].cusUid == null ? null : s.planList[i].cusUid,
+                                        conUid: s.planList[i].conUid == null ? null : s.planList[i].conUid,
+                                        hourDiff: s.planList[i].hourDiff,
+                                        minuteDiff: s.planList[i].minuteDiff,
+                                        pos : i
+                                    })
+
+                                    if(i == s.planList.length-1){
+                                        $('#myAlert').hide();
+                                        showCalender();
+                                    }
+
+                                });
 
                             }
 
                         }
-
-                        showCalender();
 
                     },
                     error: function (e) {
@@ -278,6 +319,7 @@
                             bodyIcon: 'fa fa-times-circle',
                             ntsTaBtn: false,
                             ntsCnfBtn: false,
+                            ntsActBtn : false,
                             alertHeading: 'Error',
                         });
 
@@ -291,6 +333,7 @@
                     bodyIcon: 'fa fa-times-circle',
                     ntsTaBtn: false,
                     ntsCnfBtn: false,
+                    ntsActBtn : false,
                     alertHeading: 'Error',
                 });
 
@@ -325,6 +368,7 @@
                                 bodyIcon: 'fa fa-times-circle',
                                 ntsTaBtn: false,
                                 ntsCnfBtn: false,
+                                ntsActBtn : false,
                                 alertHeading: 'Warning',
                             })
 
@@ -375,6 +419,7 @@
                                         bodyIcon: 'fa fa-times-circle',
                                         ntsTaBtn: false,
                                         ntsCnfBtn: false,
+                                        ntsActBtn : false,
                                         alertHeading: 'Warning',
                                     });
 
@@ -385,6 +430,7 @@
                                         bodyIcon: 'fa fa-refresh fa-spin',
                                         ntsTaBtn: false,
                                         ntsCnfBtn: false,
+                                        ntsActBtn : false,
                                         alertHeading: 'Loading',
                                     });
 
@@ -431,12 +477,20 @@
                                                     bodyIcon: 'fa fa-times-circle',
                                                     ntsTaBtn: false,
                                                     ntsCnfBtn: false,
+                                                    ntsActBtn : false,
                                                     alertHeading: 'Error',
                                                 })
 
                                             } else {
 
-                                                location.reload();
+                                                showAlert({
+                                                    msg: "Event created successfully!",
+                                                    bodyIcon: 'fa fa-check-circle',
+                                                    ntsTaBtn: false,
+                                                    ntsCnfBtn: false,
+                                                    ntsActBtn : true,
+                                                    alertHeading: 'Success',
+                                                });
 
                                             }
 
@@ -449,6 +503,7 @@
                                                 bodyIcon: 'fa fa-times-circle',
                                                 ntsTaBtn: false,
                                                 ntsCnfBtn: false,
+                                                ntsActBtn : false,
                                                 alertHeading: 'Error',
                                             })
 
@@ -568,6 +623,7 @@
                                 bodyIcon: 'fa fa-exclamation-circle',
                                 ntsTaBtn: false,
                                 ntsCnfBtn: true,
+                                ntsActBtn : false,
                                 alertHeading: 'Alert',
                                 event : event
                             });
@@ -581,6 +637,7 @@
                                 bodyIcon: 'fa fa-exclamation-circle',
                                 ntsTaBtn: false,
                                 ntsCnfBtn: true,
+                                ntsActBtn : false,
                                 alertHeading: 'Alert',
                                 event : event
                             });
@@ -594,6 +651,7 @@
                                 bodyIcon: 'fa fa-refresh fa-spin',
                                 ntsTaBtn: false,
                                 ntsCnfBtn: false,
+                                ntsActBtn : false,
                                 alertHeading: 'Loading',
                             });
 
@@ -618,12 +676,20 @@
                                             bodyIcon: 'fa fa-times-circle',
                                             ntsTaBtn: false,
                                             ntsCnfBtn: false,
+                                            ntsActBtn : false,
                                             alertHeading: 'Error',
                                         })
 
                                     } else {
 
-                                        location.reload();
+                                        showAlert({
+                                            msg: "Schedule accepted successfully!",
+                                            bodyIcon: 'fa fa-check-circle',
+                                            ntsTaBtn: false,
+                                            ntsCnfBtn: false,
+                                            ntsActBtn : true,
+                                            alertHeading: 'Success',
+                                        });
 
                                     }
 
@@ -636,6 +702,7 @@
                                         bodyIcon: 'fa fa-times-circle',
                                         ntsTaBtn: false,
                                         ntsCnfBtn: false,
+                                        ntsActBtn : false,
                                         alertHeading: 'Error',
                                     })
 
@@ -669,7 +736,7 @@
 
 </head>
 <body>
-	<div class="my-model" id="myAlert" style="z-index: 3" hidden>
+	<div class="my-model" id="myAlert" style="z-index: 1001" hidden>
 	    <div class="container" style="margin-top: 50px" >
 	        <div class="row justify-content-center">
 	            <div class="col-sm-6">
@@ -698,10 +765,16 @@
 	                    </div>
                         <div class="my-div-foot" id="emptyFoot" ></div>
 	                    <div class="my-div-foot" id="alertTryAgain" >
-	                        <div class="my-div-foot-left">
-	                            <button id="alertTryAgainBtn" class="my-btn">Try Again</button>
-	                        </div>
+	                        <div class="my-div-foot-left"></div>
+                            <div class="my-div-foot-right" >
+                                <button id="alertTryAgainBtn" class="my-btn">Try Again</button>
+                            </div>
 	                    </div>
+                        <div class="my-div-foot" id="afterAction" >
+                            <div class="my-div-foot-left">
+                                <button id="afterActionBtn" class="my-btn">OK</button>
+                            </div>
+                        </div>
                         <div class="my-div-foot" id="alertConfirm" >
                             <div class="my-div-foot-left">
                                 <button id="alertConfirmYes" class="my-btn">Yes</button>

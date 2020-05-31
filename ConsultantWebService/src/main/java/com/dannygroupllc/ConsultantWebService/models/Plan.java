@@ -77,7 +77,18 @@ public class Plan {
     @Transient
     public Integer chatDurationMinLimit;
 
+    @Transient
+    public String uid;
+
     public Plan() {}
+
+    public String getUid() {
+        return uid;
+    }
+
+    public void setUid(String uid) {
+        this.uid = uid;
+    }
 
     public Date getCheckOutCreatedDate() {
         return checkOutCreatedDate;

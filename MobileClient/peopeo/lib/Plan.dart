@@ -10,7 +10,7 @@ class Plan {
   String startTime;
   String endTime;
   bool isAcceptByCon;
-  String paymentTransId;
+  String checkOutId;
   int freeMinutesForNewCustomer;
   int hourlyRate;
   int userType;
@@ -29,7 +29,7 @@ class Plan {
       this.startTime,
       this.endTime,
       this.isAcceptByCon,
-      this.paymentTransId,
+      this.checkOutId,
       this.freeMinutesForNewCustomer,
       this.hourlyRate,
       this.userType,
@@ -49,7 +49,7 @@ class Plan {
         startTime: json['startTime'],
         endTime: json['endTime'],
         isAcceptByCon: json['isAcceptByCon'],
-        paymentTransId: json['paymentTransId'],
+        checkOutId: json['checkOutId'],
         freeMinutesForNewCustomer: json['freeMinutesForNewCustomer'],
         hourlyRate: json['hourlyRate'],
         userType: json['userType'],

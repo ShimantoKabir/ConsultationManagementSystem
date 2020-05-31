@@ -18,6 +18,7 @@ class NotificationViewerState extends State<NotificationViewer> {
   NotificationViewerState({Key key, @required this.uid});
 
   String uid;
+  TextEditingController payPalEmailTECtl = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -103,6 +104,7 @@ class NotificationViewerState extends State<NotificationViewer> {
         title: Text(document['title'],
             style: getTextStyle(Colors.red, FontWeight.bold)),
         subtitle: Wrap(
+
           // 1 = booking request (start time, end time, topic, body , title)
           // 2 = booking request cancellation (start time, end time, topic, body , title)
           // 3 = booking request acceptation (start time, end time, topic, body , title)
@@ -112,22 +114,35 @@ class NotificationViewerState extends State<NotificationViewer> {
           // 7 = payment received (title, body, amount, email, plan id)
 
           children: <Widget>[
-            Text(document['body'],
-                style: getTextStyle(Colors.black, FontWeight.normal)),
+            Visibility(
+              visible: document['type'] == 6 || document['type'] == 7,
+              child: Text(document['body'],
+                  style: getTextStyle(Colors.black, FontWeight.normal)),
+            ),
             Visibility(
               visible: document['type'] == 1 ||
                   document['type'] == 2 ||
                   document['type'] == 3 ||
                   document['type'] == 4 ||
                   document['type'] == 5,
-              child: Wrap(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(document['topic'] == null ? "Empty" : document['topic'],
-                      style: getTextStyle(Colors.grey, FontWeight.normal)),
-                  Text(document['startTime'] == null ? "Empty" : document['startTime'],
-                      style: getTextStyle(Colors.grey, FontWeight.normal)),
-                  Text(document['endTime']  == null ? "Empty" : document['endTime'],
-                      style: getTextStyle(Colors.grey, FontWeight.normal)),
+                  Text(
+                      document['topic'] == null
+                          ? "empty"
+                          : "Topic ${document['topic']}",
+                      style: getTextStyle(Colors.black, FontWeight.bold)),
+                  Text(
+                      document['startTime'] == null
+                          ? "empty"
+                          : "Start time ${document['startTime']}",
+                      style: getTextStyle(Colors.black, FontWeight.normal)),
+                  Text(
+                      document['endTime'] == null
+                          ? "empty"
+                          : "End time   ${document['endTime']}",
+                      style: getTextStyle(Colors.black, FontWeight.normal)),
                 ],
               ),
             ),
@@ -152,7 +167,64 @@ class NotificationViewerState extends State<NotificationViewer> {
             Visibility(
               visible: document['type'] == 7,
               child: OutlineButton(
-                onPressed: () async {
+                onPressed: () {
+
+                  showDialog(
+                    context: context,
+                    builder: (context) => new AlertDialog(
+                      title: new Text('Paypal Email',
+                          style: TextStyle(
+                            fontSize: 18.0,
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Armata',
+                          )),
+                      content: TextField(
+                          decoration: InputDecoration(
+                              contentPadding:
+                              EdgeInsets.fromLTRB(
+                                  15.0, 5.0, 5.0, 5.0),
+                              border: OutlineInputBorder()),
+                          controller: payPalEmailTECtl,
+                          maxLength: 20,
+                          keyboardType: TextInputType.emailAddress),
+                      actions: <Widget>[
+                        FlatButton(
+                            child: Text('Close',
+                                style: TextStyle(
+                                    color: Colors.black,
+                                    fontFamily: 'Armata',
+                                    fontWeight: FontWeight.bold)),
+                            onPressed: () => Navigator.of(context).pop(false)),
+                        FlatButton(
+                            child: Text('Save',
+                                style: TextStyle(
+                                    color: Colors.green,
+                                    fontFamily: 'Armata',
+                                    fontWeight: FontWeight.bold)),
+                            onPressed: () {
+
+                              Navigator.of(context).pop(false);
+                              print("paypal email = ${payPalEmailTECtl.text}");
+
+//                              Firestore.instance
+//                                  .collection('notificationList')
+//                                  .document(document['docId'])
+//                                  .delete()
+//                                  .then((res) {
+//                                Fluttertoast.showToast(
+//                                    msg: "Delete successful!",
+//                                    toastLength: Toast.LENGTH_LONG);
+//                              }).catchError((err) {
+//                                Fluttertoast.showToast(
+//                                    msg: "Delete unsuccessful!",
+//                                    toastLength: Toast.LENGTH_LONG);
+//                              });
+
+                            })
+                      ],
+                    ),
+                  );
 
                 },
                 child: Text("Set Paypal Email Address".toUpperCase(),
@@ -164,6 +236,7 @@ class NotificationViewerState extends State<NotificationViewer> {
         trailing: InkWell(
           child: Icon(Icons.delete),
           onTap: () {
+
             showDialog(
               context: context,
               builder: (context) => new AlertDialog(
@@ -196,6 +269,7 @@ class NotificationViewerState extends State<NotificationViewer> {
                               fontFamily: 'Armata',
                               fontWeight: FontWeight.bold)),
                       onPressed: () {
+
                         Navigator.of(context).pop(false);
                         Firestore.instance
                             .collection('notificationList')
@@ -210,6 +284,7 @@ class NotificationViewerState extends State<NotificationViewer> {
                               msg: "Delete unsuccessful!",
                               toastLength: Toast.LENGTH_LONG);
                         });
+
                       })
                 ],
               ),

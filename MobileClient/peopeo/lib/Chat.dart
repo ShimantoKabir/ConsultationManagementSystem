@@ -121,7 +121,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
     isLoading = false;
     isShowSticker = false;
     int fm = plan.freeMinutesForNewCustomer;
-    String pi = plan.paymentTransId;
+    String coi = plan.checkOutId;
     int id = plan.id;
     int hr = plan.hourlyRate;
 
@@ -141,7 +141,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
     totalChatDuration = calculateDuration(endDateTime, startDateTime);
 
     print("Free minute = $fm");
-    print("Payment id = $pi");
+    print("check out id = $coi");
     print("Plan id = $id");
     print("Plan hourly rate  = $hr");
     print("Total chat duration = $totalChatDuration");
@@ -1198,7 +1198,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                   fontWeight: FontWeight.normal),
             ),
             Text(
-              "You have $paymentDuration minute's to coomplete your payemnt. Would to like to pay?",
+              "You have $paymentDuration minutes to coomplete your payemnt. Would to like to pay?",
               style: TextStyle(
                   color: Colors.redAccent,
                   fontFamily: 'Armata',
@@ -1236,7 +1236,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                         msg: "No internat connection available.");
                   } else {
                     sendMsgContent(cusContinueMsg, 0);
-                    getClientToken(amount, p.id);
+                    redirectToPayment(amount, p);
                   }
                 });
               },
@@ -1245,6 +1245,54 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
         );
       },
     );
+  }
+
+  void redirectToPayment(String amount, Plan p) {
+
+    String url = webClientBaseUrl +
+        '/payment.html?amount=' +
+        amount +
+        "&plan-id=" +
+        p.id.toString() +
+        "&con-uid=" +
+        p.conUid;
+
+    print("payment url = $url");
+
+    Navigator.of(context, rootNavigator: true).pop();
+    Navigator.of(context)
+        .push(MaterialPageRoute(
+        builder: (BuildContext context) => MyWebView(
+          title: "Payment",
+          url: url,
+        )))
+        .whenComplete(() {
+      print("need to pop up notification = [yes] in plan info go for payment");
+      MySharedPreferences.setBooleanValue("needToPopUpNoti", true);
+
+      MySharedPreferences.getBooleanValue('isPaymentSuccessful')
+          .then((isPaymentSuccessful) {
+        if (isPaymentSuccessful) {
+          Fluttertoast.showToast(
+              msg: "Payment successful!",
+              toastLength: Toast.LENGTH_LONG,
+              gravity: ToastGravity.BOTTOM,
+              timeInSecForIosWeb: 1,
+              backgroundColor: Colors.green,
+              textColor: Colors.white,
+              fontSize: 16.0);
+        } else {
+          Fluttertoast.showToast(
+              msg: "Payment unsuccessful!",
+              toastLength: Toast.LENGTH_LONG,
+              gravity: ToastGravity.BOTTOM,
+              timeInSecForIosWeb: 1,
+              backgroundColor: Colors.red,
+              textColor: Colors.white,
+              fontSize: 16.0);
+        }
+      });
+    });
   }
 
   void paymentCheckingPopUp(BuildContext context) {
@@ -1284,54 +1332,6 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
     );
   }
 
-  void getClientToken(String amount, int planId) async {
-    String url = serverBaseUrl + '/pg/get-client-token';
-    Map<String, String> headers = {"Content-type": "application/json"};
-    var request = {'customerId': uid};
-
-    Response response =
-        await post(url, headers: headers, body: json.encode(request));
-
-    if (response.statusCode == 200) {
-      // checking if server returns an OK response, then parse the JSON.
-      print(HttpResponse.fromJson(json.decode(response.body)).clientToken);
-
-      String clientToken =
-          HttpResponse.fromJson(json.decode(response.body)).clientToken;
-
-      reloadAuth(clientToken, amount, planId);
-    } else {
-      // If that response was not OK, throw an error.
-      throw Exception('Failed to load post');
-    }
-  }
-
-  void reloadAuth(String clientToken, String amount, int planId) async {
-    String url = serverBaseUrl + '/auth/reload';
-    Map<String, String> headers = {"Content-type": "application/json"};
-    var request = {
-      'auth': {
-        'uId': uid,
-        'amount': amount,
-        'clientToken': clientToken,
-        'planId': planId
-      }
-    };
-
-    Response response =
-        await post(url, headers: headers, body: json.encode(request));
-
-    if (response.statusCode == 200) {
-      String aid = HttpResponse.fromJson(json.decode(response.body)).aid;
-
-      goBrowserForPayment(aid);
-
-      print(response.body.toString());
-    } else {
-      throw Exception('Failed to load post');
-    }
-  }
-
   void changeChattedStatus(int planId, String cusUid, String conUid) async {
     String url = serverBaseUrl + '/plan/change-are-cus-con-have-chatted-status';
     Map<String, String> headers = {"Content-type": "application/json"};
@@ -1348,40 +1348,6 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
     } else {
       throw Exception('Failed to load post');
     }
-  }
-
-  void goBrowserForPayment(String aid) async {
-    String url = webClientBaseUrl + '/payment.html?aid=' + aid + "&uid=" + uid;
-
-    Navigator.of(context, rootNavigator: true).pop();
-    Navigator.of(context)
-        .push(MaterialPageRoute(
-            builder: (BuildContext context) => MyWebView(
-                  title: "Payment",
-                  url: url,
-                )))
-        .whenComplete(() {
-      MySharedPreferences.getBooleanValue('isPaymentSuccessful')
-          .then((isPaymentSuccessful) {
-        if (isPaymentSuccessful) {
-          paymentCheckingPopUp(context);
-        } else {
-          Fluttertoast.showToast(
-              msg: "Payment unsuccessful!",
-              toastLength: Toast.LENGTH_LONG,
-              gravity: ToastGravity.BOTTOM,
-              timeInSecForIosWeb: 1,
-              backgroundColor: Colors.red,
-              textColor: Colors.white,
-              fontSize: 16.0);
-
-          sendMsgContent("Customer payment unsuccessful!", 3);
-          isReviewAndRatingShowedUp = true;
-          controller.stop();
-          reviewAndRatingPopUp();
-        }
-      });
-    });
   }
 
   Future<void> sendMsgContent(String content, int type) async {
@@ -1551,4 +1517,5 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
     connectivitySubscription.cancel();
     super.dispose();
   }
+
 }

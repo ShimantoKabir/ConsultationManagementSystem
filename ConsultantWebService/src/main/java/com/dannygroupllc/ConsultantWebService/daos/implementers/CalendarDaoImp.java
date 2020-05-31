@@ -2,7 +2,6 @@ package com.dannygroupllc.ConsultantWebService.daos.implementers;
 
 import com.dannygroupllc.ConsultantWebService.Utility.NotificationSender;
 import com.dannygroupllc.ConsultantWebService.daos.interfaces.CalendarDao;
-import com.dannygroupllc.ConsultantWebService.models.Auth;
 import com.dannygroupllc.ConsultantWebService.models.Calendar;
 import com.dannygroupllc.ConsultantWebService.models.Plan;
 import com.dannygroupllc.ConsultantWebService.pojos.Notification;
@@ -504,7 +503,7 @@ public class CalendarDaoImp implements CalendarDao {
                     "  DATE_FORMAT(CONVERT_TZ(start_time,'UTC',time_zone),'%Y-%m-%d %T') AS f_start_time,\n" +
                     "  DATE_FORMAT(CONVERT_TZ(end_time,'UTC',time_zone),'%Y-%m-%d %T') AS f_end_time,\n" +
                     "  p.is_accept_by_con AS is_accept_by_con,\n" +
-                    "  p.payment_trans_id AS payment_trans_id,\n" +
+                    "  p.check_out_id AS check_out_id,\n" +
                     "  p.free_minutes_for_new_customer AS free_minutes_for_new_customer,\n" +
                     "  p.cus_uid AS cus_uid,\n" +
                     "  p.con_uid AS con_uid,\n" +
@@ -542,12 +541,17 @@ public class CalendarDaoImp implements CalendarDao {
                 Plan ap = new Plan();
                 String isBookingAcceptanceTimePassed = (String) result[9];
 
+                // 7 = cus uid
+                String uid = result[7] == null ? (String) result[8] : (String) result[7];
+                System.out.println(getClass().getName()+":getSchedule: uid = "+uid);
+
                 if (isBookingAcceptanceTimePassed.equalsIgnoreCase("n")){
 
                     bp.setId(0);
                     bp.setTopic("--");
                     bp.setfStartTime((String) result[12]);
                     bp.setfEndTime((String) result[2]);
+                    bp.setUid(uid);
                     rPlanList.add(bp);
 
                     np.setId((Integer) result[0]);
@@ -555,10 +559,11 @@ public class CalendarDaoImp implements CalendarDao {
                     np.setfStartTime((String) result[2]);
                     np.setfEndTime((String) result[3]);
                     np.setAcceptByCon((Boolean) result[4]);
-                    np.setPaymentTransId((String) result[5]);
+                    np.setCheckOutId((String) result[5]);
                     np.setFreeMinutesForNewCustomer((Integer) result[6]);
                     np.setCusUid((String) result[7]);
                     np.setConUid((String) result[8]);
+                    np.setUid(uid);
                     np.setHourDiff(((BigInteger) result[10]).intValue());
                     np.setMinuteDiff(((BigInteger) result[11]).intValue());
                     rPlanList.add(np);
@@ -567,6 +572,7 @@ public class CalendarDaoImp implements CalendarDao {
                     ap.setTopic("--");
                     ap.setfStartTime((String) result[3]);
                     ap.setfEndTime((String) result[13]);
+                    ap.setUid(uid);
                     rPlanList.add(ap);
 
                 }

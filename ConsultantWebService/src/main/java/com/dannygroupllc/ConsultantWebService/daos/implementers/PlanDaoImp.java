@@ -238,7 +238,7 @@ public class PlanDaoImp implements PlanDao {
                         "  p.free_minutes_for_new_customer AS free_minutes_for_new_customer, \n" +
                         "  p.hourly_rate AS hourly_rate, \n" +
                         "  p.is_accept_by_con AS is_accept_by_con, \n" +
-                        "  IF(p.free_minutes_for_new_customer IS NOT NULL,'complete',p.payment_trans_id) AS payment_trans_id, \n" +
+                        "  IF(p.free_minutes_for_new_customer IS NOT NULL,'complete',p.check_out_id) AS check_out_id, \n" +
                         "  p.topic AS topic, \n" +
                         "  p.created_date AS created_date, \n" +
                         "  DATE_FORMAT(CONVERT_TZ(p.start_time,'UTC',p.time_zone),'%Y-%m-%d %T') AS f_start_time, \n" +
@@ -265,7 +265,7 @@ public class PlanDaoImp implements PlanDao {
                         "  p.free_minutes_for_new_customer AS free_minutes_for_new_customer, \n" +
                         "  p.hourly_rate AS hourly_rate, \n" +
                         "  p.is_accept_by_con AS is_accept_by_con, \n" +
-                        "  IF(p.free_minutes_for_new_customer IS NOT NULL,'complete',p.payment_trans_id) AS payment_trans_id, \n" +
+                        "  IF(p.free_minutes_for_new_customer IS NOT NULL,'complete',p.check_out_id) AS check_out_id, \n" +
                         "  p.topic AS topic, \n" +
                         "  p.created_date AS created_date, \n" +
                         "  DATE_FORMAT(CONVERT_TZ(p.start_time,'UTC',p.time_zone),'%Y-%m-%d %T') AS f_start_time, \n" +
@@ -297,7 +297,7 @@ public class PlanDaoImp implements PlanDao {
             for (Object[] result : results) {
 
                 // start time sub 30 min
-                String paymentTransId = (String) result[9];
+                String checkOutId = (String) result[9];
                 Date stSubThirtyMin = (Date) result[14];
                 Date now = (Date) result[15];
 
@@ -306,22 +306,22 @@ public class PlanDaoImp implements PlanDao {
 
                 System.out.println(getClass().getName() + ".getAllPlanByUser: stSubThirtyMin " + stSubThirtyMin);
                 System.out.println(getClass().getName() + ".getAllPlanByUser: now " + now);
-                System.out.println(getClass().getName() + ".getAllPlanByUser: paymentTransId " + paymentTransId);
+                System.out.println(getClass().getName() + ".getAllPlanByUser: checkOutId " + checkOutId);
 
                 // if stSubThirtyMin cross
                 // then only add paid plan
                 if (now.after(stSubThirtyMin)) {
 
-                    if (paymentTransId != null) {
+                    if (checkOutId != null) {
 
-                        planList.add(setPlan(result, paymentTransId));
+                        planList.add(setPlan(result, checkOutId));
 
                     }
 
                     // if not show paid unpaid all
                 } else {
 
-                    planList.add(setPlan(result, paymentTransId));
+                    planList.add(setPlan(result, checkOutId));
 
                 }
 
@@ -342,7 +342,7 @@ public class PlanDaoImp implements PlanDao {
 
     }
 
-    private Plan setPlan(Object[] result, String paymentTransId) {
+    private Plan setPlan(Object[] result, String checkOutId) {
 
         Plan np = new Plan();
 
@@ -355,7 +355,7 @@ public class PlanDaoImp implements PlanDao {
         np.setFreeMinutesForNewCustomer((Integer) result[6]);
         np.setHourlyRate((Integer) result[7]);
         np.setAcceptByCon((Boolean) result[8]);
-        np.setPaymentTransId(paymentTransId);
+        np.setCheckOutId(checkOutId);
         np.setTopic((String) result[10]);
         np.setCreatedDate((Date) result[11]);
         np.setfStartTime((String) result[12]);
@@ -623,7 +623,7 @@ public class PlanDaoImp implements PlanDao {
 
         try {
 
-            String planSelectSql = "SELECT * FROM plan WHERE payment_trans_id IS NULL AND id = :id";
+            String planSelectSql = "SELECT * FROM plan WHERE check_out_id IS NULL AND id = :id";
 
             Query planSelectQry = entityManager.createNativeQuery(planSelectSql, Plan.class);
             planSelectQry.setParameter("id", p.getId());
@@ -681,7 +681,7 @@ public class PlanDaoImp implements PlanDao {
                     + "  CONVERT_TZ(end_time, 'UTC', time_zone) AS end_time, "
                     + "  DATE_SUB(CONVERT_TZ(start_time,'UTC',time_zone), INTERVAL 28 MINUTE) AS st, "
                     + "  IF(free_minutes_for_new_customer IS NULL,'no','yes') AS is_free_min_available, "
-                    + "  IF(payment_trans_id IS NULL,'no','yes') AS is_payment_complete, "
+                    + "  IF(check_out_id IS NULL,'no','yes') AS is_payment_complete, "
                     + "  cus_uid, "
                     + "  con_uid, "
                     + "  is_accept_by_con, "
@@ -753,7 +753,7 @@ public class PlanDaoImp implements PlanDao {
                     + "  CONVERT_TZ(end_time, 'UTC', time_zone) AS end_time, "
                     + "  DATE_SUB(CONVERT_TZ(start_time,'UTC',time_zone), INTERVAL 28 MINUTE) AS st, "
                     + "  IF(free_minutes_for_new_customer IS NULL,'no','yes') AS is_free_min_available, "
-                    + "  IF(payment_trans_id IS NULL,'no','yes') AS is_payment_complete, "
+                    + "  IF(check_out_id IS NULL,'no','yes') AS is_payment_complete, "
                     + "  cus_uid, "
                     + "  con_uid, "
                     + "  is_accept_by_con, "
@@ -916,8 +916,6 @@ public class PlanDaoImp implements PlanDao {
         }
 
     }
-
-
 
 }
 

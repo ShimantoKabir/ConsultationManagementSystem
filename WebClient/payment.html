@@ -14,19 +14,18 @@
     <script src="js/jquery.js"></script>
     <script src="js/jquery-ui.js"></script>
     <script src="js/moment.js"></script>
-    <!-- <script src="js/full-calendar.js"></script> -->
-    <!-- <script src="https://js.braintreegateway.com/js/braintree-2.32.1.min.js"></script> -->
-    <!-- <script src="https://js.braintreegateway.com/web/dropin/1.21.0/js/dropin.min.js"></script> -->
+    
     <script src="https://www.paypal.com/sdk/js?client-id=ASS1g6isVnN46cbtSg7iy0KYMV1y-n8uzPDs0qSd34j1PT5sPxKV4zzd1LZ01rFAbjQR9sCdm89s_Rpm">
     </script>
     <script src="https://www.gstatic.com/firebasejs/7.14.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/7.14.1/firebase-analytics.js"></script>
     <script src="https://www.gstatic.com/firebasejs/7.14.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/7.14.1/firebase-firestore.js"></script>
+    <script src="js/main.js"></script>
 </head>
 <body>
 
-<div class="my-model" id="myAlert" hidden>
+<div class="my-model" id="myAlert" style="z-index: 1001" hidden>
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-sm-6">
@@ -72,14 +71,7 @@
                 </div>
                 <div class="my-div-body" style="margin-top: 25px">
                     <div id="paypal-button-container"></div>
-                    <!-- <div id="paypal-container"></div> -->
                 </div>
-                <!-- <div style="padding: 5px">
-                    <div id="dropin-container"></div>
-                </div>
-                <div class="my-div-foot justify-content-center">
-                    <button id="submit-button" class="my-btn">Complete Payment</button>
-                </div> -->
             </div>
         </div>
     </div>
@@ -88,23 +80,6 @@
 <script type="text/javascript">
 
     $(document).ready(function () {
-
-        let serverBaseUrl = "http://192.168.43.179:8080";
-        let webClientBaseUrl = "http://192.168.43.132/consultationmanagementsystem/webclient";
-
-        var firebaseConfig = {
-            apiKey: "AIzaSyCds45N0E52JbAH2JSiwyWCsqEwnOlxCP0",
-            authDomain: "consultant-e6956.firebaseapp.com",
-            databaseURL: "https://consultant-e6956.firebaseio.com",
-            projectId: "consultant-e6956",
-            storageBucket: "consultant-e6956.appspot.com",
-            messagingSenderId: "1008185790163",
-            appId: "1:1008185790163:web:8b0846089683685c654e26",
-            measurementId: "G-YQXJFTNYTQ"
-        };
-
-        // let serverBaseUrl = "http://3.20.119.226:8080";
-        // let webClientBaseUrl = "http://3.20.119.226/cms/index.html";
 
         // alert configuration start
         $('#alertCloseBtn').click(function () {
@@ -186,150 +161,13 @@
 
         }
 
-        // let authData = {
-        //     auth: {
-        //         aId: aId,
-        //         uId: uId
-        //     }
-        // };
-
         if (isUrlOk) {
 
             $('#myAlert').hide();
 
-            // $.ajax({
-            //     url: serverBaseUrl + "/auth/check",
-            //     type: "POST",
-            //     contentType: 'application/json',
-            //     data: JSON.stringify(authData),
-            //     success: function (s) {
-
-            //         if (s.code === 404) {
-
-            //             window.location.replace(webClientBaseUrl)
-
-            //         } else {
-
-            //             console.log(JSON.stringify(s));
-            //             $('#myAlert').hide();
-
-            //             // show PayPal payment button
-            //             braintree.setup(s.auth.clientToken, "custom", {
-            //                 paypal: {
-            //                     container: "paypal-container",
-            //                 },
-            //                 onPaymentMethodReceived: function (obj) {
-
-            //                     console.log("nonce: " + obj.nonce);
-
-            //                     let json = {
-            //                         auth: {
-            //                             aId: aId,
-            //                             uId: uId
-            //                         },
-            //                         transaction: {
-            //                             nonceFromTheClient: obj.nonce
-            //                         }
-            //                     };
-
-            //                     checkout(json);
-            //                 }
-            //             });
-
-            //             // show credit card ui
-            //             braintree.dropin.create({
-            //                 authorization: s.auth.clientToken,
-            //                 container: '#dropin-container'
-            //             }, function (createErr, instance) {
-            //                 button.addEventListener('click', function () {
-            //                     instance.requestPaymentMethod(function (err, obj) {
-
-            //                         console.log("nonce: " + obj.nonce);
-
-            //                         let json = {
-            //                             auth: {
-            //                                 aId: aId,
-            //                                 uId: uId
-            //                             },
-            //                             transaction: {
-            //                                 nonceFromTheClient: obj.nonce
-            //                             }
-            //                         };
-
-            //                         checkout(json);
-
-            //                     });
-            //                 });
-            //             });
-
-            //             function checkout(json) {
-
-            //                 $.ajax({
-            //                     url: serverBaseUrl + "/pg/checkout",
-            //                     type: "POST",
-            //                     contentType: 'application/json',
-            //                     data: JSON.stringify(json),
-            //                     success: function (s) {
-
-            //                         console.log(JSON.stringify(s));
-            //                         let paymentstatus = "false";
-
-            //                         if (s.code === 200) {
-
-            //                             paymentstatus = "true";
-            //                             showAlert({
-            //                                 msg: s.msg,
-            //                                 bodyIcon: 'fa fa-check-circle',
-            //                                 ntsTaBtn: false,
-            //                                 alertHeading: 'Success',
-            //                             });
-
-            //                         } else {
-
-            //                             showAlert({
-            //                                 msg: s.msg,
-            //                                 bodyIcon: 'fa fa-exclamation-circle',
-            //                                 ntsTaBtn: false,
-            //                                 alertHeading: 'Error',
-            //                             });
-
-            //                         }
-
-            //                         let link = document.createElement('a');
-            //                         link.href = webClientBaseUrl+"/index.html?paymentstatus="+paymentstatus;
-            //                         document.body.appendChild(link);
-            //                         link.click();
-
-            //                     },
-            //                     error: function (e) {
-
-            //                         console.log(JSON.stringify(e));
-            //                         window.location.replace(webClientBaseUrl)
-
-            //                     }
-            //                 });
-
-            //             }
-
-            //         }
-
-            //     },
-            //     error: function (e) {
-
-            //         console.log(JSON.stringify(e));
-            //         window.location.replace(webClientBaseUrl)
-
-            //     }
-            // })
-
         } else {
             window.location.replace(webClientBaseUrl)
         }
-
-
-        var consultant = firebase.initializeApp(firebaseConfig,"consultant");
-        console.log(consultant.name); 
-        var db = consultant.firestore();
 
         paypal.Buttons({
             createOrder: function(data, actions) {
@@ -405,7 +243,7 @@
                                     type : 7, 
                                     seenStatus : 0,
                                     amount : amount,
-				    email : doc.data().payPalEmail,
+				    				email : doc.data().payPalEmail,
                                     planId : planId
                                 }).then(function(s) {
                                     console.log("ok to send noti if not email = ",JSON.stringify(s));
@@ -429,8 +267,6 @@
         }).render('#paypal-button-container');
 
     });
-
-    // let button = document.querySelector('#submit-button');
 
 </script>
 </body>

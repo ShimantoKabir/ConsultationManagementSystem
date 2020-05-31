@@ -227,75 +227,12 @@ class PlanInfoState extends State<PlanInfo> {
     }
   }
 
-//  void getClientToken(String amount, int planId) async {
-//    String url = serverBaseUrl + '/pg/get-client-token';
-//    Map<String, String> headers = {"Content-type": "application/json"};
-//    var request = {'customerId': uid};
-//
-//    Response response =
-//        await post(url, headers: headers, body: json.encode(request));
-//
-//    if (response.statusCode == 200) {
-//      // checking if server returns an OK response, then parse the JSON.
-//      // print(HttpResponse.fromJson(json.decode(response.body)).clientToken);
-//
-//      String clientToken =
-//          HttpResponse.fromJson(json.decode(response.body)).clientToken;
-//
-//      reloadAuth(clientToken, amount, planId);
-//    } else {
-//      // If that response was not OK, throw an error.
-//      throw Exception('Failed to load post');
-//    }
-//  }
-
-//  void goBrowserForPayment(String aid) async {
-//
-//    String url = webClientBaseUrl + '/payment.html?aid=' + aid + "&uid=" + uid;
-//
-//    Navigator.of(context, rootNavigator: true).pop();
-//    Navigator.of(context)
-//        .push(MaterialPageRoute(
-//            builder: (BuildContext context) => MyWebView(
-//                  title: "Payment",
-//                  url: url,
-//                )))
-//        .whenComplete(() {
-//
-//      print("need to pop up notification = [yes] in plan info go for payment");
-//      MySharedPreferences.setBooleanValue("needToPopUpNoti", true);
-//
-//      MySharedPreferences.getBooleanValue('isPaymentSuccessful')
-//          .then((isPaymentSuccessful) {
-//        if (isPaymentSuccessful) {
-//          Fluttertoast.showToast(
-//              msg: "Payment successful!",
-//              toastLength: Toast.LENGTH_LONG,
-//              gravity: ToastGravity.BOTTOM,
-//              timeInSecForIosWeb: 1,
-//              backgroundColor: Colors.green,
-//              textColor: Colors.white,
-//              fontSize: 16.0);
-//        } else {
-//          Fluttertoast.showToast(
-//              msg: "Payment unsuccessful!",
-//              toastLength: Toast.LENGTH_LONG,
-//              gravity: ToastGravity.BOTTOM,
-//              timeInSecForIosWeb: 1,
-//              backgroundColor: Colors.red,
-//              textColor: Colors.white,
-//              fontSize: 16.0);
-//        }
-//      });
-//    });
-//  }
-
   showPaymentButtonOrChatButton(Plan p) {
     String buttonText = "start chat";
 
     // handle consultant
     if (userType == 2) {
-      if (p.paymentTransId == null) {
+      if (p.checkOutId == null) {
         return Text("Payment Incomplete!",
             style: TextStyle(
                 color: Colors.red,
@@ -379,7 +316,7 @@ class PlanInfoState extends State<PlanInfo> {
 
       // handle customer
     } else {
-      if (p.paymentTransId == null) {
+      if (p.checkOutId == null) {
         return Container(
           height: 20.0,
           width: 10.0,
@@ -543,30 +480,6 @@ class PlanInfoState extends State<PlanInfo> {
       },
     );
   }
-
-//  void reloadAuth(String clientToken, String amount, int planId) async {
-//    String url = serverBaseUrl + '/auth/reload';
-//    Map<String, String> headers = {"Content-type": "application/json"};
-//    var request = {
-//      'auth': {
-//        'uId': uid,
-//        'amount': amount,
-//        'clientToken': clientToken,
-//        'planId': planId
-//      }
-//    };
-//
-//    Response response =
-//        await post(url, headers: headers, body: json.encode(request));
-//
-//    if (response.statusCode == 200) {
-//      String aid = HttpResponse.fromJson(json.decode(response.body)).aid;
-//      goBrowserForPayment(aid);
-//      // print(response.body.toString());
-//    } else {
-//      throw Exception('Failed to load post');
-//    }
-//  }
 
   getPeerDisplayName(Plan data) {
     String uid;

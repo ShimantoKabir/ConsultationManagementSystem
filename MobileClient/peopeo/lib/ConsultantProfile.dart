@@ -318,7 +318,7 @@ class ConsultantProfileState extends State<ConsultantProfile>
                                                   var userInfo = jsonDecode(ui);
 
                                                   print(
-                                                      "spUid = ${userInfo['uid']}, uid $uid, user type ${userInfo['userType']}");
+                                                      "sp uid = ${userInfo['uid']}, uid $uid, user type ${userInfo['userType']}");
 
                                                   showAlertDialog(context,
                                                       "Preparing calender ..");
@@ -337,8 +337,10 @@ class ConsultantProfileState extends State<ConsultantProfile>
                                                               "No internet connection available.");
                                                     } else {
                                                       getTimeZone().then((tz) {
-                                                        reloadAuth(context, tz,
+
+                                                        redirectCalender(context, tz,
                                                             userInfo);
+
                                                       }).catchError((er) {
                                                         Navigator.of(context)
                                                             .pop();
@@ -658,52 +660,31 @@ class ConsultantProfileState extends State<ConsultantProfile>
     }
   }
 
-  void reloadAuth(BuildContext context, String tz, var ui) async {
-    String reqUrl = serverBaseUrl + '/auth/reload';
-    Map<String, String> headers = {"Content-type": "application/json"};
-    var request = {
-      'auth': {'uId': uid}
-    };
+  void redirectCalender(BuildContext context, String tz, var ui) async {
 
-    Response response =
-        await post(reqUrl, headers: headers, body: json.encode(request));
+    String calenderUrl = webClientBaseUrl +
+        "/calendar.html?conid=" +
+        uid +
+        "&time-zone=" +
+        tz;
 
-    if (response.statusCode == 200) {
-      HttpResponse hr = HttpResponse.fromJson(json.decode(response.body));
+    print("calender url = $calenderUrl");
+    Navigator.of(context).pop();
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) {
+          return MyFlutterWebView(
+              title: "Calendar of " + ui['displayName'],
+              url: calenderUrl);
+        },
+      ),
+    ).whenComplete((){
 
-      if (hr.code == 200) {
-        String calenderUrl = webClientBaseUrl +
-            "/calendar.html?aid=" +
-            hr.aid +
-            "&conid=" +
-            uid +
-            "&time-zone=" +
-            tz;
+      print("need to pop up notification = [yes] in oonsultant profile");
+      MySharedPreferences.setBooleanValue("needToPopUpNoti", true);
 
-        print("calender url = $calenderUrl");
-        Navigator.of(context).pop();
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) {
-              return MyFlutterWebView(
-                  title: "Calendar of " + ui['displayName'],
-                  url: calenderUrl);
-            },
-          ),
-        ).whenComplete((){
+    });
 
-          print("need to pop up notification = [yes] in oonsultant profile");
-          MySharedPreferences.setBooleanValue("needToPopUpNoti", true);
-
-        });
-      } else {
-        Navigator.of(context).pop();
-        Fluttertoast.showToast(msg: "Something went woring!");
-      }
-    } else {
-      Navigator.of(context).pop();
-      throw Exception('Failed to load browser');
-    }
   }
 
   showPictureInGridView(String fileType) {

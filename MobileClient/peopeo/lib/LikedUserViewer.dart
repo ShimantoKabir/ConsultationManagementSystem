@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity/connectivity.dart';
@@ -9,15 +7,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:http/http.dart';
 import 'package:peopeo/MyFlutterWebView.dart';
 import 'package:share/share.dart';
-
 import 'Const.dart';
 import 'ConsultantProfile.dart';
-import 'HttpResponse.dart';
 
 class LikedUserViewer extends StatefulWidget {
+
   final List<Map<String, dynamic>> likedUserIdList;
   final String uid;
   final int userType;
@@ -35,6 +31,7 @@ class LikedUserViewer extends StatefulWidget {
 }
 
 class LikedUserViewerState extends State<LikedUserViewer> {
+
   LikedUserViewerState(
       {Key key,
       @required this.uid,
@@ -331,7 +328,9 @@ class LikedUserViewerState extends State<LikedUserViewer> {
                                   msg: "No internat connection available.");
                             } else {
                               getTimeZone().then((tz) {
-                                reloadAuth(context, document, tz);
+
+                                redirectCalender(context, document, tz);
+
                               }).catchError((er) {
                                 Navigator.of(context).pop();
                                 print("Time zone error $er");
@@ -401,8 +400,9 @@ class LikedUserViewerState extends State<LikedUserViewer> {
     return timeZone;
   }
 
-  void reloadAuth(
+  void redirectCalender(
       BuildContext context, Map<String, dynamic> document, String tz) async {
+
     int hr = document['hourlyRate'];
     int fm = 0;
     String conId = document['uid'];
@@ -414,57 +414,31 @@ class LikedUserViewerState extends State<LikedUserViewer> {
     if (hr == null) {
       Fluttertoast.showToast(msg: "This user didn't set hourly rate yet!");
     } else {
-      String url = serverBaseUrl + '/auth/reload';
-      Map<String, String> headers = {"Content-type": "application/json"};
-      var request = {
-        'auth': {'uId': document['uid']}
-      };
 
-      Response response =
-          await post(url, headers: headers, body: json.encode(request));
+      String calenderUrl = webClientBaseUrl +
+          "/calendar.html?conid=" +
+          conId +
+          "&cusid=" +
+          document['uid'] +
+          "&hourly-rate=" +
+          hr.toString() +
+          "&free-minutes=" +
+          fm.toString() +
+          "&time-zone=" +
+          tz;
 
-      print("calendar preparing response = ${response.body.toString()}");
+      print("calender url = $calenderUrl");
 
-      if (response.statusCode == 200) {
-        HttpResponse httpResponse =
-            HttpResponse.fromJson(json.decode(response.body));
-
-        if (httpResponse.code == 200) {
-          String calenderUrl = webClientBaseUrl +
-              "/calendar.html?aid=" +
-              httpResponse.aid +
-              "&conid=" +
-              conId +
-              "&cusid=" +
-              document['uid'] +
-              "&hourly-rate=" +
-              hr.toString() +
-              "&free-minutes=" +
-              fm.toString() +
-              "&time-zone=" +
-              tz;
-
-          print("calender url = $calenderUrl");
-
-          Navigator.of(context).pop();
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) {
-                return MyFlutterWebView(
-                    title: "Calendar of " + document['displayName'],
-                    url: calenderUrl);
-              },
-            ),
-          );
-        } else {
-          Navigator.of(context).pop();
-          Fluttertoast.showToast(msg: "Something went woring!");
-        }
-      } else {
-        Navigator.of(context).pop();
-        Fluttertoast.showToast(msg: "Something went woring!");
-        throw Exception('Failed to load post');
-      }
+      Navigator.of(context).pop();
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) {
+            return MyFlutterWebView(
+                title: "Calendar of " + document['displayName'],
+                url: calenderUrl);
+          },
+        ),
+      );
     }
   }
 
@@ -595,4 +569,5 @@ class LikedUserViewerState extends State<LikedUserViewer> {
     connectivitySubscription.cancel();
     super.dispose();
   }
+
 }

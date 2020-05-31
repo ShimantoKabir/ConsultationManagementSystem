@@ -396,7 +396,6 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     );
   }
 
-  // working
   void redirectCalender(DocumentSnapshot document, String tz) async {
 
     if (userInfo['userType'] == 1) {
