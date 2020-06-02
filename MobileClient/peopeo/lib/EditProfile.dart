@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -185,7 +186,7 @@ class EditProfileState extends State<EditProfile> {
                                                 shape: BoxShape.circle,
                                                 image: new DecorationImage(
                                                     fit: BoxFit.cover,
-                                                    image: NetworkImage(snapshot
+                                                    image: CachedNetworkImageProvider(snapshot
                                                             .data.documents[0]
                                                         ['photoUrl'])),
                                               ),
@@ -1242,7 +1243,7 @@ class EditProfileState extends State<EditProfile> {
       return AssetImage("assets/images/vid_tmp_img.jpg");
     } else {
       // print("image url = $imgUrl");
-      return NetworkImage(imgUrl);
+      return CachedNetworkImageProvider(imgUrl);
     }
   }
 

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity/connectivity.dart';
 import 'package:flutter/cupertino.dart';
@@ -178,7 +179,7 @@ class ConsultantProfileState extends State<ConsultantProfile>
                                       shape: BoxShape.circle,
                                       image: new DecorationImage(
                                           fit: BoxFit.cover,
-                                          image: new NetworkImage(snapshot
+                                          image: CachedNetworkImageProvider(snapshot
                                               .data.documents[0]['photoUrl'])),
                                     ),
                                   ),
@@ -788,7 +789,7 @@ class ConsultantProfileState extends State<ConsultantProfile>
               image: DecorationImage(
                   image: (imgUrl == null)
                       ? AssetImage("assets/images/vid_tmp_img.jpg")
-                      : NetworkImage(imgUrl),
+                      : CachedNetworkImageProvider(imgUrl),
                   fit: BoxFit.cover)),
         ));
   }

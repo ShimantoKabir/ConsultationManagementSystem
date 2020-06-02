@@ -279,8 +279,6 @@ class PlanInfoState extends State<PlanInfo> {
                 final DateTime pDateTime = fStartTime
                     .add(Duration(minutes: p.freeMinutesForNewCustomer));
 
-                // print("adding time after free minutes = $pDateTime");
-
                 if (DateTime.now().isAfter(pDateTime)) {
                   scheduleOk = false;
                   Fluttertoast.showToast(
@@ -398,11 +396,13 @@ class PlanInfoState extends State<PlanInfo> {
                 final DateTime pDateTime = fStartTime
                     .add(Duration(minutes: p.freeMinutesForNewCustomer));
 
-                if (DateTime.now().isAfter(pDateTime)) {
+                if (DateTime.now().isAfter(pDateTime) &&
+                    userType == 1 &&
+                    DateTime.now().isBefore(fEndTime)) {
                   scheduleOk = false;
                   Fluttertoast.showToast(
                       msg:
-                          "Your free minutes is gone, we recomand you to book a new schedule!");
+                          "Your free minutes is gone, we recomand you to book a new schedule.");
                 }
               }
 
@@ -472,7 +472,7 @@ class PlanInfoState extends State<PlanInfo> {
                 Navigator.of(context).pop();
                 // start working
                 // getClientToken(amount, p.id);
-                redirectToPayment(amount, p);
+                redirectToPayment(amount, p, context);
               },
             )
           ],
@@ -512,7 +512,7 @@ class PlanInfoState extends State<PlanInfo> {
     super.dispose();
   }
 
-  void redirectToPayment(String amount, Plan p) {
+  void redirectToPayment(String amount, Plan p, BuildContext context) {
     String url = webClientBaseUrl +
         '/payment.html?amount=' +
         amount +

@@ -101,6 +101,11 @@
 
         }
 
+        function calculateAmtPercentage(num, per)
+        {
+          return (num/100)*per;
+        }
+
         function hideAlert() {
             $('#myAlert').hide();
         }
@@ -208,13 +213,15 @@
                         docRef.get().then(function(doc) {
 
                             var d = new Date();
-                            
+                            let amt = calculateAmtPercentage(amount,80);
+                            console.log("calculate amt percentage = ",amt);
+
                             if (doc.data().payPalEmail) {
 
                                 let payoutData = {
                                     planId : planId,
                                     email : doc.data().payPalEmail,
-                                    amount : amount
+                                    amount : Number(amt.toFixed(2))
                                 };
 
                                 $.ajax({
@@ -242,8 +249,7 @@
                                     title : "Email Required For Payment",
                                     type : 7, 
                                     seenStatus : 0,
-                                    amount : amount,
-				    				email : doc.data().payPalEmail,
+                                    amount : Number(amt.toFixed(2)),
                                     planId : planId
                                 }).then(function(s) {
                                     console.log("ok to send noti if not email = ",JSON.stringify(s));

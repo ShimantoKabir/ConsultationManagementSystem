@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity/connectivity.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -189,7 +190,7 @@ class CustomerProfileState extends State<CustomerProfile>
                                     shape: BoxShape.circle,
                                     image: new DecorationImage(
                                         fit: BoxFit.fill,
-                                        image: new NetworkImage(snapshot
+                                        image: new CachedNetworkImageProvider(snapshot
                                             .data.documents[0]['photoUrl'])),
                                   ),
                                 ),
@@ -554,7 +555,7 @@ class CustomerProfileState extends State<CustomerProfile>
               image: DecorationImage(
                   image: (imgUrl == null)
                       ? AssetImage("assets/images/vid_tmp_img.jpg")
-                      : NetworkImage(imgUrl),
+                      : CachedNetworkImageProvider(imgUrl),
                   fit: BoxFit.cover)),
         ));
   }

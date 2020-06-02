@@ -8,6 +8,7 @@ import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:peopeo/MyFlutterWebView.dart';
+import 'package:peopeo/MySharedPreferences.dart';
 import 'package:share/share.dart';
 import 'Const.dart';
 import 'ConsultantProfile.dart';
@@ -109,256 +110,253 @@ class LikedUserViewerState extends State<LikedUserViewer> {
   }
 
   Widget buildItem(
-      BuildContext context, Map<String, dynamic> document, String uid) {
-    if (document['uid'] == uid) {
-      return Container();
-    } else {
-      return Container(
-        decoration: BoxDecoration(
-            border: Border(
-                bottom: BorderSide(color: Theme.of(context).dividerColor))),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.all(5.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: <Widget>[
-                  getOnlineStatus(document),
-                  IconButton(
-                    icon: Icon(Icons.share, color: Colors.grey),
-                    onPressed: () {
-                      Share.share(
-                          webClientBaseUrl +
-                              "/profile.html?uid=" +
-                              document['uid'],
-                          subject: "Profile");
-                    },
+      BuildContext context, Map<String, dynamic> document) {
+    print("uid = ${document['uid']}");
+    return Container(
+      decoration: BoxDecoration(
+          border: Border(
+              bottom: BorderSide(color: Theme.of(context).dividerColor))),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.all(5.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                getOnlineStatus(document),
+                IconButton(
+                  icon: Icon(Icons.share, color: Colors.grey),
+                  onPressed: () {
+                    Share.share(
+                        webClientBaseUrl +
+                            "/profile.html?uid=" +
+                            document['uid'],
+                        subject: "Profile");
+                  },
+                ),
+              ],
+            ),
+          ),
+          Divider(
+            height: 0.0,
+            thickness: 1.0,
+          ),
+          Padding(
+            padding: const EdgeInsets.all(5.0),
+            child: Row(
+              children: <Widget>[
+                Container(
+                  height: 100.0,
+                  width: 100.0,
+                  decoration: new BoxDecoration(
+                    shape: BoxShape.circle,
+                    image: new DecorationImage(
+                        fit: BoxFit.cover,
+                        image: new NetworkImage(document['photoUrl'])),
                   ),
-                ],
-              ),
-            ),
-            Divider(
-              height: 0.0,
-              thickness: 1.0,
-            ),
-            Padding(
-              padding: const EdgeInsets.all(5.0),
-              child: Row(
-                children: <Widget>[
-                  Container(
-                    height: 100.0,
-                    width: 100.0,
-                    decoration: new BoxDecoration(
-                      shape: BoxShape.circle,
-                      image: new DecorationImage(
-                          fit: BoxFit.cover,
-                          image: new NetworkImage(document['photoUrl'])),
-                    ),
-                  ),
-                  Expanded(
-                    child: Column(
-                      children: <Widget>[
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: <Widget>[
-                            Column(
-                              children: <Widget>[
-                                IconButton(
-                                  icon: Icon(Icons.thumb_up),
-                                  onPressed: () {},
-                                ),
-                                StreamBuilder(
-                                  stream: Firestore.instance
-                                      .collection('userInfoList')
-                                      .document(document['uid'])
-                                      .collection("likedUserIdList")
-                                      .snapshots(),
-                                  builder: (context, snapshot) {
-                                    if (snapshot.hasData) {
-                                      String like;
-
-                                      if (snapshot.data.documents.length > 0) {
-                                        if (snapshot.data.documents.length ==
-                                            1) {
-                                          like = "1 Like";
-                                        } else {
-                                          like = snapshot.data.documents.length
-                                                  .toString() +
-                                              " Likes";
-                                        }
-                                      } else {
-                                        like = "0 Like";
-                                      }
-
-                                      return Text(like,
-                                          style: TextStyle(
-                                            fontSize: 12.0,
-                                            fontWeight: FontWeight.w600,
-                                            fontFamily: 'Armata',
-                                          ));
-                                    } else {
-                                      return Text('0 Like',
-                                          style: TextStyle(
-                                            fontSize: 12.0,
-                                            fontWeight: FontWeight.w600,
-                                            fontFamily: 'Armata',
-                                          ));
-                                    }
-                                  },
-                                )
-                              ],
-                            ),
-                            Column(
-                              children: <Widget>[
-                                IconButton(
-                                  icon: Icon(Icons.attach_money),
-                                  onPressed: () {},
-                                ),
-                                getHourlyRate(document)
-                              ],
-                            )
-                          ],
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(10.0),
-                          child: getFreeMinutes(document),
-                        )
-                      ],
-                    ),
-                  )
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(5.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  Row(
+                ),
+                Expanded(
+                  child: Column(
                     children: <Widget>[
-                      Text(
-                        "(" + getRating(document).toString() + ")",
-                        textAlign: TextAlign.left,
-                        style: TextStyle(
-                          fontSize: 18.0,
-                          color: Colors.black,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Armata',
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: <Widget>[
+                          Column(
+                            children: <Widget>[
+                              IconButton(
+                                icon: Icon(Icons.thumb_up),
+                                onPressed: () {},
+                              ),
+                              StreamBuilder(
+                                stream: Firestore.instance
+                                    .collection('userInfoList')
+                                    .document(document['uid'])
+                                    .collection("likedUserIdList")
+                                    .snapshots(),
+                                builder: (context, snapshot) {
+                                  if (snapshot.hasData) {
+                                    String like;
+
+                                    if (snapshot.data.documents.length > 0) {
+                                      if (snapshot.data.documents.length ==
+                                          1) {
+                                        like = "1 Like";
+                                      } else {
+                                        like = snapshot.data.documents.length
+                                            .toString() +
+                                            " Likes";
+                                      }
+                                    } else {
+                                      like = "0 Like";
+                                    }
+
+                                    return Text(like,
+                                        style: TextStyle(
+                                          fontSize: 12.0,
+                                          fontWeight: FontWeight.w600,
+                                          fontFamily: 'Armata',
+                                        ));
+                                  } else {
+                                    return Text('0 Like',
+                                        style: TextStyle(
+                                          fontSize: 12.0,
+                                          fontWeight: FontWeight.w600,
+                                          fontFamily: 'Armata',
+                                        ));
+                                  }
+                                },
+                              )
+                            ],
+                          ),
+                          Column(
+                            children: <Widget>[
+                              IconButton(
+                                icon: Icon(Icons.attach_money),
+                                onPressed: () {},
+                              ),
+                              getHourlyRate(document)
+                            ],
+                          )
+                        ],
                       ),
-                      RatingBarIndicator(
-                          rating: getRating(document),
-                          direction: Axis.horizontal,
-                          itemCount: 5,
-                          itemSize: 25.0,
-                          itemBuilder: (context, index) => Icon(
-                                Icons.star,
-                                color: Colors.amber,
-                              ))
+                      Padding(
+                        padding: const EdgeInsets.all(10.0),
+                        child: getFreeMinutes(document),
+                      )
                     ],
                   ),
-                  getDisplayName(document),
-                  SizedBox(
-                    height: 10.0,
-                  ),
-                  getShortDescription(document),
-                  SizedBox(
-                    height: 10.0,
-                  ),
-                  getLongDescription(document),
-                  SizedBox(
-                    height: 10.0,
-                  )
-                ],
-              ),
+                )
+              ],
             ),
-            Divider(
-              height: 0.0,
-              thickness: 1.0,
+          ),
+          Padding(
+            padding: const EdgeInsets.all(5.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    Text(
+                      "(" + getRating(document).toString() + ")",
+                      textAlign: TextAlign.left,
+                      style: TextStyle(
+                        fontSize: 18.0,
+                        color: Colors.black,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Armata',
+                      ),
+                    ),
+                    RatingBarIndicator(
+                        rating: getRating(document),
+                        direction: Axis.horizontal,
+                        itemCount: 5,
+                        itemSize: 25.0,
+                        itemBuilder: (context, index) => Icon(
+                          Icons.star,
+                          color: Colors.amber,
+                        ))
+                  ],
+                ),
+                getDisplayName(document),
+                SizedBox(
+                  height: 10.0,
+                ),
+                getShortDescription(document),
+                SizedBox(
+                  height: 10.0,
+                ),
+                getLongDescription(document),
+                SizedBox(
+                  height: 10.0,
+                )
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.all(6.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: <Widget>[
-                  RaisedButton(
-                    shape: new RoundedRectangleBorder(
-                        borderRadius: new BorderRadius.circular(8.0),
-                        side: BorderSide(color: Colors.red)),
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) {
-                            return ConsultantProfile(uid: document['uid']);
-                          },
-                        ),
-                      );
-                    },
-                    color: Colors.red,
-                    textColor: Colors.white,
-                    child: Text("Profile".toUpperCase(),
-                        style: TextStyle(fontSize: 14)),
-                  ),
-                  RaisedButton(
-                    shape: new RoundedRectangleBorder(
-                        borderRadius: new BorderRadius.circular(8.0),
-                        side: BorderSide(color: Colors.red)),
-                    onPressed: () async {
-                      if (document['hourlyRate'] == null) {
-                        Fluttertoast.showToast(
-                            msg: "This expert didn't set his hourly rate yet!");
-                      } else {
-                        bool isPortrait = MediaQuery.of(context).orientation ==
-                            Orientation.portrait;
+          ),
+          Divider(
+            height: 0.0,
+            thickness: 1.0,
+          ),
+          Padding(
+            padding: const EdgeInsets.all(6.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                RaisedButton(
+                  shape: new RoundedRectangleBorder(
+                      borderRadius: new BorderRadius.circular(8.0),
+                      side: BorderSide(color: Colors.red)),
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) {
+                          return ConsultantProfile(uid: document['uid']);
+                        },
+                      ),
+                    );
+                  },
+                  color: Colors.red,
+                  textColor: Colors.white,
+                  child: Text("Profile".toUpperCase(),
+                      style: TextStyle(fontSize: 14)),
+                ),
+                RaisedButton(
+                  shape: new RoundedRectangleBorder(
+                      borderRadius: new BorderRadius.circular(8.0),
+                      side: BorderSide(color: Colors.red)),
+                  onPressed: () async {
+                    if (document['hourlyRate'] == null) {
+                      Fluttertoast.showToast(
+                          msg: "This expert didn't set his hourly rate yet.");
+                    } else {
+                      bool isPortrait = MediaQuery.of(context).orientation ==
+                          Orientation.portrait;
 
-                        if (isPortrait) {
-                          showAlertDialog(context, "Preparing calender ..");
-                          Connectivity()
-                              .checkConnectivity()
-                              .then((connectivityResult) {
-                            if (connectivityResult == ConnectivityResult.none) {
+                      if (isPortrait) {
+                        showAlertDialog(context, "Preparing calender ..");
+                        Connectivity()
+                            .checkConnectivity()
+                            .then((connectivityResult) {
+                          if (connectivityResult == ConnectivityResult.none) {
+                            Navigator.of(context).pop();
+                            Fluttertoast.showToast(
+                                msg: "No internat connection available.");
+                          } else {
+                            getTimeZone().then((tz) {
+
+                              redirectCalender(context, document, tz);
+
+                            }).catchError((er) {
                               Navigator.of(context).pop();
+                              print("Time zone error $er.");
                               Fluttertoast.showToast(
-                                  msg: "No internat connection available.");
-                            } else {
-                              getTimeZone().then((tz) {
-
-                                redirectCalender(context, document, tz);
-
-                              }).catchError((er) {
-                                Navigator.of(context).pop();
-                                print("Time zone error $er");
-                                Fluttertoast.showToast(
-                                    msg: "Can't fetch time zone!");
-                              });
-                            }
-                          });
-                        } else {
-                          Fluttertoast.showToast(
-                              msg:
-                                  "Please change your app orientation to portrait!",
-                              toastLength: Toast.LENGTH_LONG);
-                        }
+                                  msg: "Can't fetch time zone.");
+                            });
+                          }
+                        });
+                      } else {
+                        Fluttertoast.showToast(
+                            msg:
+                            "Please change your app orientation to portrait.",
+                            toastLength: Toast.LENGTH_LONG);
                       }
-                    },
-                    color: Colors.red,
-                    textColor: Colors.white,
-                    child: Text("Calender".toUpperCase(),
-                        style: TextStyle(fontSize: 14)),
-                  )
-                ],
-              ),
+                    }
+                  },
+                  color: Colors.red,
+                  textColor: Colors.white,
+                  child: Text("Calender".toUpperCase(),
+                      style: TextStyle(fontSize: 14)),
+                )
+              ],
             ),
-          ],
-        ),
-      );
-    }
+          ),
+        ],
+      ),
+    );
   }
 
   showAlertDialog(BuildContext context, String msg) {
@@ -419,7 +417,7 @@ class LikedUserViewerState extends State<LikedUserViewer> {
           "/calendar.html?conid=" +
           conId +
           "&cusid=" +
-          document['uid'] +
+          uid +
           "&hourly-rate=" +
           hr.toString() +
           "&free-minutes=" +
@@ -438,7 +436,12 @@ class LikedUserViewerState extends State<LikedUserViewer> {
                 url: calenderUrl);
           },
         ),
-      );
+      ).whenComplete((){
+
+        print("need to pop up notification = [yes] in main calendre button");
+        MySharedPreferences.setBooleanValue("needToPopUpNoti", true);
+
+      });
     }
   }
 
@@ -547,10 +550,11 @@ class LikedUserViewerState extends State<LikedUserViewer> {
   }
 
   showLikedUser() {
+
     if (likedUserIdList.length > 0) {
       return ListView.builder(
         itemBuilder: (context, index) =>
-            buildItem(context, likedUserIdList[index], uid),
+            buildItem(context, likedUserIdList[index]),
         itemCount: likedUserIdList.length,
       );
     } else {

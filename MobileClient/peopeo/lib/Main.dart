@@ -10,7 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:http/http.dart';
 import 'package:intl/intl.dart';
 import 'package:peopeo/ChattedUserViewer.dart';
 import 'package:peopeo/Const.dart';
@@ -18,7 +17,6 @@ import 'package:peopeo/ConsultantProfile.dart';
 import 'package:peopeo/CustomerListViewer.dart';
 import 'package:peopeo/CustomerProfile.dart';
 import 'package:peopeo/ExpertSearch.dart';
-import 'package:peopeo/HttpResponse.dart';
 import 'package:peopeo/LikedUserViewer.dart';
 import 'package:peopeo/LoginPage.dart';
 import 'package:peopeo/MyFlutterWebView.dart';
@@ -28,7 +26,6 @@ import 'package:peopeo/PlanInfo.dart';
 import 'package:peopeo/UserInfo.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:share/share.dart';
-import 'dart:io';
 
 void main() {
   runApp(MyApp());
@@ -501,7 +498,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                       image: new DecorationImage(
                           fit: BoxFit.cover,
                           image: isInternetAvailable
-                              ? NetworkImage(document['photoUrl'])
+                              ? CachedNetworkImageProvider(document['photoUrl'])
                               : AssetImage(
                                   "assets/images/demo_profile_pic.png")),
                     ),
@@ -905,6 +902,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   }
 
   void addToBookMark(expertUid, String myUid) {
+
     CollectionReference cr = Firestore.instance
         .collection('userInfoList')
         .document(myUid)
@@ -951,53 +949,92 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   }
 
   void showNotification(BuildContext context, Map<String, dynamic> message) {
-    showDialog<void>(
-      context: context,
-      barrierDismissible: true, // user must tap button!
-      builder: (BuildContext context) {
-        return AlertDialog(
-            title: Text(message['notification']['title'],
-                style: TextStyle(
-                    color: Colors.pink,
-                    fontFamily: 'Armata',
-                    fontWeight: FontWeight.bold)),
-            content: Wrap(children: <Widget>[
-              Text(
-                message['notification']['body'],
-                style: TextStyle(
-                    color: Colors.grey,
-                    fontFamily: 'Armata',
-                    fontWeight: FontWeight.normal),
-              )
-            ]),
-            actions: <Widget>[
-              FlatButton(
-                  child: Text('Close',
-                      style: TextStyle(
-                          color: Colors.green,
-                          fontFamily: 'Armata',
-                          fontWeight: FontWeight.bold)),
-                  onPressed: () => Navigator.of(context).pop(false)),
-              FlatButton(
-                  child: Text('Details',
-                      style: TextStyle(
-                          color: Colors.green,
-                          fontFamily: 'Armata',
-                          fontWeight: FontWeight.bold)),
-                  onPressed: () {
-                    Navigator.of(context).pop(false);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) {
-                          return NotificationViewer(uid: userInfo['uid']);
-                        },
-                      ),
-                    );
-                  })
-            ]);
-      },
-    );
+
+    Firestore.instance
+        .collection('notificationList')
+        .document(message['data']['docId'])
+        .get().then((val){
+
+      showDialog<void>(
+        context: context,
+        barrierDismissible: true, // user must tap button!
+        builder: (BuildContext context) {
+          return AlertDialog(
+              title: Text(message['notification']['title'],
+                  style: TextStyle(
+                      color: Colors.pink,
+                      fontFamily: 'Armata',
+                      fontWeight: FontWeight.bold)),
+              content: Wrap(children: <Widget>[
+                Visibility(
+                  visible: val.data['type'] == 6 || val.data['type'] == 7,
+                  child: Text(val.data['body'],
+                      style: getTextStyle(Colors.black, FontWeight.normal)),
+                ),
+                Visibility(
+                  visible: val.data['type'] == 1 ||
+                      val.data['type'] == 2 ||
+                      val.data['type'] == 3 ||
+                      val.data['type'] == 4 ||
+                      val.data['type'] == 5,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                          val.data['topic'] == null
+                              ? "empty"
+                              : "Topic ${val.data['topic']}",
+                          style: getTextStyle(Colors.black, FontWeight.bold)),
+                      Text(
+                          val.data['startTime'] == null
+                              ? "empty"
+                              : "Start time ${val.data['startTime']}",
+                          style: getTextStyle(Colors.black, FontWeight.normal)),
+                      Text(
+                          val.data['endTime'] == null
+                              ? "empty"
+                              : "End time   ${val.data['endTime']}",
+                          style: getTextStyle(Colors.black, FontWeight.normal)),
+                    ],
+                  ),
+                )
+              ]),
+              actions: <Widget>[
+                FlatButton(
+                    child: Text('Close',
+                        style: TextStyle(
+                            color: Colors.green,
+                            fontFamily: 'Armata',
+                            fontWeight: FontWeight.bold)),
+                    onPressed: () => Navigator.of(context).pop(false)),
+                FlatButton(
+                    child: Text('Details',
+                        style: TextStyle(
+                            color: Colors.green,
+                            fontFamily: 'Armata',
+                            fontWeight: FontWeight.bold)),
+                    onPressed: () {
+                      Navigator.of(context).pop(false);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) {
+                            return NotificationViewer(uid: userInfo['uid']);
+                          },
+                        ),
+                      );
+                    })
+              ]);
+        },
+      );
+
+    });
+
+  }
+
+  TextStyle getTextStyle(Color color, FontWeight fontWeight) {
+    return TextStyle(
+        color: color, fontFamily: 'Armata', fontWeight: fontWeight);
   }
 
   void goToLoginPage() {
@@ -1030,7 +1067,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           .getDocuments();
 
       await Future.wait(luDocs.documents.map((lu) async {
-        print('lu id = ${lu['uid']}');
+        print('lu id = ${uiObj['uid']}');
         likedUserIdList.add(uiObj);
       }));
     }));

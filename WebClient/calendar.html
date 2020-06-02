@@ -52,6 +52,7 @@
                 data.ntsTaBtn ? $('#alertTryAgain').show() : $('#alertTryAgain').hide();
                 data.ntsCnfBtn ? $('#alertConfirm').show() : $('#alertConfirm').hide();
                 data.ntsActBtn ? $('#afterAction').show() : $('#afterAction').hide();
+                data.ntsActBtn ? $('#alertCloseBtn').hide() : $('#alertCloseBtn').show();
 
                 !data.ntsCnfBtn && !data.ntsTaBtn && !data.ntsActBtn ? 
                 $('#emptyFoot').show() : $('#emptyFoot').hide();
@@ -272,7 +273,7 @@
                                         title = "--";
                                     }else {
 
-                                        if(cusId == null){
+                                        if(s.planList[i].cusUid == null){
                                             title = "Expert name "+doc.data().displayName+". Topic "+s.planList[i].
                                             topic+".";
                                         }else {

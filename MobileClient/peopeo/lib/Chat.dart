@@ -185,6 +185,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
         if (!isReviewAndRatingShowedUp && dateTimeNow.isAfter(endDateTime)) {
           print('Review and rating showed up!');
           isReviewAndRatingShowedUp = true;
+          print("review show 3");
           reviewAndRatingPopUp();
         }
 
@@ -254,6 +255,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
             !isReviewAndRatingShowedUp &&
             controller.isDismissed &&
             dateTimeNow.isAfter(reviewAndRatingShowDateTime)) {
+          print("review show 2");
           reviewAndRatingPopUp();
           print('Show popup for review and rating in time tiker block!');
           isReviewAndRatingShowedUp = true;
@@ -713,6 +715,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                         "$displayName has ended the chat session.", 3);
                     isReviewAndRatingShowedUp = true;
                     controller.stop();
+                    print("review show 1");
                     reviewAndRatingPopUp();
                   })
             ],
@@ -1220,6 +1223,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                 needToShowPaymentUi = false;
                 Navigator.of(context).pop();
                 controller.stop();
+                print("review show 6");
                 reviewAndRatingPopUp();
               },
             ),
@@ -1236,7 +1240,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                         msg: "No internat connection available.");
                   } else {
                     sendMsgContent(cusContinueMsg, 0);
-                    redirectToPayment(amount, p);
+                    redirectToPayment(amount, p,context);
                   }
                 });
               },
@@ -1247,7 +1251,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
     );
   }
 
-  void redirectToPayment(String amount, Plan p) {
+  void redirectToPayment(String amount, Plan p, BuildContext context) {
 
     String url = webClientBaseUrl +
         '/payment.html?amount=' +
@@ -1447,6 +1451,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
         isReviewAndRatingShowedUp = true;
         Navigator.of(context).pop();
         controller.stop();
+        print("review show 5");
         reviewAndRatingPopUp();
       }
     } else {
@@ -1469,6 +1474,8 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
           .collection('conversations')
           .document(idOfCusLeaveMsg)
           .updateData(<String, dynamic>{'isReviewAndRatingShowedUp': 1});
+
+      print("review show 4");
       reviewAndRatingPopUp();
       controller.stop();
       isReviewAndRatingShowedUp = true;

@@ -1,7 +1,11 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:http/http.dart';
+import 'package:peopeo/Const.dart';
 import 'package:peopeo/ConsultantProfile.dart';
 
 class NotificationViewer extends StatefulWidget {
@@ -56,7 +60,11 @@ class NotificationViewerState extends State<NotificationViewer> {
                     'endTime': f['endTime'],
                     'topic': f['topic'],
                     'type': f['type'],
-                    'docId': f.documentID
+                    'docId': f.documentID,
+                    'planId': f['planId'],
+                    'amount': f['amount'],
+                    'payPalEmail': f['payPalEmail'],
+                    'isPaid': f['isPaid'],
                   });
                 });
 
@@ -104,7 +112,6 @@ class NotificationViewerState extends State<NotificationViewer> {
         title: Text(document['title'],
             style: getTextStyle(Colors.red, FontWeight.bold)),
         subtitle: Wrap(
-
           // 1 = booking request (start time, end time, topic, body , title)
           // 2 = booking request cancellation (start time, end time, topic, body , title)
           // 3 = booking request acceptation (start time, end time, topic, body , title)
@@ -168,66 +175,113 @@ class NotificationViewerState extends State<NotificationViewer> {
               visible: document['type'] == 7,
               child: OutlineButton(
                 onPressed: () {
+                  if (document['isPaid'] == null) {
+                    if (document['payPalEmail'] == null) {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: new Text('Paypal Email',
+                              style: TextStyle(
+                                fontSize: 18.0,
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Armata',
+                              )),
+                          content: TextField(
+                              decoration: InputDecoration(
+                                  contentPadding:
+                                      EdgeInsets.fromLTRB(15.0, 5.0, 5.0, 5.0),
+                                  border: OutlineInputBorder()),
+                              controller: payPalEmailTECtl,
+                              keyboardType: TextInputType.emailAddress),
+                          actions: <Widget>[
+                            FlatButton(
+                                child: Text('Close',
+                                    style: TextStyle(
+                                        color: Colors.black,
+                                        fontFamily: 'Armata',
+                                        fontWeight: FontWeight.bold)),
+                                onPressed: () =>
+                                    Navigator.of(context).pop(false)),
+                            FlatButton(
+                                child: Text('Save',
+                                    style: TextStyle(
+                                        color: Colors.green,
+                                        fontFamily: 'Armata',
+                                        fontWeight: FontWeight.bold)),
+                                onPressed: () async {
+                                  Navigator.of(context).pop(false);
+                                  print(
+                                      "paypal email = ${payPalEmailTECtl.text}");
+                                  print("amount = ${document['amount']}");
+                                  print("planId = ${document['planId']}");
+                                  print(
+                                      "payPalEmail = ${document['payPalEmail']}");
 
-                  showDialog(
-                    context: context,
-                    builder: (context) => new AlertDialog(
-                      title: new Text('Paypal Email',
-                          style: TextStyle(
-                            fontSize: 18.0,
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'Armata',
-                          )),
-                      content: TextField(
-                          decoration: InputDecoration(
-                              contentPadding:
-                              EdgeInsets.fromLTRB(
-                                  15.0, 5.0, 5.0, 5.0),
-                              border: OutlineInputBorder()),
-                          controller: payPalEmailTECtl,
-                          maxLength: 20,
-                          keyboardType: TextInputType.emailAddress),
-                      actions: <Widget>[
-                        FlatButton(
-                            child: Text('Close',
-                                style: TextStyle(
-                                    color: Colors.black,
-                                    fontFamily: 'Armata',
-                                    fontWeight: FontWeight.bold)),
-                            onPressed: () => Navigator.of(context).pop(false)),
-                        FlatButton(
-                            child: Text('Save',
-                                style: TextStyle(
-                                    color: Colors.green,
-                                    fontFamily: 'Armata',
-                                    fontWeight: FontWeight.bold)),
-                            onPressed: () {
+                                  if (payPalEmailTECtl.text.trim().isEmpty) {
+                                    Fluttertoast.showToast(
+                                        msg: "Email address required!",
+                                        toastLength: Toast.LENGTH_SHORT);
+                                  } else {
+                                    try {
+                                      Firestore.instance
+                                          .collection('userInfoList')
+                                          .document(uid)
+                                          .updateData({
+                                        "payPalEmail":
+                                            payPalEmailTECtl.text.trim()
+                                      }).then((s) {
+                                        Firestore.instance
+                                            .collection('notificationList')
+                                            .where('type', isEqualTo: 7)
+                                            .getDocuments()
+                                            .then((nDocs) {
+                                          nDocs.documents.forEach((nDoc) {
+                                            Firestore.instance
+                                                .collection('notificationList')
+                                                .document(nDoc.documentID)
+                                                .updateData({
+                                              "payPalEmail":
+                                                  payPalEmailTECtl.text.trim()
+                                            });
+                                          });
+                                        });
+                                      });
 
-                              Navigator.of(context).pop(false);
-                              print("paypal email = ${payPalEmailTECtl.text}");
+                                      var request = {
+                                        'planId': document['planId'],
+                                        'email': payPalEmailTECtl.text.trim(),
+                                        'amount': document['amount']
+                                      };
 
-//                              Firestore.instance
-//                                  .collection('notificationList')
-//                                  .document(document['docId'])
-//                                  .delete()
-//                                  .then((res) {
-//                                Fluttertoast.showToast(
-//                                    msg: "Delete successful!",
-//                                    toastLength: Toast.LENGTH_LONG);
-//                              }).catchError((err) {
-//                                Fluttertoast.showToast(
-//                                    msg: "Delete unsuccessful!",
-//                                    toastLength: Toast.LENGTH_LONG);
-//                              });
+                                      showAlertDialog(
+                                          context, "Please wait...!");
+                                      payout(request, document);
+                                    } catch (e) {
+                                      print(e);
+                                      Fluttertoast.showToast(
+                                          msg: "Something went wrong!");
+                                    }
+                                  }
+                                })
+                          ],
+                        ),
+                      );
+                    } else {
+                      var request = {
+                        'planId': document['planId'],
+                        'email': document['payPalEmail'],
+                        'amount': document['amount']
+                      };
 
-                            })
-                      ],
-                    ),
-                  );
-
+                      showAlertDialog(context, "Please wait...!");
+                      payout(request, document);
+                    }
+                  } else {
+                    Fluttertoast.showToast(msg: "Already paid!");
+                  }
                 },
-                child: Text("Set Paypal Email Address".toUpperCase(),
+                child: Text(showPayPalEmailBtnTxt(document),
                     style: TextStyle(fontSize: 14)),
               ),
             )
@@ -236,7 +290,6 @@ class NotificationViewerState extends State<NotificationViewer> {
         trailing: InkWell(
           child: Icon(Icons.delete),
           onTap: () {
-
             showDialog(
               context: context,
               builder: (context) => new AlertDialog(
@@ -269,7 +322,6 @@ class NotificationViewerState extends State<NotificationViewer> {
                               fontFamily: 'Armata',
                               fontWeight: FontWeight.bold)),
                       onPressed: () {
-
                         Navigator.of(context).pop(false);
                         Firestore.instance
                             .collection('notificationList')
@@ -284,7 +336,6 @@ class NotificationViewerState extends State<NotificationViewer> {
                               msg: "Delete unsuccessful!",
                               toastLength: Toast.LENGTH_LONG);
                         });
-
                       })
                 ],
               ),
@@ -300,6 +351,59 @@ class NotificationViewerState extends State<NotificationViewer> {
         },
       ),
     );
+  }
+
+  showAlertDialog(BuildContext context, String msg) {
+    AlertDialog alert = AlertDialog(
+      content: ListTile(
+        leading: CircularProgressIndicator(),
+        title: Text("Loading"),
+        subtitle: Text(msg),
+      ),
+    );
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (BuildContext context) {
+        return alert;
+      },
+    );
+  }
+
+  Future<int> payout(request, document) async {
+    String url = serverBaseUrl + '/pg/payout';
+    Map<String, String> headers = {"Content-type": "application/json"};
+
+    Response response =
+        await post(url, headers: headers, body: json.encode(request));
+
+    if (response.statusCode == 200) {
+      print(response.body);
+      var body = json.decode(response.body);
+
+      if(body['code'] == 200){
+
+        print("response body = ${body['code']}");
+
+        Firestore.instance
+            .collection('notificationList')
+            .document(document['docId'])
+            .updateData({"isPaid": true});
+
+      }else {
+
+        Fluttertoast.showToast(msg: "Something went wrong!");
+
+      }
+
+      Navigator.of(context).pop();
+      return 200;
+
+    } else {
+      Fluttertoast.showToast(msg: "Something went wrong!");
+      Navigator.of(context).pop();
+      return 404;
+    }
   }
 
   String getStartTime(document) {
@@ -321,5 +425,21 @@ class NotificationViewerState extends State<NotificationViewer> {
   TextStyle getTextStyle(Color color, FontWeight fontWeight) {
     return TextStyle(
         color: color, fontFamily: 'Armata', fontWeight: fontWeight);
+  }
+
+  String showPayPalEmailBtnTxt(document) {
+    String btnTxt;
+
+    if (document['payPalEmail'] == null) {
+      btnTxt = "Set Paypal Email Address".toUpperCase();
+    } else {
+      if (document['isPaid'] == null) {
+        btnTxt = "Get your payment".toUpperCase();
+      } else {
+        btnTxt = "Paid".toUpperCase();
+      }
+    }
+
+    return btnTxt;
   }
 }

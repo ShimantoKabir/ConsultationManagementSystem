@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:peopeo/ChatHistory.dart';
@@ -55,7 +56,7 @@ class ChattedUserViewerState extends State<ChattedUserViewer>{
             shape: BoxShape.circle,
             image: new DecorationImage(
                 fit: BoxFit.fill,
-                image: new NetworkImage(document['photoUrl'])),
+                image: CachedNetworkImageProvider(document['photoUrl'])),
           ),
         ),
         title: getDisplayName(document),

@@ -158,7 +158,7 @@ public class PaymentGateway {
 
             e.printStackTrace();
             response.setMsg("Exception occurred !");
-            response.setCode(400);
+            response.setCode(404);
 
         } finally {
             if (session != null) {
@@ -210,7 +210,7 @@ public class PaymentGateway {
 
             e.printStackTrace();
             response.setMsg(e.getMessage());
-            response.setCode(400);
+            response.setCode(404);
 
         } finally {
             if (session != null) {
