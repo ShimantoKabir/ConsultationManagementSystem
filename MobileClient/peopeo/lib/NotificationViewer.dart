@@ -234,6 +234,7 @@ class NotificationViewerState extends State<NotificationViewer> {
                                         Firestore.instance
                                             .collection('notificationList')
                                             .where('type', isEqualTo: 7)
+                                            .where('uid', isEqualTo: uid)
                                             .getDocuments()
                                             .then((nDocs) {
                                           nDocs.documents.forEach((nDoc) {

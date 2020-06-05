@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Consultant Payment</title>
+    <title>Payment</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <link rel="stylesheet" href="css/full-calendar.css"/>
@@ -81,7 +81,6 @@
 
     $(document).ready(function () {
 
-        // alert configuration start
         $('#alertCloseBtn').click(function () {
             $('#myAlert').hide();
         });
@@ -101,9 +100,8 @@
 
         }
 
-        function calculateAmtPercentage(num, per)
-        {
-          return (num/100)*per;
+        function calculateAmtPercentage(num, per) {
+            return (num/100)*per;
         }
 
         function hideAlert() {
@@ -112,19 +110,40 @@
 
         function updateCheckOutStatus(checkOutData) {
             
-            $.ajax({
-                url: serverBaseUrl + "/plan/update-check-out-status",
-                type: "POST",
-                contentType: 'application/json',
-                data: JSON.stringify(checkOutData),
-                success: function (s) {
-                    console.log("success to update checkout = ",JSON.stringify(s));
-                    redirectBack("true");
-                },
-                error: function (e) {
-                    console.log("error to update checout = ",JSON.stringify(e));
-                    redirectBack("true");
-                }
+            var authId = 'auth_id_' + (new Date()).getTime();
+
+            db.collection("userInfoList").doc(cusUid).update({
+                authId : authId
+            }).then(function(s) {
+
+                $.ajax({
+                    url: serverBaseUrl + "/plan/update-check-out-status",
+                    type: "POST",
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        plan : checkOutData,
+                        authId : authId
+                    }),
+                    success: function (s) {
+                        console.log("success to update checkout = ",JSON.stringify(s));
+                        redirectBack("true");
+                    },
+                    error: function (e) {
+                        console.log("error to update checout = ",JSON.stringify(e));
+                        redirectBack("true");
+                    }
+                });
+
+            }).catch(function(e) {
+                $('#myAlert').hide();
+                console.log(e);
+                showAlert({
+                    msg: "Some thing went wrong!",
+                    bodyIcon: 'fa fa-times-circle',
+                    ntsTaBtn: false,
+                    ntsCnfBtn: false,
+                    alertHeading: 'Error',
+                });
             });
 
         }
@@ -147,17 +166,20 @@
         let amount = null;
         let planId = null;
         let conUid = null;
+        let cusUid = null;
         let isUrlOk = false;
 
         let urlParameters = new URLSearchParams(window.location.search);
 
         if (urlParameters.has('amount') &&
             urlParameters.has('plan-id') &&
-            urlParameters.has('con-uid')) {
+            urlParameters.has('con-uid') &&
+            urlParameters.has('cus-uid')) {
 
             amount = urlParameters.get('amount');
             planId = urlParameters.get('plan-id');
             conUid = urlParameters.get('con-uid');
+            cusUid = urlParameters.get('cus-uid');
             isUrlOk = true;
 
         } else {
@@ -167,9 +189,7 @@
         }
 
         if (isUrlOk) {
-
             $('#myAlert').hide();
-
         } else {
             window.location.replace(webClientBaseUrl)
         }
@@ -193,18 +213,16 @@
                     alertHeading: 'Loading',
                 });
                     
-                console.log("onApprove data = ",JSON.stringify(data));
-                console.log("onApprove actions = ",JSON.stringify(actions));
+                console.log("on approve data = ",JSON.stringify(data));
+                console.log("on approve actions = ",JSON.stringify(actions));
 
                 return actions.order.capture().then(function(details) {
 
-                    let req = {
-                        plan : {
-                            id : planId,
-                            checkOutId : details.id,
-                            checkOutStatus : details.status,
-                            checkOutCreatedDate : new Date(details.create_time),
-                        }
+                    let plan = {
+                        id : planId,
+                        checkOutId : details.id,
+                        checkOutStatus : details.status,
+                        checkOutCreatedDate : new Date(details.create_time),
                     };
 
                     if (details.status == "COMPLETED") {
@@ -218,25 +236,43 @@
 
                             if (doc.data().payPalEmail) {
 
+                                var authId = 'auth_id_' + (new Date()).getTime();
                                 let payoutData = {
                                     planId : planId,
                                     email : doc.data().payPalEmail,
-                                    amount : Number(amt.toFixed(2))
+                                    amount : Number(amt.toFixed(2)),
+                                    authId : authId
                                 };
 
-                                $.ajax({
-                                    url: serverBaseUrl + "/pg/payout",
-                                    type: "POST",
-                                    contentType: 'application/json',
-                                    data: JSON.stringify(payoutData),
-                                    success: function (s) {
-                                        console.log("ok to udt checkout if email = ",JSON.stringify(s));
-                                        updateCheckOutStatus(req);
-                                    },
-                                    error: function (e) {
-                                        console.log("er to udt checkout if email = ",JSON.stringify(e));
-                                        updateCheckOutStatus(req);
-                                    }
+                                db.collection("userInfoList").doc(cusUid).update({
+                                    authId : authId
+                                }).then(function(s) {
+
+                                    $.ajax({
+                                        url: serverBaseUrl + "/pg/payout",
+                                        type: "POST",
+                                        contentType: 'application/json',
+                                        data: JSON.stringify(payoutData),
+                                        success: function (s) {
+                                            console.log("ok to udt checkout if email = ",JSON.stringify(s));
+                                            updateCheckOutStatus(plan);
+                                        },
+                                        error: function (e) {
+                                            console.log("er to udt checkout if email = ",JSON.stringify(e));
+                                            updateCheckOutStatus(plan);
+                                        }
+                                    });
+
+                                }).catch(function(e) {
+                                    $('#myAlert').hide();
+                                    console.log(e);
+                                    showAlert({
+                                        msg: "Some thing went wrong!",
+                                        bodyIcon: 'fa fa-times-circle',
+                                        ntsTaBtn: false,
+                                        ntsCnfBtn: false,
+                                        alertHeading: 'Error',
+                                    });
                                 });
 
                             }else {
@@ -253,10 +289,10 @@
                                     planId : planId
                                 }).then(function(s) {
                                     console.log("ok to send noti if not email = ",JSON.stringify(s));
-                                    updateCheckOutStatus(req);
+                                    updateCheckOutStatus(plan);
                                 }).catch(function(e) {
                                     console.log("er to send noti if not email = ",JSON.stringify(e));
-                                    updateCheckOutStatus(req);
+                                    updateCheckOutStatus(plan);
                                 });
 
                             }

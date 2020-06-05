@@ -23,6 +23,7 @@ import 'package:peopeo/fullPhoto.dart';
 import 'MyWebView.dart';
 
 class Chat extends StatefulWidget {
+
   final String peerId;
   final String peerAvatar;
   final String displayName;
@@ -148,7 +149,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
     print("Free min add with start date time = $fmAddWithStartDateTime");
     print("Riview and rating show date time = $reviewAndRatingShowDateTime");
 
-    // if free minute's[10] equal to
+    // if free minutes[10] equal to
     // total chat duration[10] or
     // total chat duration[5] less
     // then free minute's[10]
@@ -185,7 +186,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
         if (!isReviewAndRatingShowedUp && dateTimeNow.isAfter(endDateTime)) {
           print('Review and rating showed up!');
           isReviewAndRatingShowedUp = true;
-          print("review show 3");
+          print("review show 1");
           reviewAndRatingPopUp();
         }
 
@@ -715,7 +716,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                         "$displayName has ended the chat session.", 3);
                     isReviewAndRatingShowedUp = true;
                     controller.stop();
-                    print("review show 1");
+                    print("review show 3");
                     reviewAndRatingPopUp();
                   })
             ],
@@ -1223,7 +1224,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                 needToShowPaymentUi = false;
                 Navigator.of(context).pop();
                 controller.stop();
-                print("review show 6");
+                print("review show 4");
                 reviewAndRatingPopUp();
               },
             ),
@@ -1259,7 +1260,9 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
         "&plan-id=" +
         p.id.toString() +
         "&con-uid=" +
-        p.conUid;
+        p.conUid+
+        "&cus-uid=" +
+        p.cusUid;
 
     print("payment url = $url");
 
@@ -1475,7 +1478,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
           .document(idOfCusLeaveMsg)
           .updateData(<String, dynamic>{'isReviewAndRatingShowedUp': 1});
 
-      print("review show 4");
+      print("review show 6");
       reviewAndRatingPopUp();
       controller.stop();
       isReviewAndRatingShowedUp = true;

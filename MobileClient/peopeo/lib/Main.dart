@@ -11,6 +11,7 @@ import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
+import 'package:peopeo/AuthManager.dart';
 import 'package:peopeo/ChattedUserViewer.dart';
 import 'package:peopeo/Const.dart';
 import 'package:peopeo/ConsultantProfile.dart';
@@ -146,7 +147,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     });
 
     updateOnlineStatus();
-    Timer.periodic(Duration(minutes: 1), (timer) {
+    Timer.periodic(Duration(minutes: 5), (timer) {
       updateOnlineStatus();
     });
 
@@ -163,6 +164,11 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         print('Data connection is available.');
       }
     });
+
+    AuthManager.init().then((val){
+      print("hello there = "+val);
+    });
+
   }
 
   @override
@@ -1223,7 +1229,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   void updateOnlineStatus() {
     if (isUserLoggedIn) {
       getTimeZone().then((tz) {
-        print("Last online update , timezone = $tz");
+        print("last online update , timezone = $tz");
         Firestore.instance
             .collection("userInfoList")
             .document(userInfo['uid'])

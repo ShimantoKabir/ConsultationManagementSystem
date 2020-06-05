@@ -210,7 +210,6 @@ class PlanInfoState extends State<PlanInfo> {
     }
     Response response =
         await post(url, headers: headers, body: json.encode(request));
-    print("response $response");
 
     if (response.statusCode == 200) {
       print(response.body);
@@ -286,8 +285,6 @@ class PlanInfoState extends State<PlanInfo> {
                           "This customer has free minute and it's gone, we recomandad him to create a new schedule!");
                 }
               }
-
-              // print("scheduleOk $scheduleOk");
 
               if (scheduleOk) {
                 Firestore.instance
@@ -519,7 +516,9 @@ class PlanInfoState extends State<PlanInfo> {
         "&plan-id=" +
         p.id.toString() +
         "&con-uid=" +
-        p.conUid;
+        p.conUid+
+        "&cus-uid=" +
+        p.cusUid;
 
     print("payment url = $url");
 

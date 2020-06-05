@@ -679,7 +679,7 @@ public class PlanDaoImp implements PlanDao {
                     + "(SELECT "
                     + "  CONVERT_TZ(start_time, 'UTC',time_zone) AS start_time, "
                     + "  CONVERT_TZ(end_time, 'UTC', time_zone) AS end_time, "
-                    + "  DATE_SUB(CONVERT_TZ(start_time,'UTC',time_zone), INTERVAL 28 MINUTE) AS st, "
+                    + "  DATE_SUB(CONVERT_TZ(start_time,'UTC',time_zone), INTERVAL 30 MINUTE) AS st, "
                     + "  IF(free_minutes_for_new_customer IS NULL,'no','yes') AS is_free_min_available, "
                     + "  IF(check_out_id IS NULL,'no','yes') AS is_payment_complete, "
                     + "  cus_uid, "
@@ -690,7 +690,7 @@ public class PlanDaoImp implements PlanDao {
                     + "FROM "
                     + "  plan) AS t "
                     + "WHERE t.is_accept_by_con IS TRUE AND t.st BETWEEN CONVERT_TZ(NOW(), 'UTC',t.time_zone) "
-                    + "  AND DATE_ADD(CONVERT_TZ(NOW(), 'UTC', t.time_zone), INTERVAL 1 MINUTE)";
+                    + "  AND DATE_ADD(CONVERT_TZ(NOW(), 'UTC', t.time_zone), INTERVAL 5 MINUTE)";
 
             // System.out.println(getClass().getName()+".remindToUser: chat cancel sql = "+chatCancelSql);
 
@@ -751,7 +751,7 @@ public class PlanDaoImp implements PlanDao {
                     + "(SELECT "
                     + "  CONVERT_TZ(start_time, 'UTC',time_zone ) AS start_time, "
                     + "  CONVERT_TZ(end_time, 'UTC', time_zone) AS end_time, "
-                    + "  DATE_SUB(CONVERT_TZ(start_time,'UTC',time_zone), INTERVAL 28 MINUTE) AS st, "
+                    + "  DATE_SUB(CONVERT_TZ(start_time,'UTC',time_zone), INTERVAL 60 MINUTE) AS st, "
                     + "  IF(free_minutes_for_new_customer IS NULL,'no','yes') AS is_free_min_available, "
                     + "  IF(check_out_id IS NULL,'no','yes') AS is_payment_complete, "
                     + "  cus_uid, "
@@ -762,7 +762,7 @@ public class PlanDaoImp implements PlanDao {
                     + "FROM "
                     + "  plan) AS t "
                     + "WHERE t.is_accept_by_con IS TRUE AND t.st BETWEEN CONVERT_TZ(NOW(), 'UTC', t.time_zone) "
-                    + "  AND DATE_ADD(CONVERT_TZ(NOW(), 'UTC',t.time_zone), INTERVAL 1 MINUTE)";
+                    + "  AND DATE_ADD(CONVERT_TZ(NOW(), 'UTC',t.time_zone), INTERVAL 5 MINUTE)";
 
             // System.out.println(getClass().getName()+".remindToUser: reminder sql = "+reminderSql);
 
@@ -902,7 +902,7 @@ public class PlanDaoImp implements PlanDao {
                 long duration  = curDate.getTime() - lastOnlineAt.getTime();
                 long diffInMinutes = TimeUnit.MILLISECONDS.toMinutes(duration);
 
-                if(diffInMinutes > 2){
+                if(diffInMinutes > 5){
                     DocumentReference dr = cr.document(document.getId());
                     dr.update("isOnline",false);
                 }

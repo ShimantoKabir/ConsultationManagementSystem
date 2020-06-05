@@ -7,6 +7,7 @@ import com.dannygroupllc.ConsultantWebService.models.Plan;
 import com.dannygroupllc.ConsultantWebService.pojos.Notification;
 import com.dannygroupllc.ConsultantWebService.pojos.Response;
 import com.google.gson.Gson;
+import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
@@ -127,7 +128,7 @@ public class CalendarDaoImp implements CalendarDao {
                 } else {
 
                     // COMMENT OUT BEFORE APP GOES LIVE
-                    // curDateTime = DateUtils.addHours(curDateTime,1);
+                    curDateTime = DateUtils.addHours(curDateTime,1);
 
                     if (curDateTime.before(startDateTime)) {
 
