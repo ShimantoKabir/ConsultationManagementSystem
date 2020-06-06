@@ -112,6 +112,8 @@
             
             var authId = 'auth_id_' + (new Date()).getTime();
 
+            console.log("update checkout auth id = "+authId);
+
             db.collection("userInfoList").doc(cusUid).update({
                 authId : authId
             }).then(function(s) {
@@ -243,6 +245,8 @@
                                     amount : Number(amt.toFixed(2)),
                                     authId : authId
                                 };
+
+                                console.log("payout auth id = "+authId);
 
                                 db.collection("userInfoList").doc(cusUid).update({
                                     authId : authId

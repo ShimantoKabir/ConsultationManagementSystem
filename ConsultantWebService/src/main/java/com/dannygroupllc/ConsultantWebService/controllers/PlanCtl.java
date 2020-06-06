@@ -1,5 +1,6 @@
 package com.dannygroupllc.ConsultantWebService.controllers;
 
+import com.dannygroupllc.ConsultantWebService.Utility.AuthManager;
 import com.dannygroupllc.ConsultantWebService.models.Plan;
 import com.dannygroupllc.ConsultantWebService.pojos.Request;
 import com.dannygroupllc.ConsultantWebService.pojos.Response;
@@ -18,11 +19,13 @@ public class PlanCtl {
 
     public PlanService planService;
     public Gson gson;
+    public AuthManager authManager;
 
     @Autowired
     public PlanCtl(PlanService planService) {
         this.planService = planService;
         this.gson = new Gson();
+        this.authManager = new AuthManager();
     }
 
     @PostMapping("/delete")

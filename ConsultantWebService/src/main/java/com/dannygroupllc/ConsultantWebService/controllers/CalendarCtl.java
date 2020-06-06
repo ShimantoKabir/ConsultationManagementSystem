@@ -1,5 +1,6 @@
 package com.dannygroupllc.ConsultantWebService.controllers;
 
+import com.dannygroupllc.ConsultantWebService.Utility.AuthManager;
 import com.dannygroupllc.ConsultantWebService.models.Calendar;
 import com.dannygroupllc.ConsultantWebService.pojos.Request;
 import com.dannygroupllc.ConsultantWebService.pojos.Response;
@@ -18,11 +19,13 @@ public class CalendarCtl {
 
     public CalendarService calendarService;
     public Gson gson;
+    public AuthManager authManager;
 
     @Autowired
     public CalendarCtl(CalendarService calendarService) {
         this.calendarService = calendarService;
         this.gson = new Gson();
+        authManager = new AuthManager();
     }
 
     @PostMapping("/create-event")
@@ -30,6 +33,8 @@ public class CalendarCtl {
 
         Response response = new Response();
 
+        Integer authRes = authManager.check(request);
+        System.out.println(getClass().getName()+":createEvent: auth res = "+authRes);
         Calendar calendar = calendarService.createEvent(httpServletRequest,request.getCalendar());
 
         response.setMsg(calendar.getMsg());

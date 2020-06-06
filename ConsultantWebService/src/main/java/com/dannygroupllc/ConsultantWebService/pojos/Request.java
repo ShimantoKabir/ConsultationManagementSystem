@@ -18,8 +18,26 @@ public class Request {
     public String email;
     public String amount;
     public Integer planId;
+    public String authId;
+    public String uid;
 
     public Request() {}
+
+    public String getAuthId() {
+        return authId;
+    }
+
+    public void setAuthId(String authId) {
+        this.authId = authId;
+    }
+
+    public String getUid() {
+        return uid;
+    }
+
+    public void setUid(String uid) {
+        this.uid = uid;
+    }
 
     public Integer getPlanId() {
         return planId;

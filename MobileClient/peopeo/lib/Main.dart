@@ -165,10 +165,6 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       }
     });
 
-    AuthManager.init().then((val){
-      print("hello there = "+val);
-    });
-
   }
 
   @override

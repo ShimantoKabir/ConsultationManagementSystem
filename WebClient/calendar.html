@@ -90,6 +90,8 @@
                     authId : authId
                 };
 
+                console.log("auth id event delete = "+authId);
+
                 db.collection("userInfoList").doc(uid).update({
                     authId : authId
                 }).then(function(s) {
@@ -249,223 +251,123 @@
 
             if (isUrlOk) {
 
-                // $.ajax({
-                //     url: serverBaseUrl+"/calendar/get-schedule",
-                //     type: "POST",
-                //     contentType: 'application/json',
-                //     data: JSON.stringify({
-                //         calendar: {
-                //             conUid: conId
-                //         }
-                //     }),
-                //     success: function (s) {
-
-                //         if (s.code === 404) {
-
-                //             showAlert({
-                //                 msg: s.msg,
-                //                 bodyIcon: 'fa fa-times-circle',
-                //                 ntsTaBtn: false,
-                //                 ntsCnfBtn: false,
-                //                 ntsActBtn : false,
-                //                 alertHeading: 'Alert',
-                //             });
-
-                //             showCalender();
-
-                //         } else {
-
-                //             console.log(JSON.stringify(s));
-
-                //             for (let i = 0; i < s.planList.length; i++) {
-
-                //                 var docRef = db.collection("userInfoList").doc(s.planList[i].uid);
-                //                 docRef.get().then(function(doc) {
-
-                //                     let color = '';
-
-                //                     if(s.planList[i].id !== 0){
-                //                         color = s.planList[i].cusUid == null ? 
-                //                         "blue" : s.planList[i].isAcceptByCon ? "green" : "red";
-                //                     }
- 
-                //                     let title = null;
-                //                     if(s.planList[i].id == 0){
-                //                         title = "--";
-                //                     }else {
-
-                //                         if(s.planList[i].cusUid == null){
-                //                             title = "Expert name "+doc.data().displayName+". Topic "+s.planList[i].
-                //                             topic+".";
-                //                         }else {
-                //                             title = "Customer name "+doc.data().displayName+". Topic "+s.planList[i].topic+".";
-                //                         }
-
-                //                     }
-
-                //                     events.push({
-                //                         id: s.planList[i].id,
-                //                         title: title,
-                //                         start: s.planList[i].fStartTime,
-                //                         end: s.planList[i].fEndTime,
-                //                         color: color,
-                //                         isAcceptByCon: s.planList[i].isAcceptByCon,
-                //                         paymentTransId: s.planList[i].paymentTransId == null ? null : s.planList[i]
-                //                             .paymentTransId,
-                //                         freeMinutesForNewCustomer: s.planList[i].freeMinutesForNewCustomer == null ? 0 :
-                //                             s.planList[i].freeMinutesForNewCustomer,
-                //                         hourlyRate: s.planList[i].hourlyRate,
-                //                         cusUid: s.planList[i].cusUid == null ? null : s.planList[i].cusUid,
-                //                         conUid: s.planList[i].conUid == null ? null : s.planList[i].conUid,
-                //                         hourDiff: s.planList[i].hourDiff,
-                //                         minuteDiff: s.planList[i].minuteDiff,
-                //                         pos : i
-                //                     })
-
-                //                     if(i == s.planList.length-1){
-                //                         $('#myAlert').hide();
-                //                         showCalender();
-                //                     }
-
-                //                 });
-
-                //             }
-
-                //         }
-
-                //     },
-                //     error: function (e) {
-
-                //         showAlert({
-                //             msg: "Some thing went wrong!",
-                //             bodyIcon: 'fa fa-times-circle',
-                //             ntsTaBtn: false,
-                //             ntsCnfBtn: false,
-                //             ntsActBtn : false,
-                //             alertHeading: 'Error',
-                //         });
-
-                //     }
-                // })
-
                 var authId = 'auth_id_' + (new Date()).getTime();
-                console.log(authId);
+                console.log("calendar init = "+authId);
                 db.collection("userInfoList").doc(uid).update({
                     authId : authId
-                });
-                // .then(function(s) {
+                }).then(function(s) {
                     
-                //     // $.ajax({
-                //     //     url: serverBaseUrl+"/calendar/get-schedule",
-                //     //     type: "POST",
-                //     //     contentType: 'application/json',
-                //     //     data: JSON.stringify({
-                //     //         calendar: {
-                //     //             conUid: conId
-                //     //         },
-                //     //         authId : authId
-                //     //     }),
-                //     //     success: function (s) {
+                    $.ajax({
+                        url: serverBaseUrl+"/calendar/get-schedule",
+                        type: "POST",
+                        contentType: 'application/json',
+                        data: JSON.stringify({
+                            calendar: {
+                                conUid: conId
+                            },
+                            authId : authId
+                        }),
+                        success: function (s) {
 
-                //     //         if (s.code === 404) {
+                            if (s.code === 404) {
 
-                //     //             showAlert({
-                //     //                 msg: s.msg,
-                //     //                 bodyIcon: 'fa fa-times-circle',
-                //     //                 ntsTaBtn: false,
-                //     //                 ntsCnfBtn: false,
-                //     //                 ntsActBtn : false,
-                //     //                 alertHeading: 'Alert',
-                //     //             });
+                                showAlert({
+                                    msg: s.msg,
+                                    bodyIcon: 'fa fa-times-circle',
+                                    ntsTaBtn: false,
+                                    ntsCnfBtn: false,
+                                    ntsActBtn : false,
+                                    alertHeading: 'Alert',
+                                });
 
-                //     //             showCalender();
+                                showCalender();
 
-                //     //         } else {
+                            } else {
 
-                //     //             console.log(JSON.stringify(s));
+                                console.log(JSON.stringify(s));
 
-                //     //             for (let i = 0; i < s.planList.length; i++) {
+                                for (let i = 0; i < s.planList.length; i++) {
 
-                //     //                 var docRef = db.collection("userInfoList").doc(s.planList[i].uid);
-                //     //                 docRef.get().then(function(doc) {
+                                    var docRef = db.collection("userInfoList").doc(s.planList[i].uid);
+                                    docRef.get().then(function(doc) {
 
-                //     //                     let color = '';
+                                        let color = '';
 
-                //     //                     if(s.planList[i].id !== 0){
-                //     //                         color = s.planList[i].cusUid == null ? 
-                //     //                         "blue" : s.planList[i].isAcceptByCon ? "green" : "red";
-                //     //                     }
+                                        if(s.planList[i].id !== 0){
+                                            color = s.planList[i].cusUid == null ? 
+                                            "blue" : s.planList[i].isAcceptByCon ? "green" : "red";
+                                        }
      
-                //     //                     let title = null;
-                //     //                     if(s.planList[i].id == 0){
-                //     //                         title = "--";
-                //     //                     }else {
+                                        let title = null;
+                                        if(s.planList[i].id == 0){
+                                            title = "--";
+                                        }else {
 
-                //     //                         if(s.planList[i].cusUid == null){
-                //     //                             title = "Expert name "+doc.data().displayName+". Topic "+s.planList[i].
-                //     //                             topic+".";
-                //     //                         }else {
-                //     //                             title = "Customer name "+doc.data().displayName+". Topic "+s.planList[i].topic+".";
-                //     //                         }
+                                            if(s.planList[i].cusUid == null){
+                                                title = "Expert name "+doc.data().displayName+". Topic "+s.planList[i].
+                                                topic+".";
+                                            }else {
+                                                title = "Customer name "+doc.data().displayName+". Topic "+s.planList[i].topic+".";
+                                            }
 
-                //     //                     }
+                                        }
 
-                //     //                     events.push({
-                //     //                         id: s.planList[i].id,
-                //     //                         title: title,
-                //     //                         start: s.planList[i].fStartTime,
-                //     //                         end: s.planList[i].fEndTime,
-                //     //                         color: color,
-                //     //                         isAcceptByCon: s.planList[i].isAcceptByCon,
-                //     //                         paymentTransId: s.planList[i].paymentTransId == null ? null : s.planList[i]
-                //     //                             .paymentTransId,
-                //     //                         freeMinutesForNewCustomer: s.planList[i].freeMinutesForNewCustomer == null ? 0 :
-                //     //                             s.planList[i].freeMinutesForNewCustomer,
-                //     //                         hourlyRate: s.planList[i].hourlyRate,
-                //     //                         cusUid: s.planList[i].cusUid == null ? null : s.planList[i].cusUid,
-                //     //                         conUid: s.planList[i].conUid == null ? null : s.planList[i].conUid,
-                //     //                         hourDiff: s.planList[i].hourDiff,
-                //     //                         minuteDiff: s.planList[i].minuteDiff,
-                //     //                         pos : i
-                //     //                     })
+                                        events.push({
+                                            id: s.planList[i].id,
+                                            title: title,
+                                            start: s.planList[i].fStartTime,
+                                            end: s.planList[i].fEndTime,
+                                            color: color,
+                                            isAcceptByCon: s.planList[i].isAcceptByCon,
+                                            paymentTransId: s.planList[i].paymentTransId == null ? null : s.planList[i]
+                                                .paymentTransId,
+                                            freeMinutesForNewCustomer: s.planList[i].freeMinutesForNewCustomer == null ? 0 :
+                                                s.planList[i].freeMinutesForNewCustomer,
+                                            hourlyRate: s.planList[i].hourlyRate,
+                                            cusUid: s.planList[i].cusUid == null ? null : s.planList[i].cusUid,
+                                            conUid: s.planList[i].conUid == null ? null : s.planList[i].conUid,
+                                            hourDiff: s.planList[i].hourDiff,
+                                            minuteDiff: s.planList[i].minuteDiff,
+                                            pos : i
+                                        })
 
-                //     //                     if(i == s.planList.length-1){
-                //     //                         $('#myAlert').hide();
-                //     //                         showCalender();
-                //     //                     }
+                                        if(i == s.planList.length-1){
+                                            $('#myAlert').hide();
+                                            showCalender();
+                                        }
 
-                //     //                 });
+                                    });
 
-                //     //             }
+                                }
 
-                //     //         }
+                            }
 
-                //     //     },
-                //     //     error: function (e) {
+                        },
+                        error: function (e) {
 
-                //     //         showAlert({
-                //     //             msg: "Some thing went wrong!",
-                //     //             bodyIcon: 'fa fa-times-circle',
-                //     //             ntsTaBtn: false,
-                //     //             ntsCnfBtn: false,
-                //     //             ntsActBtn : false,
-                //     //             alertHeading: 'Error',
-                //     //         });
+                            showAlert({
+                                msg: "Some thing went wrong!",
+                                bodyIcon: 'fa fa-times-circle',
+                                ntsTaBtn: false,
+                                ntsCnfBtn: false,
+                                ntsActBtn : false,
+                                alertHeading: 'Error',
+                            });
 
-                //     //     }
-                //     // })
+                        }
+                    })
 
-                // }).catch(function(e) {
-                //     console.log(e);
-                //     showAlert({
-                //         msg: "Some thing went wrong!",
-                //         bodyIcon: 'fa fa-times-circle',
-                //         ntsTaBtn: false,
-                //         ntsCnfBtn: false,
-                //         ntsActBtn : false,
-                //         alertHeading: 'Error',
-                //     });
-                // });
+                }).catch(function(e) {
+                    console.log(e);
+                    showAlert({
+                        msg: "Some thing went wrong!",
+                        bodyIcon: 'fa fa-times-circle',
+                        ntsTaBtn: false,
+                        ntsCnfBtn: false,
+                        ntsActBtn : false,
+                        alertHeading: 'Error',
+                    });
+                });
 
             } else {
 
@@ -580,6 +482,7 @@
                                     let d = new Date();
                                     let currentDateTime = formatDate(d);
                                     var authId = 'auth_id_' + (new Date()).getTime();
+                                    console.log("auth id event book = "+authId);
 
                                     let planData = {
                                         calendar: {
@@ -822,6 +725,8 @@
                                 },
                                 authId : authId
                             };
+
+                            console.log("auth id event accept = "+authId);
 
                             db.collection("userInfoList").doc(uid).update({
                                 authId : authId
