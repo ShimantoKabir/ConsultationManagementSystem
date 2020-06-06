@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/calendar")
@@ -32,9 +33,9 @@ public class CalendarCtl {
     public Response createEvent(@RequestBody Request request, HttpServletRequest httpServletRequest){
 
         Response response = new Response();
-
+        System.out.println(getClass().getName()+":createEvent: request = "+request);
         Integer authRes = authManager.check(request);
-        System.out.println(getClass().getName()+":createEvent: auth res = "+authRes);
+
         if(authRes == 200){
             Calendar calendar = calendarService.createEvent(httpServletRequest,request.getCalendar());
             response.setMsg(calendar.getMsg());
@@ -52,13 +53,26 @@ public class CalendarCtl {
     public Response getSchedule(@RequestBody Request request, HttpServletRequest httpServletRequest){
 
         Response response = new Response();
+        System.out.println(getClass().getName()+".getSchedule: request ="+gson.toJson(request));
 
-        Calendar calendar = calendarService.getSchedule(httpServletRequest,request.getCalendar());
+        Integer authRes = authManager.check(request);
 
-        System.out.println(getClass().getName()+".getSchedule: plan list ="+gson.toJson(calendar));
-        response.setMsg(calendar.getMsg());
-        response.setCode(calendar.getCode());
-        response.setPlanList(calendar.getPlanList());
+        if (authRes == 200){
+
+            Calendar calendar = calendarService.getSchedule(httpServletRequest,request.getCalendar());
+            System.out.println(getClass().getName()+".getSchedule: plan list ="+gson.toJson(calendar));
+            response.setMsg(calendar.getMsg());
+            response.setCode(calendar.getCode());
+            response.setPlanList(calendar.getPlanList());
+
+        }else {
+
+            response.setMsg("Authentication failed!");
+            response.setCode(404);
+            response.setPlanList(new ArrayList<>());
+
+        }
+
 
         return response;
 

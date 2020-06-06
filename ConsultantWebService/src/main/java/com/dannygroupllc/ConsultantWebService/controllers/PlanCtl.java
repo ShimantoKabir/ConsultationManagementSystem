@@ -32,10 +32,16 @@ public class PlanCtl {
     public Response delete(@RequestBody Request request, HttpServletRequest httpServletRequest){
 
         Response response = new Response();
+        Integer authRes = authManager.check(request);
 
-        Plan plan = planService.delete(httpServletRequest,request.getPlan());
-        response.setMsg(plan.getMsg());
-        response.setCode(plan.getCode());
+        if(authRes == 200){
+            Plan plan = planService.delete(httpServletRequest,request.getPlan());
+            response.setMsg(plan.getMsg());
+            response.setCode(plan.getCode());
+        }else {
+            response.setMsg("Authentication failed!");
+            response.setCode(404);
+        }
 
         return response;
 
@@ -45,10 +51,18 @@ public class PlanCtl {
     public Response changeAcceptStatus(@RequestBody Request request, HttpServletRequest httpServletRequest){
 
         Response response = new Response();
+        Integer authRes = authManager.check(request);
 
-        Plan plan = planService.changeAcceptStatus(httpServletRequest,request.getPlan());
-        response.setMsg(plan.getMsg());
-        response.setCode(plan.getCode());
+        if(authRes == 200){
+
+            Plan plan = planService.changeAcceptStatus(httpServletRequest,request.getPlan());
+            response.setMsg(plan.getMsg());
+            response.setCode(plan.getCode());
+
+        }else {
+            response.setMsg("Authentication failed!");
+            response.setCode(404);
+        }
 
         return response;
 
@@ -58,12 +72,21 @@ public class PlanCtl {
     public Response saveReviewAndRating(@RequestBody Request request, HttpServletRequest httpServletRequest){
 
         Response response = new Response();
+        Integer authRes = authManager.check(request);
 
-        System.out.println(getClass().getName()+".saveReviewAndRatingCtl plan = "+gson.toJson(request.getPlan()));
+        if(authRes == 200){
 
-        Plan plan = planService.saveReviewAndRating(httpServletRequest,request.getPlan());
-        response.setMsg(plan.getMsg());
-        response.setCode(plan.getCode());
+            System.out.println(getClass().getName()+".saveReviewAndRatingCtl plan = "+gson.toJson(request.getPlan()));
+
+            Plan plan = planService.saveReviewAndRating(httpServletRequest,request.getPlan());
+            response.setMsg(plan.getMsg());
+            response.setCode(plan.getCode());
+
+        }else {
+            response.setMsg("Authentication failed!");
+            response.setCode(404);
+
+        }
 
         return response;
 
@@ -73,20 +96,29 @@ public class PlanCtl {
     public Response getAllPlanByUser(@RequestBody Request request, HttpServletRequest httpServletRequest){
 
         Response response = new Response();
+        Integer authRes = authManager.check(request);
 
-        List<Plan> planList = planService.getAllPlanByUser(httpServletRequest,request.getPlan());
+        if(authRes == 200){
 
-        if (planList.size()>0){
+            List<Plan> planList = planService.getAllPlanByUser(httpServletRequest,request.getPlan());
 
-            response.setMsg("Found plan list!");
-            response.setCode(200);
-            response.setPlanList(planList);
+            if (planList.size()>0){
+
+                response.setMsg("Found plan list!");
+                response.setCode(200);
+                response.setPlanList(planList);
+
+            }else {
+
+                response.setMsg("No plan list found!");
+                response.setCode(404);
+                response.setPlanList(new ArrayList<>());
+
+            }
 
         }else {
-
-            response.setMsg("No plan list found!");
+            response.setMsg("Authentication failed!");
             response.setCode(404);
-
         }
 
         return response;
@@ -97,20 +129,29 @@ public class PlanCtl {
     public Response getReviewAndRating(@RequestBody Request request, HttpServletRequest httpServletRequest){
 
         Response response = new Response();
+        Integer authRes = authManager.check(request);
 
-        List<Plan> planList = planService.getReviewAndRating(httpServletRequest,request.getPlan());
+        if(authRes == 200){
 
-        if (planList.size()>0){
+            List<Plan> planList = planService.getReviewAndRating(httpServletRequest,request.getPlan());
 
-            response.setMsg("Review and rating found!");
-            response.setCode(200);
-            response.setPlanList(planList);
+            if (planList.size()>0){
+
+                response.setMsg("Review and rating found!");
+                response.setCode(200);
+                response.setPlanList(planList);
+
+            }else {
+
+                response.setMsg("No review and rating found!");
+                response.setCode(404);
+                response.setPlanList(new ArrayList<>());
+
+            }
 
         }else {
-
-            response.setMsg("No review and rating found!");
+            response.setMsg("Authentication failed!");
             response.setCode(404);
-
         }
 
         return response;
@@ -121,10 +162,18 @@ public class PlanCtl {
     public Response changeAreCusConHaveChattedStatus(@RequestBody Request request, HttpServletRequest httpServletRequest){
 
         Response response = new Response();
+        Integer authRes = authManager.check(request);
 
-        Plan plan = planService.changeAreCusConHaveChattedStatus(httpServletRequest,request.getPlan());
-        response.setMsg(plan.getMsg());
-        response.setCode(plan.getCode());
+        if(authRes == 200){
+
+            Plan plan = planService.changeAreCusConHaveChattedStatus(httpServletRequest,request.getPlan());
+            response.setMsg(plan.getMsg());
+            response.setCode(plan.getCode());
+
+        }else {
+            response.setMsg("Authentication failed!");
+            response.setCode(404);
+        }
 
         return response;
 
@@ -134,11 +183,19 @@ public class PlanCtl {
     public Response checkPaymentStatus(@RequestBody Request request, HttpServletRequest httpServletRequest){
 
         Response response = new Response();
+        Integer authRes = authManager.check(request);
 
-        Plan plan = planService.checkPaymentStatus(request.getPlan());
-        response.setMsg(plan.getMsg());
-        response.setCode(plan.getCode());
-        response.setPlanList(new ArrayList<>());
+        if(authRes == 200){
+
+            Plan plan = planService.checkPaymentStatus(request.getPlan());
+            response.setMsg(plan.getMsg());
+            response.setCode(plan.getCode());
+
+        }else {
+            response.setMsg("Authentication failed!");
+            response.setCode(404);
+        }
+
 
         return response;
 
@@ -148,10 +205,17 @@ public class PlanCtl {
     public Response updateCheckOutStatus(@RequestBody Request request, HttpServletRequest httpServletRequest){
 
         Response response = new Response();
+        Integer authRes = authManager.check(request);
 
-        Plan plan = planService.updateCheckOutStatus(request.getPlan());
-        response.setMsg(plan.getMsg());
-        response.setCode(plan.getCode());
+        if(authRes == 200){
+            Plan plan = planService.updateCheckOutStatus(request.getPlan());
+            response.setMsg(plan.getMsg());
+            response.setCode(plan.getCode());
+        }else {
+            response.setMsg("Authentication failed!");
+            response.setCode(404);
+        }
+
         return response;
 
     }
