@@ -124,7 +124,8 @@
                     contentType: 'application/json',
                     data: JSON.stringify({
                         plan : checkOutData,
-                        authId : authId
+                        authId : authId,
+                        uid : cusUid
                     }),
                     success: function (s) {
                         console.log("success to update checkout = ",JSON.stringify(s));
@@ -229,7 +230,7 @@
 
                     if (details.status == "COMPLETED") {
 
-                        var docRef = db.collection("userInfoList").doc(conUid);
+                        var docRef = db.collection("userInfoList").doc(cusUid);
                         docRef.get().then(function(doc) {
 
                             var d = new Date();
@@ -243,7 +244,8 @@
                                     planId : planId,
                                     email : doc.data().payPalEmail,
                                     amount : Number(amt.toFixed(2)),
-                                    authId : authId
+                                    authId : authId,
+                                    uid : cusUid
                                 };
 
                                 console.log("payout auth id = "+authId);

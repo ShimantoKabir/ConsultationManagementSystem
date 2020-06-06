@@ -35,10 +35,14 @@ public class CalendarCtl {
 
         Integer authRes = authManager.check(request);
         System.out.println(getClass().getName()+":createEvent: auth res = "+authRes);
-        Calendar calendar = calendarService.createEvent(httpServletRequest,request.getCalendar());
-
-        response.setMsg(calendar.getMsg());
-        response.setCode(calendar.getCode());
+        if(authRes == 200){
+            Calendar calendar = calendarService.createEvent(httpServletRequest,request.getCalendar());
+            response.setMsg(calendar.getMsg());
+            response.setCode(calendar.getCode());
+        }else {
+            response.setMsg("Authentication failed!");
+            response.setCode(404);
+        }
 
         return response;
 

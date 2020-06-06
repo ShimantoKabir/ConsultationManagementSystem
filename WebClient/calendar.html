@@ -87,7 +87,8 @@
                     plan: {
                         id: event.id
                     },
-                    authId : authId
+                    authId : authId,
+                    uid : uid
                 };
 
                 console.log("auth id event delete = "+authId);
@@ -265,7 +266,8 @@
                             calendar: {
                                 conUid: conId
                             },
-                            authId : authId
+                            authId : authId,
+                            uid : uid
                         }),
                         success: function (s) {
 
@@ -505,7 +507,8 @@
                                                 createdDate : d
                                             }
                                         },
-                                        authId : authId
+                                        authId : authId,
+                            			uid : uid
                                     };
 
                                     db.collection("userInfoList").doc(uid).update({
@@ -723,7 +726,8 @@
                                 plan: {
                                     id: event.id
                                 },
-                                authId : authId
+                                authId : authId,
+                            	uid : uid
                             };
 
                             console.log("auth id event accept = "+authId);
