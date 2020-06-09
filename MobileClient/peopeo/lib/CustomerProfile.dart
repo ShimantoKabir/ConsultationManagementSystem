@@ -1,43 +1,46 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity/connectivity.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:peopeo/EditProfile.dart';
-import 'package:peopeo/HttpResponse.dart';
-import 'package:peopeo/LoginPage.dart';
-import 'package:peopeo/MySharedPreferences.dart';
-import 'package:peopeo/Plan.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:http/http.dart';
+import 'package:peopeo/AuthManager.dart';
 import 'package:peopeo/Const.dart';
+import 'package:peopeo/EditProfile.dart';
 import 'package:peopeo/FullPhoto.dart';
+import 'package:peopeo/HttpResponse.dart';
+import 'package:peopeo/LoginPage.dart';
+import 'package:peopeo/MySharedPreferences.dart';
+import 'package:peopeo/Plan.dart';
 import 'package:peopeo/SocialSignIn.dart';
 import 'package:peopeo/VideoPlayerScreen.dart';
 
 class CustomerProfile extends StatefulWidget {
   final String uid;
+  final List<Plan> reviewAndRatingList;
 
-  CustomerProfile({Key key, @required this.uid}) : super(key: key);
+  CustomerProfile({Key key, @required this.uid,this.reviewAndRatingList}) : super(key: key);
 
   @override
-  CustomerProfileState createState() => new CustomerProfileState(uid: uid);
+  CustomerProfileState createState() => new CustomerProfileState(uid: uid,reviewAndRatingList : reviewAndRatingList);
 }
 
 class CustomerProfileState extends State<CustomerProfile>
     with TickerProviderStateMixin {
+
   String uid;
+  List<Plan> reviewAndRatingList;
   bool needToShowEditButton = false;
   bool isInternetAvailable = true;
   StreamSubscription<ConnectivityResult> connectivitySubscription;
 
-  CustomerProfileState({Key key, @required this.uid});
+  CustomerProfileState({Key key, @required this.uid, @required this.reviewAndRatingList});
 
   List<Tab> tabList = List();
   TabController tabController;
@@ -168,6 +171,10 @@ class CustomerProfileState extends State<CustomerProfile>
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.hasData) {
+
+                  print("profile photo url = ${snapshot
+                      .data.documents[0]['photoUrl']}");
+
                   return ListView(
                     children: <Widget>[
                       Column(
@@ -183,16 +190,29 @@ class CustomerProfileState extends State<CustomerProfile>
                             padding: const EdgeInsets.all(5.0),
                             child: Row(
                               children: <Widget>[
-                                Container(
-                                  height: 100.0,
-                                  width: 100.0,
-                                  decoration: new BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    image: new DecorationImage(
-                                        fit: BoxFit.fill,
-                                        image: new CachedNetworkImageProvider(snapshot
-                                            .data.documents[0]['photoUrl'])),
+                                InkWell(
+                                  child: Container(
+                                    height: 100.0,
+                                    width: 100.0,
+                                    decoration: new BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        image: new DecorationImage(
+                                            fit: BoxFit.fill,
+                                            image: new CachedNetworkImageProvider(snapshot
+                                                .data.documents[0]['photoUrl']))
+                                    ),
                                   ),
+                                  onTap: (){
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (context) {
+                                          return FullPhoto(
+                                              url: snapshot.data.documents[0]
+                                              ['photoUrl']);
+                                        },
+                                      ),
+                                    );
+                                  },
                                 ),
                                 Expanded(
                                   child: Column(
@@ -316,49 +336,7 @@ class CustomerProfileState extends State<CustomerProfile>
                                 children: <Widget>[
                                   showPictureInGridView('im'),
                                   showPictureInGridView('vd'),
-                                  isInternetAvailable ?
-                                  FutureBuilder(
-                                    future: Firestore.instance
-                                        .collection('userInfoList')
-                                        .document(uid)
-                                        .get(),
-                                    builder: (BuildContext context,
-                                        AsyncSnapshot<DocumentSnapshot>
-                                            snapshot) {
-                                      if (snapshot.hasData) {
-                                        return showReviewAndRating(
-                                            snapshot.data);
-                                      } else {
-                                        return Wrap(
-                                          children: <Widget>[
-                                            Padding(
-                                              padding: EdgeInsets.all(15.0),
-                                              child: Center(
-                                                child: Text(
-                                                    "No review and rating available!"),
-                                              ),
-                                            )
-                                          ],
-                                        );
-                                      }
-                                    },
-                                  ) : Wrap(
-                                    children: <Widget>[
-                                      Padding(
-                                        padding: EdgeInsets.all(15.0),
-                                        child: Center(
-                                          child: Text(
-                                              "[No internet connection available]",
-                                              style: TextStyle(
-                                                fontSize: 15.0,
-                                                color: Colors.red,
-                                                fontWeight: FontWeight.bold,
-                                                fontFamily: 'Armata',
-                                              )),
-                                        ),
-                                      )
-                                    ],
-                                  )
+                                  showReviewAndRating(context)
                                 ],
                               ),
                             )
@@ -560,79 +538,41 @@ class CustomerProfileState extends State<CustomerProfile>
         ));
   }
 
-  Future<List<Plan>> getPlanList(snapshot) async {
-    String url = serverBaseUrl + '/plan/get-review-and-rating';
-    Map<String, String> headers = {"Content-type": "application/json"};
+  showReviewAndRating(BuildContext context) {
 
-    var request = {
-      'plan': {'cusUid': snapshot['uid'], 'userType': snapshot['userType']}
-    };
+    if(reviewAndRatingList.length == 0){
 
-    Response response =
-        await post(url, headers: headers, body: json.encode(request));
+      return Wrap(
+        children: <Widget>[
+          Padding(
+            padding: EdgeInsets.all(15.0),
+            child: Center(
+              child: Text(
+                  "[No review and rating found]",
+                  style: TextStyle(
+                    fontSize: 15.0,
+                    color: Colors.red,
+                    fontWeight:
+                    FontWeight.bold,
+                    fontFamily: 'Armata',
+                  )),
+            ),
+          )
+        ],
+      );
 
-    print("review and rating = ${response.body}");
+    }else {
 
-    if (response.statusCode == 200) {
-      var body = json.decode(response.body);
-      if (body['code'] == 200) {
-        return HttpResponse.fromJson(body).planList;
-      } else {
-        return [];
-      }
-    } else {
-      Fluttertoast.showToast(msg: "Plan list getting error!");
-      return [];
+      return ListView.builder(
+        itemBuilder: (context, index) =>
+            buildItem(context, reviewAndRatingList[index]),
+        itemCount: reviewAndRatingList.length,
+      );
+
     }
   }
 
-  showReviewAndRating(DocumentSnapshot documentSnapshot) {
-    return FutureBuilder<List<Plan>>(
-      future: getPlanList(documentSnapshot),
-      builder: (context, snapshot) {
-        if (snapshot.hasData) {
-          if (snapshot.data.length > 0) {
-            return ListView.builder(
-              itemBuilder: (context, index) =>
-                  buildItem(context, snapshot.data[index], documentSnapshot),
-              itemCount: snapshot.data.length,
-            );
-          } else {
-            return Wrap(
-              children: <Widget>[
-                Padding(
-                  padding: EdgeInsets.all(15.0),
-                  child: Center(
-                      child: Text("[No review and rating found]",
-                          style: TextStyle(
-                            fontSize: 15.0,
-                            color: Colors.red,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'Armata',
-                          ))),
-                )
-              ],
-            );
-          }
-        } else {
-          return Wrap(
-            children: <Widget>[
-              Padding(
-                padding: EdgeInsets.all(15.0),
-                child: Center(
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
-                  ),
-                ),
-              )
-            ],
-          );
-        }
-      },
-    );
-  }
-
-  buildItem(BuildContext context, document, DocumentSnapshot documentSnapshot) {
+  buildItem(BuildContext context, document) {
     return Card(
       child: ListTile(
           title: RatingBarIndicator(

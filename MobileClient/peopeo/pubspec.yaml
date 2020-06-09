@@ -49,6 +49,8 @@ dependencies:
   data_connection_checker: ^0.3.4
   connectivity:
   chewie: ^0.9.10
+  flutter_phoenix: ^0.1.0
+  flutter_cache_manager: ^1.4.0
 
 dev_dependencies:
   flutter_test:

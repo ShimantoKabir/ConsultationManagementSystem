@@ -373,7 +373,7 @@ public class PlanDaoImp implements PlanDao {
             String planListSql;
 
             // consultant
-            if (p.getUserType() == 1) {
+            if (p.getUserType() == 2) {
 
                 planListSql = ""
                         + "SELECT "
@@ -382,9 +382,8 @@ public class PlanDaoImp implements PlanDao {
                         + "  DATE_FORMAT(p.end_time, '%Y-%m-%d %T') AS f_end_time "
                         + "FROM "
                         + "  plan AS p "
-                        + "WHERE cus_uid = :cusUid "
-                        + "  AND are_cus_con_have_chatted IS TRUE "
-                        + "  AND DATE(p.end_time) < NOW() ";
+                        + "WHERE con_uid = :conUid "
+                        + "  AND are_cus_con_have_chatted IS TRUE ";
 
                 // customer
             } else {
@@ -396,9 +395,8 @@ public class PlanDaoImp implements PlanDao {
                         + "  DATE_FORMAT(p.end_time, '%Y-%m-%d %T') AS f_end_time "
                         + "FROM "
                         + "  plan AS p "
-                        + "WHERE con_uid = :conUid "
-                        + "  AND are_cus_con_have_chatted IS TRUE "
-                        + "  AND DATE(p.end_time) < NOW() ";
+                        + "WHERE cus_uid = :cusUid "
+                        + "  AND are_cus_con_have_chatted IS TRUE ";
 
             }
 
@@ -520,22 +518,22 @@ public class PlanDaoImp implements PlanDao {
         // (5 * 252 + 4 * 124 + 3 * 40 + 2 * 29 + 1 * 33) / 478 = 4.11
         String planSelectSql = (userType == 1) ? ""
                 + "SELECT "
-                + "	SUM(cus_rating = 5) AS five_star, "
-                + "	SUM(cus_rating = 4) AS four_star , "
-                + "	SUM(cus_rating = 3) AS three_star, "
-                + "	SUM(cus_rating = 2) AS two_star, "
-                + "	SUM(cus_rating = 1) AS one_star "
+                + " SUM(cus_rating = 5) AS five_star, "
+                + " SUM(cus_rating = 4) AS four_star , "
+                + " SUM(cus_rating = 3) AS three_star, "
+                + " SUM(cus_rating = 2) AS two_star, "
+                + " SUM(cus_rating = 1) AS one_star "
                 + "FROM "
-                + "	plan "
+                + " plan "
                 + "WHERE cus_uid = :uid " : ""
                 + "SELECT "
-                + "	SUM(con_rating = 5) AS five_star, "
-                + "	SUM(con_rating = 4) AS four_star , "
-                + "	SUM(con_rating = 3) AS three_star, "
-                + "	SUM(con_rating = 2) AS two_star, "
-                + "	SUM(con_rating = 1) AS one_star "
+                + " SUM(con_rating = 5) AS five_star, "
+                + " SUM(con_rating = 4) AS four_star , "
+                + " SUM(con_rating = 3) AS three_star, "
+                + " SUM(con_rating = 2) AS two_star, "
+                + " SUM(con_rating = 1) AS one_star "
                 + "FROM "
-                + "	plan "
+                + " plan "
                 + "WHERE con_uid = :uid";
 
         Query planSelectQry = entityManager.createNativeQuery(planSelectSql);
@@ -740,13 +738,13 @@ public class PlanDaoImp implements PlanDao {
                     + "SELECT "
                     + " DATE_FORMAT(t.start_time, '%d-%m-%Y %r') AS f_start_time, "
                     + " DATE_FORMAT(t.end_time, '%d-%m-%Y %r') AS f_end_time, "
-                    + "	t.st, "
-                    + "	t.is_free_min_available, "
-                    + "	t.is_payment_complete, "
-                    + "	t.cus_uid, "
-                    + "	t.con_uid, "
-                    + "	t.is_accept_by_con, "
-                    + "	t.topic "
+                    + " t.st, "
+                    + " t.is_free_min_available, "
+                    + " t.is_payment_complete, "
+                    + " t.cus_uid, "
+                    + " t.con_uid, "
+                    + " t.is_accept_by_con, "
+                    + " t.topic "
                     + "FROM "
                     + "(SELECT "
                     + "  CONVERT_TZ(start_time, 'UTC',time_zone ) AS start_time, "
@@ -849,13 +847,13 @@ public class PlanDaoImp implements PlanDao {
 
             String checkOutUpdateSql = ""
                     + "UPDATE "
-                    + "	plan "
+                    + " plan "
                     + "SET "
-                    + "	check_out_id = :checkOutId, "
-                    + "	check_out_status = :checkOutStatus, "
-                    + "	check_out_created_date = :checkOutCreatedDate "
+                    + " check_out_id = :checkOutId, "
+                    + " check_out_status = :checkOutStatus, "
+                    + " check_out_created_date = :checkOutCreatedDate "
                     + "WHERE "
-                    + "	id = :id ";
+                    + " id = :id ";
 
             Query checkOutUpdateQry = entityManager.createNativeQuery(checkOutUpdateSql);
             checkOutUpdateQry.setParameter("id", p.getId());

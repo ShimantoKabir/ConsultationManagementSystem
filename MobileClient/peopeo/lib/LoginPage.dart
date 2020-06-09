@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_phoenix/flutter_phoenix.dart';
 import 'package:peopeo/Main.dart';
 import 'package:peopeo/SocialSignIn.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -84,10 +85,10 @@ class LoginPageState extends State<LoginPage> {
               ),
               Visibility(
                   visible: !needToShowUserTypeCheckBox,
-                  child: googleSignInButton()),
+                  child: googleSignInButton(context)),
               Visibility(
                 visible: !needToShowUserTypeCheckBox,
-                child: facebookSignInButton(),
+                child: facebookSignInButton(context),
               )
             ],
           ),
@@ -96,7 +97,7 @@ class LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget googleSignInButton() {
+  Widget googleSignInButton(BuildContext context) {
     return OutlineButton(
       splashColor: Colors.grey,
       onPressed: () {
@@ -125,7 +126,8 @@ class LoginPageState extends State<LoginPage> {
                 };
 
                 setUserCredential(val,data).then((val) {
-                  Navigator.of(context).popUntil((route) => route.isFirst);
+                  Phoenix.rebirth(context);
+                  Navigator.of(context).pop();
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
@@ -137,7 +139,7 @@ class LoginPageState extends State<LoginPage> {
                 });
 
               }).catchError((err) {
-                Navigator.pop(context);
+                Navigator.of(context).pop();
                 Fluttertoast.showToast(
                     msg: "Something went wrong, please try again!");
               });
@@ -147,8 +149,7 @@ class LoginPageState extends State<LoginPage> {
             });
           }
         }).catchError((err) {
-          print(err);
-          Navigator.pop(context);
+          Navigator.of(context).pop();
           Fluttertoast.showToast(msg: "Something went wrong, please try again!");
         });
       },
@@ -180,7 +181,7 @@ class LoginPageState extends State<LoginPage> {
     );
   }
 
-  Widget facebookSignInButton() {
+  Widget facebookSignInButton(BuildContext context) {
     return OutlineButton(
       splashColor: Colors.grey,
       onPressed: () {
@@ -206,7 +207,9 @@ class LoginPageState extends State<LoginPage> {
                   'displayName' : d.data['displayName'],
                   'photoUrl' : d.data['photoUrl']
                 }).then((val) {
-                  Navigator.of(context).popUntil((route) => route.isFirst);
+
+                  Phoenix.rebirth(context);
+                  Navigator.of(context).pop();
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
@@ -217,13 +220,13 @@ class LoginPageState extends State<LoginPage> {
                   );
                 });
               }).catchError((err) {
-                Navigator.pop(context);
+                Navigator.of(context).pop();
                 Fluttertoast.showToast(
                     msg: "Something went wrong, please try again!");
               });
 
             }).catchError((err) {
-              Navigator.pop(context);
+              Navigator.of(context).pop();
               Fluttertoast.showToast(
                   msg: "Something went wrong, please try again!");
             });
@@ -290,7 +293,7 @@ class LoginPageState extends State<LoginPage> {
                       fontFamily: 'Armata',
                       fontWeight: FontWeight.bold)),
               onPressed: () {
-                Navigator.pop(context);
+                Navigator.of(context).pop();
               },
             ),
             FlatButton(
@@ -300,8 +303,8 @@ class LoginPageState extends State<LoginPage> {
                       fontFamily: 'Armata',
                       fontWeight: FontWeight.bold)),
               onPressed: () {
-                Navigator.pop(context);
-                processUserRegistration();
+                Navigator.of(context).pop();
+                processUserRegistration(context);
               },
             )
           ],
@@ -327,7 +330,7 @@ class LoginPageState extends State<LoginPage> {
     );
   }
 
-  void processUserRegistration() {
+  void processUserRegistration(BuildContext context) {
     showAlertDialog(context, "Please wait user registration processing.");
     fm.getToken().then((token) {
 
@@ -335,8 +338,9 @@ class LoginPageState extends State<LoginPage> {
         'userType' : userType,
         'token' : token
       }).then((val) {
-        Navigator.of(context).popUntil((route) => route.isFirst);
 
+        Phoenix.rebirth(context);
+        Navigator.of(context).pop();
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -346,11 +350,11 @@ class LoginPageState extends State<LoginPage> {
           ),
         );
       }).catchError((err) {
-        Navigator.pop(context);
+        Navigator.of(context).pop();
         Fluttertoast.showToast(msg: "Something went wrong, please try again!");
       });
     }).catchError((err) {
-      Navigator.pop(context);
+      Navigator.of(context).pop();
       Fluttertoast.showToast(msg: "Something went wrong, please try again!");
     });
   }

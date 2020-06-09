@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart';
+import 'package:peopeo/AuthManager.dart';
 import 'package:peopeo/Const.dart';
 import 'package:peopeo/ConsultantProfile.dart';
 
@@ -23,83 +24,117 @@ class NotificationViewerState extends State<NotificationViewer> {
 
   String uid;
   TextEditingController payPalEmailTECtl = TextEditingController();
+  bool isUiEnable = true;
+  String alertMsg = 'Loading...';
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        appBar: new AppBar(
-          iconTheme: IconThemeData(color: Colors.black),
-          backgroundColor: Colors.white,
-          title: new Text('Notifications',
-              style: TextStyle(
-                  color: Colors.black,
-                  fontFamily: 'Armata',
-                  fontWeight: FontWeight.bold)),
-          centerTitle: true,
-        ),
-        body: StreamBuilder(
-            stream: Firestore.instance
-                .collection('notificationList')
-                .where('uid', isEqualTo: uid)
-                .snapshots(),
-            builder:
-                (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
-              if (snapshot.hasData) {
-                List<Map<String, dynamic>> nList = [];
+    return AbsorbPointer(
+      absorbing: !isUiEnable,
+      child: Scaffold(
+          appBar: AppBar(
+            iconTheme: IconThemeData(color: Colors.black),
+            backgroundColor: Colors.white,
+            title: new Text('Notifications',
+                style: TextStyle(
+                    color: Colors.black,
+                    fontFamily: 'Armata',
+                    fontWeight: FontWeight.bold)),
+            centerTitle: true,
+          ),
+          body: StreamBuilder(
+              stream: Firestore.instance
+                  .collection('notificationList')
+                  .where('uid', isEqualTo: uid)
+                  .snapshots(),
+              builder:
+                  (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                if (snapshot.hasData) {
+                  List<Map<String, dynamic>> nList = [];
 
-                snapshot.data.documents.forEach((f) {
-                  nList.add({
-                    'title': f['title'],
-                    'fcmRegistrationToken': f['fcmRegistrationToken'],
-                    'uid': f['uid'],
-                    'body': f['body'],
-                    'invitationSenderUid': f['invitationSenderUid'],
-                    'seenStatus': f['seenStatus'],
-                    'timeStamp': f['timeStamp'],
-                    'startTime': f['startTime'],
-                    'endTime': f['endTime'],
-                    'topic': f['topic'],
-                    'type': f['type'],
-                    'docId': f.documentID,
-                    'planId': f['planId'],
-                    'amount': f['amount'],
-                    'payPalEmail': f['payPalEmail'],
-                    'isPaid': f['isPaid'],
+                  snapshot.data.documents.forEach((f) {
+                    nList.add({
+                      'title': f['title'],
+                      'fcmRegistrationToken': f['fcmRegistrationToken'],
+                      'uid': f['uid'],
+                      'body': f['body'],
+                      'invitationSenderUid': f['invitationSenderUid'],
+                      'seenStatus': f['seenStatus'],
+                      'timeStamp': f['timeStamp'],
+                      'startTime': f['startTime'],
+                      'endTime': f['endTime'],
+                      'topic': f['topic'],
+                      'type': f['type'],
+                      'docId': f.documentID,
+                      'planId': f['planId'],
+                      'amount': f['amount'],
+                      'payPalEmail': f['payPalEmail'],
+                      'isPaid': f['isPaid'],
+                    });
                   });
-                });
 
-                Comparator<Map<String, dynamic>> x =
-                    (b, a) => a['timeStamp'].compareTo(b['timeStamp']);
+                  Comparator<Map<String, dynamic>> x =
+                      (b, a) => a['timeStamp'].compareTo(b['timeStamp']);
 
-                nList.sort(x);
+                  nList.sort(x);
 
-                nList.forEach((f) {
-                  print("timeStamp = ${f['timeStamp']}, title = ${f['title']}");
-                });
+                  nList.forEach((f) {
+                    print("timeStamp = ${f['timeStamp']}, title = ${f['title']}");
+                  });
 
-                if (nList.length > 0) {
-                  return ListView.builder(
-                    itemBuilder: (context, index) =>
-                        buildItem(context, nList[index]),
-                    itemCount: nList.length,
-                  );
+                  if (nList.length > 0) {
+                    return ListView.builder(
+                      itemBuilder: (context, index) =>
+                          buildItem(context, nList[index]),
+                      itemCount: nList.length,
+                    );
+                  } else {
+                    return Center(
+                      child: Text("[No message found]",
+                          style: TextStyle(
+                              color: Colors.red,
+                              fontFamily: 'Armata',
+                              fontWeight: FontWeight.bold)),
+                    );
+                  }
                 } else {
                   return Center(
-                    child: Text("[No message found]",
-                        style: TextStyle(
-                            color: Colors.red,
-                            fontFamily: 'Armata',
-                            fontWeight: FontWeight.bold)),
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                    ),
                   );
                 }
-              } else {
-                return Center(
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
-                  ),
-                );
-              }
-            }));
+              }),
+          bottomNavigationBar: Visibility(
+            visible: !isUiEnable,
+            child: Container(
+              color: Colors.white,
+              height: 50.0,
+              alignment: Alignment.center,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                        strokeWidth: 1.0,
+                      )),
+                  SizedBox(width: 10),
+                  Text(alertMsg,
+                      style: TextStyle(
+                        fontSize: 17.0,
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Armata',
+                      ))
+                ],
+              ),
+            ),
+          )
+      )
+    );
   }
 
   buildItem(BuildContext context, document) {
@@ -110,7 +145,7 @@ class NotificationViewerState extends State<NotificationViewer> {
             ? Icon(Icons.notifications, size: 40.0)
             : Icon(Icons.notifications_none, size: 40.0),
         title: Text(document['title'],
-            style: getTextStyle(Colors.red, FontWeight.bold)),
+            style: getTextStyle(Colors.red, FontWeight.bold, 15.0)),
         subtitle: Wrap(
           // 1 = booking request (start time, end time, topic, body , title)
           // 2 = booking request cancellation (start time, end time, topic, body , title)
@@ -124,7 +159,7 @@ class NotificationViewerState extends State<NotificationViewer> {
             Visibility(
               visible: document['type'] == 6 || document['type'] == 7,
               child: Text(document['body'],
-                  style: getTextStyle(Colors.black, FontWeight.normal)),
+                  style: getTextStyle(Colors.black, FontWeight.normal, 14.0)),
             ),
             Visibility(
               visible: document['type'] == 1 ||
@@ -139,17 +174,19 @@ class NotificationViewerState extends State<NotificationViewer> {
                       document['topic'] == null
                           ? "empty"
                           : "Topic ${document['topic']}",
-                      style: getTextStyle(Colors.black, FontWeight.bold)),
+                      style: getTextStyle(Colors.black, FontWeight.bold, 14.0)),
                   Text(
                       document['startTime'] == null
                           ? "empty"
-                          : "Start time ${document['startTime']}",
-                      style: getTextStyle(Colors.black, FontWeight.normal)),
+                          : "Start at ${document['startTime']}",
+                      style:
+                          getTextStyle(Colors.black, FontWeight.normal, 11.0)),
                   Text(
                       document['endTime'] == null
                           ? "empty"
-                          : "End time   ${document['endTime']}",
-                      style: getTextStyle(Colors.black, FontWeight.normal)),
+                          : "End at ${document['endTime']}",
+                      style:
+                          getTextStyle(Colors.black, FontWeight.normal, 11.0)),
                 ],
               ),
             ),
@@ -211,12 +248,6 @@ class NotificationViewerState extends State<NotificationViewer> {
                                         fontWeight: FontWeight.bold)),
                                 onPressed: () async {
                                   Navigator.of(context).pop(false);
-                                  print(
-                                      "paypal email = ${payPalEmailTECtl.text}");
-                                  print("amount = ${document['amount']}");
-                                  print("planId = ${document['planId']}");
-                                  print(
-                                      "payPalEmail = ${document['payPalEmail']}");
 
                                   if (payPalEmailTECtl.text.trim().isEmpty) {
                                     Fluttertoast.showToast(
@@ -255,11 +286,22 @@ class NotificationViewerState extends State<NotificationViewer> {
                                         'amount': document['amount']
                                       };
 
-                                      showAlertDialog(
-                                          context, "Please wait...!");
-                                      payout(request, document);
+                                      setState(() {
+                                        isUiEnable = false;
+                                        alertMsg = "Payment precessing...";
+                                      });
+
+                                      payout(request, document, context).whenComplete((){
+
+                                        setState(() {
+                                          isUiEnable = true;
+                                        });
+
+                                      });
+
+
+
                                     } catch (e) {
-                                      print(e);
                                       Fluttertoast.showToast(
                                           msg: "Something went wrong!");
                                     }
@@ -275,8 +317,18 @@ class NotificationViewerState extends State<NotificationViewer> {
                         'amount': document['amount']
                       };
 
-                      showAlertDialog(context, "Please wait...!");
-                      payout(request, document);
+                      setState(() {
+                        isUiEnable = false;
+                        alertMsg = "Payment precessing...";
+                      });
+
+                      payout(request, document, context).whenComplete((){
+
+                        setState(() {
+                          isUiEnable = true;
+                        });
+
+                      });
                     }
                   } else {
                     Fluttertoast.showToast(msg: "Already paid!");
@@ -371,61 +423,58 @@ class NotificationViewerState extends State<NotificationViewer> {
     );
   }
 
-  Future<int> payout(request, document) async {
-    String url = serverBaseUrl + '/pg/payout';
-    Map<String, String> headers = {"Content-type": "application/json"};
+  Future<int> payout(data, document, BuildContext context) async {
+    int res;
+    String authId = await AuthManager.init();
 
-    Response response =
-        await post(url, headers: headers, body: json.encode(request));
+    if (authId == null) {
+      Fluttertoast.showToast(msg: "Auth initialization error.");
+      res = 404;
+    } else {
+      String url = serverBaseUrl + '/pg/payout';
+      Map<String, String> headers = {"Content-type": "application/json"};
 
-    if (response.statusCode == 200) {
-      print(response.body);
-      var body = json.decode(response.body);
+      var request = {
+        'planId': data['planId'],
+        'email': data['email'],
+        'amount': data['amount'],
+        'authId': authId,
+        'uid': uid
+      };
 
-      if(body['code'] == 200){
+      Response response =
+          await post(url, headers: headers, body: json.encode(request));
 
-        print("response body = ${body['code']}");
+      if (response.statusCode == 200) {
+        var body = json.decode(response.body);
 
-        Firestore.instance
-            .collection('notificationList')
-            .document(document['docId'])
-            .updateData({"isPaid": true});
+        if (body['code'] == 200) {
+          print("response body = ${body['code']}");
 
-      }else {
+          await Firestore.instance
+              .collection('notificationList')
+              .document(document['docId'])
+              .updateData({"isPaid": true});
+        } else {
+          Fluttertoast.showToast(msg: "Something went wrong!");
+        }
 
+        res = 200;
+      } else {
         Fluttertoast.showToast(msg: "Something went wrong!");
-
+        res = 404;
       }
-
-      Navigator.of(context).pop();
-      return 200;
-
-    } else {
-      Fluttertoast.showToast(msg: "Something went wrong!");
-      Navigator.of(context).pop();
-      return 404;
     }
+
+    return res;
   }
 
-  String getStartTime(document) {
-    if (document['startTime'] == null) {
-      return document['body'];
-    } else {
-      return "Start time ${document['startTime']}";
-    }
-  }
-
-  String getEndTime(document) {
-    if (document['endTime'] == null) {
-      return "";
-    } else {
-      return "End time ${document['endTime']}";
-    }
-  }
-
-  TextStyle getTextStyle(Color color, FontWeight fontWeight) {
+  TextStyle getTextStyle(Color color, FontWeight fontWeight, double fs) {
     return TextStyle(
-        color: color, fontFamily: 'Armata', fontWeight: fontWeight);
+        color: color,
+        fontFamily: 'Armata',
+        fontWeight: fontWeight,
+        fontSize: fs);
   }
 
   String showPayPalEmailBtnTxt(document) {

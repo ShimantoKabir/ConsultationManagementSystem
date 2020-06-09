@@ -5,25 +5,27 @@ import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity/connectivity.dart';
-import 'package:peopeo/MySharedPreferences.dart';
-import 'package:peopeo/PlanInfo.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_phoenix/flutter_phoenix.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:peopeo/AuthManager.dart';
+import 'package:peopeo/Const.dart';
+import 'package:peopeo/Main.dart';
+import 'package:peopeo/MySharedPreferences.dart';
+import 'package:peopeo/Plan.dart';
+import 'package:peopeo/PlanInfo.dart';
+import 'package:peopeo/fullPhoto.dart';
 import 'package:screen/screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:peopeo/Plan.dart';
-import 'package:peopeo/Const.dart';
-import 'package:peopeo/HttpResponse.dart';
-import 'package:peopeo/fullPhoto.dart';
+
 import 'MyWebView.dart';
 
 class Chat extends StatefulWidget {
-
   final String peerId;
   final String peerAvatar;
   final String displayName;
@@ -86,12 +88,14 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
   bool isShowSticker;
   String imageUrl;
   int totalChatDuration = 0;
-  String idOfCusLeaveMsg;
+
+  // String idOfCusLeaveMsg;
   String idOfCusSuccessPaymentMsg;
   int chargedMinutes = 0;
   DateTime reviewAndRatingShowDateTime;
   bool isInternetAvailable = true;
   StreamSubscription<ConnectivityResult> connectivitySubscription;
+  BuildContext buildContext;
 
   final TextEditingController textEditingController =
       new TextEditingController();
@@ -183,12 +187,12 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
         }
 
         // logic for review and rating
-        if (!isReviewAndRatingShowedUp && dateTimeNow.isAfter(endDateTime)) {
-          print('Review and rating showed up!');
-          isReviewAndRatingShowedUp = true;
-          print("review show 1");
-          reviewAndRatingPopUp();
-        }
+        // if (!isReviewAndRatingShowedUp && dateTimeNow.isAfter(endDateTime)) {
+        //   print('Review and rating showed up!');
+        //   isReviewAndRatingShowedUp = true;
+        //   print("review show 1");
+        //   reviewAndRatingPopUp();
+        // }
 
         // if available
       } else {
@@ -212,7 +216,6 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
           int chatDuration = detectedChatDuration - passedAwayMinutes;
           isTimeTickerRunning = true;
           startTimeTicker(controller, chatDuration);
-
         }
 
         // logic for show up payment ui
@@ -229,7 +232,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
 
           if (userType == 1) {
             double chargeAmount = hr * (chargedMinutes / 60);
-            confirmPopUp(context, chargeAmount.toStringAsFixed(2), plan);
+            confirmPopUp(chargeAmount.toStringAsFixed(2), plan);
           }
 
           // but start time ticker for all
@@ -244,7 +247,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
             !isChargedMinutesStarted) {
           // customer
           if (userType == 1) {
-            checkPaymentStatus(plan.id, true);
+            checkPaymentStatus(plan.id, true, context);
           }
 
           isChargedMinutesStarted = true;
@@ -252,15 +255,15 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
         }
 
         // logic for popup review and rating
-        if (isPaymentUiShowedUp &&
-            !isReviewAndRatingShowedUp &&
-            controller.isDismissed &&
-            dateTimeNow.isAfter(reviewAndRatingShowDateTime)) {
-          print("review show 2");
-          reviewAndRatingPopUp();
-          print('Show popup for review and rating in time tiker block!');
-          isReviewAndRatingShowedUp = true;
-        }
+        // if (isPaymentUiShowedUp &&
+        //     !isReviewAndRatingShowedUp &&
+        //     controller.isDismissed &&
+        //     dateTimeNow.isAfter(reviewAndRatingShowDateTime)) {
+        //   print("review show 2");
+        //   reviewAndRatingPopUp();
+        //   print('Show popup for review and rating in time tiker block!');
+        //   isReviewAndRatingShowedUp = true;
+        // }
       }
     });
 
@@ -297,7 +300,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
       groupChatId = '$peerId-$id';
     }
 
-    print("GroupChatId = $groupChatId");
+    print("group chat id = $groupChatId");
     FocusScope.of(context).requestFocus(focusNode);
     Firestore.instance
         .collection('userInfoList')
@@ -362,11 +365,11 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
   }
 
   Widget buildItem(int index, DocumentSnapshot document) {
-    idOfCusLeaveMsg = (document['type'] == 3 &&
-            document['isReviewAndRatingShowedUp'] == 0 &&
-            !isReviewAndRatingShowedUp)
-        ? document.documentID
-        : idOfCusLeaveMsg;
+//    idOfCusLeaveMsg = (document['type'] == 3 &&
+//            document['isReviewAndRatingShowedUp'] == 0 &&
+//            !isReviewAndRatingShowedUp)
+//        ? document.documentID
+//        : idOfCusLeaveMsg;
 
     idOfCusSuccessPaymentMsg = (document['type'] == 4 &&
             document['isPaymentCompleteAfterFreeMinuteGone'] == 0)
@@ -716,7 +719,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                         "$displayName has ended the chat session.", 3);
                     isReviewAndRatingShowedUp = true;
                     controller.stop();
-                    print("review show 3");
+                    Navigator.of(context).pop(false);
                     reviewAndRatingPopUp();
                   })
             ],
@@ -727,6 +730,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    buildContext = context;
     return AbsorbPointer(
         absorbing: !isInternetAvailable,
         child: Scaffold(
@@ -1061,7 +1065,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
   }
 
   void reviewAndRatingPopUp() {
-    showDialog<void>(
+    showDialog(
       context: context,
       barrierDismissible: false, // user must tap button!
       builder: (context) {
@@ -1090,14 +1094,28 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                 },
               ),
             ),
+            Container(
+              width: MediaQuery.of(context).size.width,
+              margin: EdgeInsets.fromLTRB(
+                  10.0, 0.0, 0.0, 0.0),
+              child: Text("Review",
+                  style: TextStyle(
+                    fontSize: 15.0,
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Armata',
+                  )),
+            ),
             Center(
               child: Padding(
-                padding: EdgeInsets.all(5.0),
+                padding: EdgeInsets.all(10.0),
                 child: TextField(
+                  maxLines: 4,
+                  keyboardType: TextInputType.multiline,
                   decoration: InputDecoration(
-                      contentPadding: EdgeInsets.fromLTRB(15.0, 5.0, 5.0, 5.0),
-                      border: OutlineInputBorder(),
-                      labelText: "Write a review"),
+                      contentPadding: EdgeInsets.fromLTRB(
+                          15.0, 15.0, 15.0, 15.0),
+                      border: OutlineInputBorder()),
                   controller: reviewTECtl,
                 ),
               ),
@@ -1116,36 +1134,30 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                 } else if (reviewTECtl.text.toString().isEmpty) {
                   Fluttertoast.showToast(msg: "Please give a review!");
                 } else {
-                  showAlertDialog(
-                      context, "Please wait, saving review and rating ...");
-
-                  var request;
-                  // customer
+                  var planRes;
                   if (userType == 1) {
-                    request = {
-                      'plan': {
-                        'id': plan.id,
-                        'conUid': peerId,
-                        'cusUid': uid,
-                        'conReview': reviewTECtl.text.toString(),
-                        'conRating': rating,
-                        'userType': 1
-                      }
+                    planRes = {
+                      'id': plan.id,
+                      'conUid': peerId,
+                      'cusUid': uid,
+                      'conReview': reviewTECtl.text.toString(),
+                      'conRating': rating,
+                      'userType': 1
                     };
-                    // consultant
                   } else {
-                    request = {
-                      'plan': {
-                        'id': plan.id,
-                        'conUid': uid,
-                        'cusUid': peerId,
-                        'cusReview': reviewTECtl.text.toString(),
-                        'cusRating': rating,
-                        'userType': 2
-                      }
+                    planRes = {
+                      'id': plan.id,
+                      'conUid': uid,
+                      'cusUid': peerId,
+                      'cusReview': reviewTECtl.text.toString(),
+                      'cusRating': rating,
+                      'userType': 2
                     };
                   }
-                  saveReviewAndRating(request, uid, userType);
+
+                  Navigator.of(context).pop(false);
+                  saveReviewAndRating(planRes, uid, userType);
+
                 }
               },
             )
@@ -1155,35 +1167,41 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
     );
   }
 
-  void saveReviewAndRating(request, uid, userType) async {
-    String url = serverBaseUrl + '/plan/save-review-and-rating';
-    Map<String, String> headers = {"Content-type": "application/json"};
-    Response response =
-        await post(url, headers: headers, body: json.encode(request));
-    print("request review and rating = $request");
+  void saveReviewAndRating(planRes, uid, userType) async {
 
-    if (response.statusCode == 200) {
-      Navigator.of(context).popUntil((route) => route.isFirst);
-      Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-              builder: (context) => PlanInfo(userType: userType, uid: uid)));
-      print(response.body.toString());
-    } else {
-      this.dispose();
+    showAlertDialog(context,"Please wait....");
+
+    String authId = await AuthManager.init();
+
+    if (authId == null) {
       print("need to pop up notification = [yes] in chat when finish");
-      MySharedPreferences.setBooleanValue("needToPopUpNoti", true);
-      Navigator.of(context).popUntil((route) => route.isFirst);
-      Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-              builder: (context) => PlanInfo(userType: userType, uid: uid)));
-      throw Exception('Failed to load post');
+    } else {
+      String url = serverBaseUrl + '/plan/save-review-and-rating';
+      Map<String, String> headers = {"Content-type": "application/json"};
+      Response response = await post(url,
+          headers: headers,
+          body: json.encode({'authId': authId, 'uid': uid, 'plan': planRes}));
+
+      print("response body = ${response.body}");
     }
+
+    print("need to pop up notification = [yes] in chat when finish");
+    MySharedPreferences.setBooleanValue("needToPopUpNoti", true);
+
+    Navigator.of(context).pop(false);
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) {
+          return PlanInfo(userType: userType,uid: uid);
+        },
+      ),
+    );
+
   }
 
-  void confirmPopUp(BuildContext context, String amount, Plan p) {
-    showDialog<void>(
+  void confirmPopUp(String amount, Plan p) {
+    showDialog(
       context: context,
       barrierDismissible: false, // user must tap button!
       builder: (BuildContext context) {
@@ -1217,15 +1235,13 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                       fontFamily: 'Armata',
                       fontWeight: FontWeight.bold)),
               onPressed: () {
-                print(
-                    "Review and rating showed up when customer don't want to pay");
                 sendMsgContent(cusLeaveMsg, 3);
-                isReviewAndRatingShowedUp = true;
+                // isReviewAndRatingShowedUp = true;
                 needToShowPaymentUi = false;
-                Navigator.of(context).pop();
+                Navigator.of(buildContext).pop();
                 controller.stop();
-                print("review show 4");
-                reviewAndRatingPopUp();
+                // print("review show 4");
+                // reviewAndRatingPopUp();
               },
             ),
             FlatButton(
@@ -1241,7 +1257,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                         msg: "No internat connection available.");
                   } else {
                     sendMsgContent(cusContinueMsg, 0);
-                    redirectToPayment(amount, p,context);
+                    redirectToPayment(amount, p);
                   }
                 });
               },
@@ -1252,34 +1268,31 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
     );
   }
 
-  void redirectToPayment(String amount, Plan p, BuildContext context) {
-
+  void redirectToPayment(String amount, Plan p) {
     String url = webClientBaseUrl +
         '/payment.html?amount=' +
         amount +
         "&plan-id=" +
         p.id.toString() +
         "&con-uid=" +
-        p.conUid+
+        p.conUid +
         "&cus-uid=" +
         p.cusUid;
 
     print("payment url = $url");
 
-    Navigator.of(context, rootNavigator: true).pop();
-    Navigator.of(context)
+    Navigator.of(buildContext)
         .push(MaterialPageRoute(
-        builder: (BuildContext context) => MyWebView(
-          title: "Payment",
-          url: url,
-        )))
+            builder: (BuildContext context) => MyWebView(
+                  title: "Payment",
+                  url: url,
+                )))
         .whenComplete(() {
-      print("need to pop up notification = [yes] in plan info go for payment");
-      MySharedPreferences.setBooleanValue("needToPopUpNoti", true);
-
       MySharedPreferences.getBooleanValue('isPaymentSuccessful')
           .then((isPaymentSuccessful) {
         if (isPaymentSuccessful) {
+          Navigator.of(buildContext).pop();
+
           Fluttertoast.showToast(
               msg: "Payment successful!",
               toastLength: Toast.LENGTH_LONG,
@@ -1330,7 +1343,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                       fontFamily: 'Armata',
                       fontWeight: FontWeight.bold)),
               onPressed: () {
-                checkPaymentStatus(plan.id, false);
+                checkPaymentStatus(plan.id, false, context);
               },
             )
           ],
@@ -1340,32 +1353,35 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
   }
 
   void changeChattedStatus(int planId, String cusUid, String conUid) async {
-    String url = serverBaseUrl + '/plan/change-are-cus-con-have-chatted-status';
-    Map<String, String> headers = {"Content-type": "application/json"};
-    var request = {
-      'plan': {'id': planId, 'cusUid': cusUid, 'conUid': conUid}
-    };
+    String authId = await AuthManager.init();
 
-    Response response =
-        await post(url, headers: headers, body: json.encode(request));
-
-    if (response.statusCode == 200) {
-      // HttpResponse.fromJson(json.decode(response.body));
-      print(response.body.toString());
+    if (authId == null) {
+      Fluttertoast.showToast(msg: "Auth initialization error.");
     } else {
-      throw Exception('Failed to load post');
+      String url =
+          serverBaseUrl + '/plan/change-are-cus-con-have-chatted-status';
+      Map<String, String> headers = {"Content-type": "application/json"};
+      var request = {
+        'plan': {'id': planId, 'cusUid': cusUid, 'conUid': conUid},
+        'authId': authId,
+        'uid': uid
+      };
+
+      Response response =
+          await post(url, headers: headers, body: json.encode(request));
+
+      print("response = $response");
     }
   }
 
   Future<void> sendMsgContent(String content, int type) async {
-
     print("check timmer status = ${controller.status}");
 
     Connectivity().checkConnectivity().then((connectivityResult) {
       if (connectivityResult == ConnectivityResult.none) {
         Fluttertoast.showToast(msg: "No internet connection available!");
-      } else if(controller.isDismissed){
-        Fluttertoast.showToast(msg: "You can only send message when time ticker is running!");
+      } else if (controller.isDismissed) {
+        print("message sending allowed only during chat session.");
       } else {
         textEditingController.clear();
 
@@ -1421,68 +1437,69 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
     });
   }
 
-  void checkPaymentStatus(int id, bool isCalledFromTimerPeriodic) async {
-    String url = serverBaseUrl + '/plan/check-payment-status';
-    Map<String, String> headers = {"Content-type": "application/json"};
-    var request = {
-      'plan': {
-        'id': id,
-      }
-    };
-    Response response =
-        await post(url, headers: headers, body: json.encode(request));
-    if (response.statusCode == 200) {
-      int code = HttpResponse.fromJson(json.decode(response.body)).code;
-      print("Transaction completion status = $code");
+  void checkPaymentStatus(
+      int id, bool isCalledFromTimerPeriodic, BuildContext context) async {
+    String authId = await AuthManager.init();
 
-      // payment complete
-      if (code == 200) {
-        Navigator.pop(context);
-        isPaymentComplete = true;
-        Fluttertoast.showToast(
-            msg: "You have successfully complete your payment, "
-                "enjoy the conversation the expert!");
+    if (authId == null) {
+      Fluttertoast.showToast(msg: "Auth initialization error.");
+    } else {
+      String url = serverBaseUrl + '/plan/check-payment-status';
+      Map<String, String> headers = {"Content-type": "application/json"};
+      var request = {
+        'plan': {
+          'id': id,
+        },
+        'authId': authId,
+        'uid': uid
+      };
+      Response response =
+          await post(url, headers: headers, body: json.encode(request));
 
-        if (!isCalledFromTimerPeriodic) {
-          sendMsgContent(
-              "I have successfully complete payment, let's chat.", 4);
+      if (response.statusCode == 200) {
+        var body = json.decode(response.body);
+
+        if (body['code'] == 200) {
+          isPaymentComplete = true;
+          Fluttertoast.showToast(
+              msg: "You have successfully complete your payment, "
+                  "enjoy the conversation the expert!");
+
+          if (!isCalledFromTimerPeriodic) {
+            sendMsgContent(
+                "I have successfully complete payment, let's chat.", 4);
+          }
+        } else {
+          sendMsgContent("Customer payment unsuccessful!", 3);
+          Fluttertoast.showToast(msg: "Payment unsuccessful!");
         }
-
-        // payment not complete
       } else {
         sendMsgContent("Customer payment unsuccessful!", 3);
-        isReviewAndRatingShowedUp = true;
-        Navigator.of(context).pop();
-        controller.stop();
-        print("review show 5");
-        reviewAndRatingPopUp();
+        Fluttertoast.showToast(msg: "Payment unsuccessful!");
       }
-    } else {
-      throw Exception('Failed to load post');
     }
   }
 
   actionAfterFreeMinutesGone(BuildContext context) {
-
-    print("Id of cus leave after free minutes gone $idOfCusLeaveMsg");
-    print("Id of cus payment success after free minute's gone"
+    // print("Id of cus leave after free minutes gone $idOfCusLeaveMsg");
+    print("Id of cus payment success after free minutes gone"
         " $idOfCusSuccessPaymentMsg");
 
-    if (idOfCusLeaveMsg != null &&
-        !isReviewAndRatingShowedUp
-        && plan.freeMinutesForNewCustomer != null) {
-      Firestore.instance
-          .collection('messages')
-          .document(groupChatId)
-          .collection('conversations')
-          .document(idOfCusLeaveMsg)
-          .updateData(<String, dynamic>{'isReviewAndRatingShowedUp': 1});
-
-      print("review show 6");
-      reviewAndRatingPopUp();
-      controller.stop();
-      isReviewAndRatingShowedUp = true;
-    }
+    // if (idOfCusLeaveMsg != null &&
+    //     !isReviewAndRatingShowedUp
+    //     && plan.freeMinutesForNewCustomer != null) {
+    //   Firestore.instance
+    //       .collection('messages')
+    //       .document(groupChatId)
+    //       .collection('conversations')
+    //       .document(idOfCusLeaveMsg)
+    //       .updateData(<String, dynamic>{'isReviewAndRatingShowedUp': 1});
+    //
+    //   print("review show 6");
+    //   // reviewAndRatingPopUp();
+    //   controller.stop();
+    //   // isReviewAndRatingShowedUp = true;
+    // }
 
     if (idOfCusSuccessPaymentMsg != null && !isChargedMinutesStarted) {
       Firestore.instance
@@ -1524,8 +1541,8 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
     if (controller.status == AnimationStatus.reverse) {
       controller.dispose();
     }
+    controller.dispose();
     connectivitySubscription.cancel();
     super.dispose();
   }
-
 }

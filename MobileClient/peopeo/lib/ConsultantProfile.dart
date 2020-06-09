@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -11,11 +10,9 @@ import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:http/http.dart';
 import 'package:peopeo/Const.dart';
 import 'package:peopeo/EditProfile.dart';
 import 'package:peopeo/FullPhoto.dart';
-import 'package:peopeo/HttpResponse.dart';
 import 'package:peopeo/LoginPage.dart';
 import 'package:peopeo/MyFlutterWebView.dart';
 import 'package:peopeo/MySharedPreferences.dart';
@@ -25,27 +22,32 @@ import 'package:peopeo/VideoPlayerScreen.dart';
 
 class ConsultantProfile extends StatefulWidget {
   final String uid;
+  final List<Plan> reviewAndRatingList;
 
-  ConsultantProfile({Key key, @required this.uid}) : super(key: key);
+  ConsultantProfile({Key key, @required this.uid,this.reviewAndRatingList}) : super(key: key);
 
   @override
-  ConsultantProfileState createState() => new ConsultantProfileState(uid: uid);
+  ConsultantProfileState createState() => new ConsultantProfileState(uid: uid,reviewAndRatingList : reviewAndRatingList);
 }
 
 class ConsultantProfileState extends State<ConsultantProfile>
     with TickerProviderStateMixin {
+
   String uid;
+  List<Plan> reviewAndRatingList;
   bool needToShowEditButton = false;
   bool isInternetAvailable = true;
+  int totalPlanFetched = 0;
   StreamSubscription<ConnectivityResult> connectivitySubscription;
 
-  ConsultantProfileState({Key key, @required this.uid});
+  ConsultantProfileState({Key key, @required this.uid, @required this.reviewAndRatingList});
 
   List<Tab> tabList = List();
   TabController tabController;
 
   @override
   void initState() {
+
     tabList.add(Tab(icon: Icon(Icons.camera)));
     tabList.add(Tab(icon: Icon(Icons.video_library)));
     tabList.add(Tab(icon: Icon(Icons.comment)));
@@ -76,6 +78,9 @@ class ConsultantProfileState extends State<ConsultantProfile>
         print('Data connection is available.');
       }
     });
+
+    print("review and rating list = $reviewAndRatingList");
+
   }
 
   @override
@@ -495,33 +500,7 @@ class ConsultantProfileState extends State<ConsultantProfile>
                                   showPictureInGridView('im'),
                                   showPictureInGridView('vd'),
                                   isInternetAvailable
-                                      ? FutureBuilder(
-                                          future: Firestore.instance
-                                              .collection('userInfoList')
-                                              .document(uid)
-                                              .get(),
-                                          builder: (BuildContext context,
-                                              AsyncSnapshot<DocumentSnapshot>
-                                                  snapshot) {
-                                            if (snapshot.hasData) {
-                                              return showReviewAndRating(
-                                                  snapshot.data);
-                                            } else {
-                                              return Wrap(
-                                                children: <Widget>[
-                                                  Padding(
-                                                    padding:
-                                                        EdgeInsets.all(15.0),
-                                                    child: Center(
-                                                      child: Text(
-                                                          "No review and rating available!"),
-                                                    ),
-                                                  )
-                                                ],
-                                              );
-                                            }
-                                          },
-                                        )
+                                      ? showReviewAndRating(context)
                                       : Wrap(
                                           children: <Widget>[
                                             Padding(
@@ -810,80 +789,41 @@ class ConsultantProfileState extends State<ConsultantProfile>
     }
   }
 
-  Future<List<Plan>> getPlanList(snapshot) async {
-    String url = serverBaseUrl + '/plan/get-review-and-rating';
-    Map<String, String> headers = {"Content-type": "application/json"};
+  showReviewAndRating(BuildContext context) {
 
-    var request = {
-      'plan': {'conUid': snapshot['uid'], 'userType': snapshot['userType']}
-    };
+    print("review and rating length = ${reviewAndRatingList.length}");
 
-    Response response =
-        await post(url, headers: headers, body: json.encode(request));
+    if(reviewAndRatingList.length == 0){
 
-    print("review and rating = ${response.body}");
+      return Wrap(
+        children: <Widget>[
+          Padding(
+            padding: EdgeInsets.all(15.0),
+            child: Center(
+              child: Text(
+                  "[No review and rating found]",
+                  style: TextStyle(
+                    fontSize: 15.0,
+                    color: Colors.red,
+                    fontWeight:
+                    FontWeight.bold,
+                    fontFamily: 'Armata',
+                  )),
+            ),
+          )
+        ],
+      );
 
-    if (response.statusCode == 200) {
-      var body = json.decode(response.body);
-
-      if (body['code'] == 200) {
-        return HttpResponse.fromJson(body).planList;
-      } else {
-        return [];
-      }
-    } else {
-      Fluttertoast.showToast(msg: "Plan list getting error!");
-      return [];
+    }else {
+      return ListView.builder(
+        itemBuilder: (context, index) =>
+            buildItem(context, reviewAndRatingList[index]),
+        itemCount: reviewAndRatingList.length,
+      );
     }
   }
 
-  showReviewAndRating(DocumentSnapshot documentSnapshot) {
-    return FutureBuilder<List<Plan>>(
-      future: getPlanList(documentSnapshot),
-      builder: (context, snapshot) {
-        if (snapshot.hasData) {
-          if (snapshot.data.length > 0) {
-            return ListView.builder(
-              itemBuilder: (context, index) =>
-                  buildItem(context, snapshot.data[index], documentSnapshot),
-              itemCount: snapshot.data.length,
-            );
-          } else {
-            return Wrap(
-              children: <Widget>[
-                Padding(
-                  padding: EdgeInsets.all(15.0),
-                  child: Center(
-                      child: Text("[No review and rating found]",
-                          style: TextStyle(
-                            fontSize: 15.0,
-                            color: Colors.red,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'Armata',
-                          ))),
-                )
-              ],
-            );
-          }
-        } else {
-          return Wrap(
-            children: <Widget>[
-              Padding(
-                padding: EdgeInsets.all(15.0),
-                child: Center(
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
-                  ),
-                ),
-              )
-            ],
-          );
-        }
-      },
-    );
-  }
-
-  buildItem(BuildContext context, document, DocumentSnapshot documentSnapshot) {
+  buildItem(BuildContext context, document) {
     return Card(
       child: ListTile(
           title: RatingBarIndicator(
@@ -939,4 +879,5 @@ class ConsultantProfileState extends State<ConsultantProfile>
     tabController.dispose();
     super.dispose();
   }
+
 }

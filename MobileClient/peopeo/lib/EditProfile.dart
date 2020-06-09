@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -32,7 +33,8 @@ class EditProfile extends StatefulWidget {
       new EditProfileState(uid: uid, userType: userType);
 }
 
-class EditProfileState extends State<EditProfile> {
+class EditProfileState extends State<EditProfile> with WidgetsBindingObserver {
+
   EditProfileState({Key key, @required this.uid, @required this.userType});
 
   TextEditingController displayNameTECtl = TextEditingController();
@@ -50,8 +52,6 @@ class EditProfileState extends State<EditProfile> {
   bool isUploaded = true;
   String result;
 
-  // variable for convert
-  // video url to image
   ImageFormat format = ImageFormat.JPEG;
   int quality = 100;
   int maxHeight = 500;
@@ -71,6 +71,8 @@ class EditProfileState extends State<EditProfile> {
   void initState() {
     super.initState();
     getTemporaryDirectory().then((d) => tempDir = d.path);
+
+    print("init state called");
 
     Firestore.instance
         .collection('userInfoList')
@@ -114,8 +116,6 @@ class EditProfileState extends State<EditProfile> {
 
             int hourInSec = int.tryParse(timeSplit[0]) * 60 * 60;
             int minInSec = int.tryParse(timeSplit[1]) * 60;
-//            String tmpSec = timeSplit[2].toString().isEmpty ? "01.01" : timeSplit[2];
-//            print("tmpSec = ${timeSplit[2].toString()}");
             int sec = double.tryParse(timeSplit[2]).floor();
             int totalSec = hourInSec + minInSec + sec;
             print("totalSec = $totalSec, hourInSec = $hourInSec, minInSec $minInSec, sec = $sec");
@@ -213,6 +213,7 @@ class EditProfileState extends State<EditProfile> {
                                               Fluttertoast.showToast(
                                                   msg: "No image selected.");
                                             } else {
+
                                               showAlertDialog(context,
                                                   "Image uploading please wait...!");
 
@@ -241,12 +242,24 @@ class EditProfileState extends State<EditProfile> {
                                                   'photoPath':
                                                       "images/" + imName,
                                                   'progress': 0
+                                                }).whenComplete((){
+
+                                                  MySharedPreferences.getStringValue("userInfo").then((ui){
+
+                                                    var userInfo = jsonDecode(ui);
+                                                    userInfo['photoUrl'] = imUrl;
+                                                    print("user info after update = $userInfo");
+
+                                                    MySharedPreferences.setStringValue("userInfo", jsonEncode(userInfo)).whenComplete((){
+
+                                                      Navigator.of(context, rootNavigator: true).pop('dialog');
+
+                                                    });
+
+                                                  });
+
                                                 });
 
-                                                print("time to close loading");
-                                                Navigator.of(context,
-                                                        rootNavigator: true)
-                                                    .pop();
                                               });
                                             }
                                           });
@@ -272,6 +285,7 @@ class EditProfileState extends State<EditProfile> {
                                     child: Padding(
                                       padding: EdgeInsets.all(10.0),
                                       child: TextField(
+                                          inputFormatters: [BlacklistingTextInputFormatter(new RegExp('[0-9]'))],
                                           decoration: InputDecoration(
                                               contentPadding:
                                                   EdgeInsets.fromLTRB(
@@ -1333,6 +1347,7 @@ class EditProfileState extends State<EditProfile> {
   @override
   void dispose() {
     super.dispose();
+    displayNameTECtl.dispose();
     subscription.unsubscribe();
   }
 

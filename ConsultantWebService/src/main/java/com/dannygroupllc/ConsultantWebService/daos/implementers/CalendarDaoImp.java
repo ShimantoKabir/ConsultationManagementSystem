@@ -128,7 +128,7 @@ public class CalendarDaoImp implements CalendarDao {
                 } else {
 
                     // COMMENT OUT BEFORE APP GOES LIVE
-                    curDateTime = DateUtils.addHours(curDateTime,1);
+                    // curDateTime = DateUtils.addHours(curDateTime,1);
 
                     if (curDateTime.before(startDateTime)) {
 
@@ -527,7 +527,8 @@ public class CalendarDaoImp implements CalendarDao {
                     "  FROM\n" +
                     "    plan \n" +
                     "  WHERE CONVERT_TZ(start_time,'UTC',time_zone) >= CONVERT_TZ(NOW(),'UTC',time_zone) \n" +
-                    "    AND con_uid = :conUid) AS p ";
+                    "    AND con_uid = :conUid) AS p \n"+
+                    "  ORDER BY p.start_time ";
 
             Query planFetchingQry = entityManager.createNativeQuery(planFetchingSql);
             planFetchingQry.setParameter("conUid", c.getConUid());

@@ -72,8 +72,9 @@
                         $("#longDes").text(longDes);
                         $("#coronaExp").text(coronaExp);
                         
-                        for (var i = 0; i < $(".rating-star").children().length; i++) {
+                        for (var i = 1; i < $(".rating-star").children().length+1; i++) {
                             if (i <= rating) {
+                                console.log(i+" lol "+rating);
                                 $(".rating-star > i:nth-child("+i+")").css("color", "orange");
                             }
                         }

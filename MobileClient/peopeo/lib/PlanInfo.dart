@@ -9,6 +9,7 @@ import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart';
 import 'package:intl/intl.dart';
+import 'package:peopeo/AuthManager.dart';
 import 'package:peopeo/Chat.dart';
 import 'package:peopeo/Const.dart';
 import 'package:peopeo/HttpResponse.dart';
@@ -30,6 +31,7 @@ class PlanInfo extends StatefulWidget {
 }
 
 class PlanInfoState extends State<PlanInfo> {
+
   String uid;
   int userType;
   DateFormat df = new DateFormat('dd-MM-yyyy hh:mm a');
@@ -83,6 +85,7 @@ class PlanInfoState extends State<PlanInfo> {
                           String st = df.format(
                               DateTime.parse(snapshot.data[index].fStartTime));
                           return Container(
+                              width: 95.0,
                               margin: EdgeInsets.fromLTRB(0.0, 5.0, 0.0, 0.0),
                               padding: EdgeInsets.all(3.0),
                               color: Colors.red,
@@ -195,35 +198,61 @@ class PlanInfoState extends State<PlanInfo> {
   }
 
   Future<List<Plan>> getPlanList() async {
-    String timeZone = await FlutterNativeTimezone.getLocalTimezone();
-    String url = serverBaseUrl + '/plan/get-all-plan-by-user';
-    Map<String, String> headers = {"Content-type": "application/json"};
-    var request;
-    if (userType == 2) {
-      request = {
-        'plan': {'conUid': uid, 'userType': 2, 'timeZone': timeZone}
-      };
-    } else {
-      request = {
-        'plan': {'cusUid': uid, 'userType': 1, 'timeZone': timeZone}
-      };
-    }
-    Response response =
-        await post(url, headers: headers, body: json.encode(request));
 
-    if (response.statusCode == 200) {
-      print(response.body);
-      var body = json.decode(response.body);
+    List<Plan> planList = [];
 
-      if (body['code'] == 404) {
-        return [];
+    String authId = await AuthManager.init();
+
+    if(authId == null){
+
+      Fluttertoast.showToast(msg: "Auth initialization error.");
+
+    }else {
+
+      String timeZone = await FlutterNativeTimezone.getLocalTimezone();
+      String url = serverBaseUrl + '/plan/get-all-plan-by-user';
+      Map<String, String> headers = {"Content-type": "application/json"};
+      var request;
+      if (userType == 2) {
+        request = {
+          'plan': {
+            'conUid': uid,
+            'userType': 2,
+            'timeZone': timeZone
+          },
+          'uid' : uid,
+          'authId' : authId
+        };
       } else {
-        return HttpResponse.fromJson(json.decode(response.body)).planList;
+        request = {
+          'plan': {
+            'cusUid': uid,
+            'userType': 1,
+            'timeZone': timeZone
+          },
+          'uid' : uid,
+          'authId' : authId
+        };
       }
-    } else {
-      Fluttertoast.showToast(msg: "Plan list getting error!");
-      return [];
+      Response response =
+      await post(url, headers: headers, body: json.encode(request));
+
+      if (response.statusCode == 200) {
+        print(response.body);
+        var body = json.decode(response.body);
+
+        if (body['code'] == 200) {
+          planList = HttpResponse.fromJson(json.decode(response.body)).planList;
+        }
+      } else {
+        Fluttertoast.showToast(msg: "Plan list getting error!");
+      }
+
     }
+
+    print("paln list = $planList");
+    return planList;
+
   }
 
   showPaymentButtonOrChatButton(Plan p) {

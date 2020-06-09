@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:peopeo/CustomerProfile.dart';
+import 'package:peopeo/utility/PlanManager.dart';
 
 import 'MySharedPreferences.dart';
 
@@ -144,13 +145,25 @@ class CustomerListViewerState extends State<CustomerListViewer> {
                         borderRadius: new BorderRadius.circular(8.0),
                         side: BorderSide(color: Colors.red)),
                     onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) {
-                            return CustomerProfile(uid: document['uid']);
-                          },
-                        ),
-                      );
+
+                      showAlertDialog(context,"Please wait...");
+
+                      var data = {
+                        'userType' : 2,
+                        'uid' : document['uid']
+                      };
+
+                      PlanManager.getPlanList(data).then((reviewAndRatingList){
+                        Navigator.of(context, rootNavigator: true).pop('dialog');
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) {
+                              return CustomerProfile(uid: document['uid']);
+                            },
+                          ),
+                        );
+                      });
+
                     },
                     color: Colors.red,
                     textColor: Colors.white,

@@ -7,9 +7,6 @@ import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
 import com.google.firebase.cloud.FirestoreClient;
 
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-
 public class AuthManager {
 
     public Integer check(Request request) {

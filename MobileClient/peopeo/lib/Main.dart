@@ -8,10 +8,10 @@ import 'package:connectivity/connectivity.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
+import 'package:flutter_phoenix/flutter_phoenix.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
-import 'package:peopeo/AuthManager.dart';
 import 'package:peopeo/ChattedUserViewer.dart';
 import 'package:peopeo/Const.dart';
 import 'package:peopeo/ConsultantProfile.dart';
@@ -25,17 +25,19 @@ import 'package:peopeo/MySharedPreferences.dart';
 import 'package:peopeo/NotificationViewer.dart';
 import 'package:peopeo/PlanInfo.dart';
 import 'package:peopeo/UserInfo.dart';
+import 'package:peopeo/utility/PlanManager.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:share/share.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(Phoenix(child: MyApp()));
 }
 
 bool isUserLoggedIn = false;
 var userInfo;
 
 class MyApp extends StatelessWidget {
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -52,7 +54,7 @@ class MyApp extends StatelessWidget {
               isUserLoggedIn = true;
               userInfo = jsonDecode(snapshot.data);
               print("uid = ${userInfo['uid']}");
-              print("photoUrl = ${userInfo['photoUrl']}");
+              print("photo url = ${userInfo['photoUrl']}");
 
               MySharedPreferences.getBooleanValue("isUploadRunning")
                   .then((isUploadRunning) {
@@ -395,7 +397,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     );
   }
 
-  void redirectCalender(DocumentSnapshot document, String tz) async {
+  void redirectCalender(DocumentSnapshot document, String tz, BuildContext context) async {
 
     if (userInfo['userType'] == 1) {
       int hr = document['hourlyRate'];
@@ -425,7 +427,6 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             tz;
 
         print("calender url = $calenderUrl");
-
         Navigator.of(context).pop();
         Navigator.of(context).push(
           MaterialPageRoute(
@@ -447,7 +448,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       Navigator.of(context).pop();
       Fluttertoast.showToast(
           msg:
-              "Because of you are a expert you can't see another expert calander!");
+              "Because of you are a expert, you can't see another expert calander!");
     }
   }
 
@@ -656,13 +657,27 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                         side: BorderSide(color: Colors.red)),
                     onPressed: () {
                       if (isUserLoggedIn) {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) {
-                              return ConsultantProfile(uid: document['uid']);
-                            },
-                          ),
-                        );
+
+                        showAlertDialog(context,"Please wait...");
+
+                        var data = {
+                          'userType' : 2,
+                          'uid' : document['uid']
+                        };
+
+                        PlanManager.getPlanList(data).then((reviewAndRatingList){
+
+                          Navigator.of(context, rootNavigator: true).pop('dialog');
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) {
+                                return ConsultantProfile(uid: document['uid'],reviewAndRatingList: reviewAndRatingList);
+                              },
+                            ),
+                          );
+
+                        });
+
                       } else {
                         goToLoginPage();
                       }
@@ -703,9 +718,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                               } else {
                                 getTimeZone().then((tz) {
 
-                                  // working ...
-                                  redirectCalender(document, tz);
-
+                                  redirectCalender(document, tz,context);
 
                                 }).catchError((er) {
                                   Navigator.of(context).pop();
@@ -743,7 +756,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   getFreeMinutes(DocumentSnapshot document) {
     if (document['freeMinutesForNewCustomer'] == null) {
       return Text(
-        "[No fres minutes for new customer]",
+        "[No free minutes for new customer]",
         textAlign: TextAlign.center,
         style: TextStyle(color: Colors.green, fontFamily: "Armata"),
       );
@@ -966,12 +979,13 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                   style: TextStyle(
                       color: Colors.pink,
                       fontFamily: 'Armata',
+                      fontSize: 15.0,
                       fontWeight: FontWeight.bold)),
               content: Wrap(children: <Widget>[
                 Visibility(
                   visible: val.data['type'] == 6 || val.data['type'] == 7,
                   child: Text(val.data['body'],
-                      style: getTextStyle(Colors.black, FontWeight.normal)),
+                      style: getTextStyle(Colors.black, FontWeight.normal,14.0)),
                 ),
                 Visibility(
                   visible: val.data['type'] == 1 ||
@@ -986,17 +1000,17 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                           val.data['topic'] == null
                               ? "empty"
                               : "Topic ${val.data['topic']}",
-                          style: getTextStyle(Colors.black, FontWeight.bold)),
+                          style: getTextStyle(Colors.black, FontWeight.bold,14.0)),
                       Text(
                           val.data['startTime'] == null
                               ? "empty"
-                              : "Start time ${val.data['startTime']}",
-                          style: getTextStyle(Colors.black, FontWeight.normal)),
+                              : "Start at ${val.data['startTime']}",
+                          style: getTextStyle(Colors.black, FontWeight.normal,11.0)),
                       Text(
                           val.data['endTime'] == null
                               ? "empty"
-                              : "End time   ${val.data['endTime']}",
-                          style: getTextStyle(Colors.black, FontWeight.normal)),
+                              : "End at ${val.data['endTime']}",
+                          style: getTextStyle(Colors.black, FontWeight.normal,11.0)),
                     ],
                   ),
                 )
@@ -1034,9 +1048,9 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
 
   }
 
-  TextStyle getTextStyle(Color color, FontWeight fontWeight) {
+  TextStyle getTextStyle(Color color, FontWeight fontWeight,double fs) {
     return TextStyle(
-        color: color, fontFamily: 'Armata', fontWeight: fontWeight);
+        color: color, fontFamily: 'Armata', fontWeight: fontWeight,fontSize: fs);
   }
 
   void goToLoginPage() {
@@ -1154,38 +1168,72 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
 
   getProfilePic() {
     if (isUserLoggedIn) {
-      return Container(
-        height: 10.0,
-        width: 10.0,
-        child: InkWell(
-          onTap: () {
-            if (userInfo['userType'] == 1) {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) {
-                    return CustomerProfile(uid: userInfo['uid']);
+      return FutureBuilder(
+        future: MySharedPreferences.getStringValue("userInfo"),
+          builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+
+            if (snapshot.hasData) {
+
+              var ui = jsonDecode(snapshot.data);
+              return Container(
+                height: 10.0,
+                width: 10.0,
+                child: InkWell(
+                  onTap: () {
+
+                    showAlertDialog(context,"Please wait...");
+
+                    var data = {
+                      'userType' : ui['userType'],
+                      'uid' : ui['uid']
+                    };
+
+                    PlanManager.getPlanList(data).then((reviewAndRatingList){
+
+                      Navigator.of(context, rootNavigator: true).pop('dialog');
+                      if (ui['userType'] == 1) {
+
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) {
+                              return CustomerProfile(uid: ui['uid'],reviewAndRatingList : reviewAndRatingList);
+                            },
+                          ),
+                        );
+                      } else {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) {
+                              return ConsultantProfile(uid: ui['uid'],reviewAndRatingList : reviewAndRatingList);
+                            },
+                          ),
+                        );
+                      }
+
+                    });
+
                   },
                 ),
-              );
-            } else {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) {
-                    return ConsultantProfile(uid: userInfo['uid']);
-                  },
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  image: DecorationImage(
+                      fit: BoxFit.fill,
+                      image: isInternetAvailable
+                          ? CachedNetworkImageProvider(ui['photoUrl'])
+                          : AssetImage("assets/images/demo_profile_pic.png")),
                 ),
               );
+
+            }else {
+
+              return Container(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                ),
+              );
+
             }
-          },
-        ),
-        decoration: new BoxDecoration(
-          shape: BoxShape.circle,
-          image: new DecorationImage(
-              fit: BoxFit.fill,
-              image: isInternetAvailable
-                  ? CachedNetworkImageProvider(userInfo['photoUrl'])
-                  : AssetImage("assets/images/demo_profile_pic.png")),
-        ),
+          }
       );
     } else {
       return Container(

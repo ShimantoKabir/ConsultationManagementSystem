@@ -9,6 +9,7 @@ import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:peopeo/MyFlutterWebView.dart';
 import 'package:peopeo/MySharedPreferences.dart';
+import 'package:peopeo/utility/PlanManager.dart';
 import 'package:share/share.dart';
 import 'Const.dart';
 import 'ConsultantProfile.dart';
@@ -291,13 +292,27 @@ class LikedUserViewerState extends State<LikedUserViewer> {
                       borderRadius: new BorderRadius.circular(8.0),
                       side: BorderSide(color: Colors.red)),
                   onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) {
-                          return ConsultantProfile(uid: document['uid']);
-                        },
-                      ),
-                    );
+
+                    showAlertDialog(context,"Please wait...");
+
+                    var data = {
+                      'userType' : 1,
+                      'uid' : document['uid']
+                    };
+
+                    PlanManager.getPlanList(data).then((reviewAndRatingList){
+
+                      Navigator.of(context, rootNavigator: true).pop('dialog');
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) {
+                            return ConsultantProfile(uid: document['uid'],reviewAndRatingList: reviewAndRatingList);
+                          },
+                        ),
+                      );
+
+                    });
+
                   },
                   color: Colors.red,
                   textColor: Colors.white,

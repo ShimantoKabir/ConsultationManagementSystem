@@ -17,13 +17,15 @@ class AuthManager{
       var userInfo = await MySharedPreferences.getStringValue("userInfo");
 
       ui = jsonDecode(userInfo);
-
       print("auth init uid = ${ui['uid']}");
+      print("auth init authId = $authId");
 
       await Firestore.instance
           .collection("userInfoList")
           .document(ui['uid'])
           .updateData({"authId" : authId});
+
+      print("auth init authId = $authId");
 
       return Future.value(authId);
 
