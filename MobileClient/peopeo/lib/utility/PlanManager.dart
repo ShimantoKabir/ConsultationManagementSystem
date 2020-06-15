@@ -13,7 +13,10 @@ class PlanManager{
 
     List<Plan> reviewAndRatingList = [];
 
+
     String authId = await AuthManager.init();
+
+    print("go");
 
     if(authId == null){
 

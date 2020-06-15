@@ -1,20 +1,15 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity/connectivity.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_phoenix/flutter_phoenix.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:http/http.dart';
-import 'package:peopeo/AuthManager.dart';
-import 'package:peopeo/Const.dart';
 import 'package:peopeo/EditProfile.dart';
 import 'package:peopeo/FullPhoto.dart';
-import 'package:peopeo/HttpResponse.dart';
 import 'package:peopeo/LoginPage.dart';
 import 'package:peopeo/MySharedPreferences.dart';
 import 'package:peopeo/Plan.dart';
@@ -197,7 +192,7 @@ class CustomerProfileState extends State<CustomerProfile>
                                     decoration: new BoxDecoration(
                                         shape: BoxShape.circle,
                                         image: new DecorationImage(
-                                            fit: BoxFit.fill,
+                                            fit: BoxFit.cover,
                                             image: new CachedNetworkImageProvider(snapshot
                                                 .data.documents[0]['photoUrl']))
                                     ),

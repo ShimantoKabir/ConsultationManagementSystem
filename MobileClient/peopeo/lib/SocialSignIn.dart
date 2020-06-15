@@ -6,12 +6,14 @@ import 'package:flutter_facebook_login/flutter_facebook_login.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart';
+import 'package:intl/intl.dart';
 import 'package:peopeo/MySharedPreferences.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final FirebaseAuth auth = FirebaseAuth.instance;
 final GoogleSignIn googleSignIn = GoogleSignIn();
 final databaseReference = Firestore.instance;
+final DateFormat df = new DateFormat('dd-MM-yyyy hh:mm:ss a');
 SharedPreferences prefs;
 String facebookAccessToken;
 
@@ -110,7 +112,7 @@ Future<bool> setUserCredential(
         .collection("userInfoList")
         .document(user.uid)
         .updateData({"fcmRegistrationToken": data['token']}).then((res) {
-      print('Fcm Registration token update successfully!');
+      print('fcm registration token update successfully!');
     });
 
     return null;
@@ -147,30 +149,12 @@ Future<bool> createUser(FirebaseUser user,Map<String, dynamic> data,String photo
     'hashTag': hashTag,
     'coronavirusExperience' : null,
     'isOnline' : true,
-    'lastOnlineAt' : DateTime.now(),
+    "lastOnlineAt": df.format(DateTime.now()),
     'timeZone' : timeZone
   });
 
   return Future.value(true);
-  // return createCustomerInBrainTree(user);
 }
-
-//Future<Response> createCustomerInBrainTree(FirebaseUser user) async {
-//  String url = serverBaseUrl + '/pg/create-customer';
-//  Map<String, String> headers = {"Content-type": "application/json"};
-//  var request = {
-//    'userInfo': {
-//      'firstName': user.displayName,
-//      'email': user.email,
-//      'phone': user.phoneNumber,
-//      'customerId': user.uid
-//    }
-//  };
-//  Response response =
-//      await post(url, headers: headers, body: json.encode(request));
-//  print(response.body);
-//  return response;
-//}
 
 Future<bool> logOut() async {
 
@@ -181,7 +165,7 @@ Future<bool> logOut() async {
     preferences.remove(key);
   }
 
-  await GoogleSignIn().signOut();
+  await googleSignIn.disconnect();
   await FacebookLogin().logOut();
   await FirebaseAuth.instance.signOut();
 

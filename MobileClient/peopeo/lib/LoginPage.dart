@@ -304,7 +304,7 @@ class LoginPageState extends State<LoginPage> {
                       fontWeight: FontWeight.bold)),
               onPressed: () {
                 Navigator.of(context).pop();
-                processUserRegistration(context);
+                processUserRegistration();
               },
             )
           ],
@@ -330,7 +330,7 @@ class LoginPageState extends State<LoginPage> {
     );
   }
 
-  void processUserRegistration(BuildContext context) {
+  void processUserRegistration() {
     showAlertDialog(context, "Please wait user registration processing.");
     fm.getToken().then((token) {
 

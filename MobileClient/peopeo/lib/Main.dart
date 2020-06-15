@@ -20,7 +20,7 @@ import 'package:peopeo/CustomerProfile.dart';
 import 'package:peopeo/ExpertSearch.dart';
 import 'package:peopeo/LikedUserViewer.dart';
 import 'package:peopeo/LoginPage.dart';
-import 'package:peopeo/MyFlutterWebView.dart';
+import 'package:peopeo/CalenderWebView.dart';
 import 'package:peopeo/MySharedPreferences.dart';
 import 'package:peopeo/NotificationViewer.dart';
 import 'package:peopeo/PlanInfo.dart';
@@ -123,26 +123,59 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     ReceiveSharingIntent.getInitialText().then((String uid) {
       print("whan app not in memory => shared text $uid");
       if (uid != null) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) {
-              return ConsultantProfile(uid: uid);
-            },
-          ),
-        );
+
+        showAlertDialog(context,"Please wait...");
+
+        var data = {
+          'userType' : 2,
+          'uid' : uid
+        };
+
+        PlanManager.getPlanList(data).then((reviewAndRatingList){
+
+          print("go");
+
+          Navigator.of(context, rootNavigator: true).pop('dialog');
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) {
+
+                return ConsultantProfile(uid: uid,reviewAndRatingList: reviewAndRatingList);
+
+              },
+            ),
+          );
+
+        });
+
       }
     });
 
     rsiSubscription = ReceiveSharingIntent.getTextStream().listen((String uid) {
       print("whan app in memory => shared text $uid");
       if (uid != null) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) {
-              return ConsultantProfile(uid: uid);
-            },
-          ),
-        );
+
+        showAlertDialog(context,"Please wait...");
+
+        var data = {
+          'userType' : 2,
+          'uid' : uid
+        };
+
+        PlanManager.getPlanList(data).then((reviewAndRatingList){
+
+          Navigator.of(context, rootNavigator: true).pop('dialog');
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) {
+
+                return ConsultantProfile(uid: uid,reviewAndRatingList: reviewAndRatingList);
+
+              },
+            ),
+          );
+
+        });
       }
     }, onError: (err) {
       print("getLinkStream error: $err");
@@ -1217,7 +1250,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   image: DecorationImage(
-                      fit: BoxFit.fill,
+                      fit: BoxFit.cover,
                       image: isInternetAvailable
                           ? CachedNetworkImageProvider(ui['photoUrl'])
                           : AssetImage("assets/images/demo_profile_pic.png")),
@@ -1273,15 +1306,23 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   void updateOnlineStatus() {
     if (isUserLoggedIn) {
       getTimeZone().then((tz) {
-        print("last online update , timezone = $tz");
-        Firestore.instance
-            .collection("userInfoList")
-            .document(userInfo['uid'])
-            .updateData({
-          "lastOnlineAt": df.format(DateTime.now()),
-          "timeZone": tz,
-          "isOnline": true,
-        });
+
+        if(userInfo['userType'] == 2){
+
+          print("user type = ${userInfo['userType']}");
+          print("last online update , timezone = $tz");
+
+          Firestore.instance
+              .collection("userInfoList")
+              .document(userInfo['uid'])
+              .updateData({
+            "lastOnlineAt": df.format(DateTime.now()),
+            "timeZone": tz,
+            "isOnline": true,
+          });
+
+        }
+
       });
     }
   }

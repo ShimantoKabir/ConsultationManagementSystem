@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:peopeo/MyFlutterWebView.dart';
+import 'package:peopeo/CalenderWebView.dart';
 import 'package:peopeo/MySharedPreferences.dart';
 import 'package:peopeo/utility/PlanManager.dart';
 import 'package:share/share.dart';

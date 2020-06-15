@@ -1,7 +1,7 @@
 name: peopeo
 description: A new Flutter application.
 
-version: 1.0.0+1
+version: 1.0.1+1.1
 
 environment:
   sdk: ">=2.1.0 <3.0.0"
@@ -50,7 +50,6 @@ dependencies:
   connectivity:
   chewie: ^0.9.10
   flutter_phoenix: ^0.1.0
-  flutter_cache_manager: ^1.4.0
 
 dev_dependencies:
   flutter_test:

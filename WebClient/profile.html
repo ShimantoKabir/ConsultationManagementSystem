@@ -21,7 +21,7 @@
         $(document).ready(function () {
 
             var rating = 0;
-            var like = 0;
+            var like = '';
             var hourlyRate = 0;
             var freeMin = 0;
             var shortDes = '';
@@ -45,6 +45,24 @@
 
             if (isUrlOk) {
 
+    			db.collection("userInfoList").doc(uId).collection("likedUserIdList").get().then(function(querySnapshot) {
+				    
+				    if (querySnapshot.size > 0) {
+
+				    	if (querySnapshot.size == 1) {
+                          like = "1 Like";
+                        } else {
+                          like = querySnapshot.size+" Likes";
+                        }
+
+				    }else {
+	                    like = "0 Like";
+	                }
+
+	                $("#totalLike").text(like);
+
+				});
+
                 var docRef = db.collection("userInfoList").doc(uId);
 
                 docRef.get().then(function(doc) {
@@ -52,7 +70,9 @@
                     if (doc.exists) {
 
                         rating = (doc.data().rating == null) ? 0 : doc.data().rating;
+
                         like = (doc.data().like == null) ? 0 : doc.data().like;
+                        console.log(like);
                         hourlyRate = (doc.data().hourlyRate == null) ? 0 : doc.data().hourlyRate;
                         freeMin = (doc.data().freeMinutesForNewCustomer == null) ? 0 : doc.data().freeMinutesForNewCustomer;
                         
@@ -63,7 +83,6 @@
                         coronaExp = (doc.data().coronavirusExperience == null) ? 'Corona virus experience not given yet' : doc.data().coronavirusExperience;
 
                         $(".profile-pic").attr("src",doc.data().photoUrl);
-                        $("#totalLike").text(like);
                         $("#hourlyRate").text(hourlyRate);
                         $("#freeMin").text(freeMin);
                         $("#displayName").text(doc.data().displayName);
@@ -160,7 +179,7 @@
                             <div class="lh-area" >
                                 <div class="like-area" >
                                     <i class="fa fa-heart"></i>
-                                    <p><span id="totalLike" >0</span> likes</p>
+                                    <p><span id="totalLike" >..</span></p>
                                 </div>
                                 <div class="hourly-rate-area" >
                                     <i class="fa fa-dollar"></i>

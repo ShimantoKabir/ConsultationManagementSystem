@@ -14,7 +14,7 @@ import 'package:peopeo/Chat.dart';
 import 'package:peopeo/Const.dart';
 import 'package:peopeo/HttpResponse.dart';
 import 'package:peopeo/MySharedPreferences.dart';
-import 'package:peopeo/MyWebView.dart';
+import 'package:peopeo/PaymentWebView.dart';
 import 'package:peopeo/Plan.dart';
 import 'package:side_header_list_view/side_header_list_view.dart';
 
@@ -85,13 +85,13 @@ class PlanInfoState extends State<PlanInfo> {
                           String st = df.format(
                               DateTime.parse(snapshot.data[index].fStartTime));
                           return Container(
-                              width: 95.0,
+                              width: 90.0,
                               margin: EdgeInsets.fromLTRB(0.0, 5.0, 0.0, 0.0),
                               padding: EdgeInsets.all(3.0),
                               color: Colors.red,
                               child: Text(st.substring(0, 10),
                                   style: TextStyle(
-                                      fontSize: 15.0,
+                                      fontSize: 13.0,
                                       color: Colors.white,
                                       fontFamily: 'Armata',
                                       fontWeight: FontWeight.bold)));
