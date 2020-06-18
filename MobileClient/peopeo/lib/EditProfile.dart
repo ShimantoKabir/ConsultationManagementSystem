@@ -66,6 +66,7 @@ class EditProfileState extends State<EditProfile> with WidgetsBindingObserver {
   Subscription subscription;
   int videoDuration = 0;
   DocumentReference videoDr;
+  FocusScopeNode currentFocus;
 
   @override
   void initState() {
@@ -136,6 +137,7 @@ class EditProfileState extends State<EditProfile> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    currentFocus = FocusScope.of(context);
     return WillPopScope(
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
@@ -563,9 +565,14 @@ class EditProfileState extends State<EditProfile> with WidgetsBindingObserver {
                                               print("display name = ${displayNameTECtl.text.trim()}");
                                               MySharedPreferences.setStringValue("displayName", displayNameTECtl.text.trim());
 
+                                              if (!currentFocus.hasPrimaryFocus) {
+                                                currentFocus.requestFocus(new FocusNode());
+                                              }
+
                                               Navigator.of(context,
                                                       rootNavigator: true)
                                                   .pop();
+
                                               Fluttertoast.showToast(
                                                   msg:
                                                       "Information save successfully!");
@@ -627,12 +634,19 @@ class EditProfileState extends State<EditProfile> with WidgetsBindingObserver {
                                               'hashTag': getHashTag()
                                             }).then((val) {
 
+
                                               print("display name = ${displayNameTECtl.text.trim()}");
                                               MySharedPreferences.setStringValue("displayName", displayNameTECtl.text.trim());
+
+
+                                              if (!currentFocus.hasPrimaryFocus) {
+                                                currentFocus.requestFocus(new FocusNode());
+                                              }
 
                                               Navigator.of(context,
                                                       rootNavigator: true)
                                                   .pop();
+
                                               Fluttertoast.showToast(
                                                   msg:
                                                       "Information save successfully!");

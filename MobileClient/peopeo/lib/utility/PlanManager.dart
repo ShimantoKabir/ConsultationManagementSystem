@@ -13,12 +13,9 @@ class PlanManager{
 
     List<Plan> reviewAndRatingList = [];
 
+    Map<String, dynamic> authInfo = await AuthManager.init();
 
-    String authId = await AuthManager.init();
-
-    print("go");
-
-    if(authId == null){
+    if(authInfo == null){
 
       Fluttertoast.showToast(msg: "Auth initialization error.");
 
@@ -36,8 +33,8 @@ class PlanManager{
             'cusUid': userInfo['uid'],
             'userType': 1
           },
-          'authId' : authId,
-          'uid' : userInfo['uid']
+          'authId' : authInfo['authId'],
+          'uid' : authInfo['uid']
         };
 
       }else {
@@ -47,8 +44,8 @@ class PlanManager{
             'conUid': userInfo['uid'],
             'userType': 2
           },
-          'authId' : authId,
-          'uid' : userInfo['uid']
+          'authId' : authInfo['authId'],
+          'uid' : authInfo['uid']
         };
 
       }

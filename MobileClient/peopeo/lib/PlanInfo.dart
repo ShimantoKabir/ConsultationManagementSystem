@@ -201,9 +201,9 @@ class PlanInfoState extends State<PlanInfo> {
 
     List<Plan> planList = [];
 
-    String authId = await AuthManager.init();
+    Map<String, dynamic> authInfo = await AuthManager.init();
 
-    if(authId == null){
+    if(authInfo == null){
 
       Fluttertoast.showToast(msg: "Auth initialization error.");
 
@@ -220,8 +220,8 @@ class PlanInfoState extends State<PlanInfo> {
             'userType': 2,
             'timeZone': timeZone
           },
-          'uid' : uid,
-          'authId' : authId
+          'uid' : authInfo['uid'],
+          'authId' : authInfo['authId']
         };
       } else {
         request = {
@@ -230,8 +230,8 @@ class PlanInfoState extends State<PlanInfo> {
             'userType': 1,
             'timeZone': timeZone
           },
-          'uid' : uid,
-          'authId' : authId
+          'uid' : authInfo['uid'],
+          'authId' : authInfo['authId']
         };
       }
       Response response =

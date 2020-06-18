@@ -11,6 +11,7 @@ import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:flutter_phoenix/flutter_phoenix.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:http/http.dart';
 import 'package:intl/intl.dart';
 import 'package:peopeo/ChattedUserViewer.dart';
 import 'package:peopeo/Const.dart';
@@ -124,29 +125,33 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       print("whan app not in memory => shared text $uid");
       if (uid != null) {
 
-        showAlertDialog(context,"Please wait...");
+        if (isUserLoggedIn) {
 
-        var data = {
-          'userType' : 2,
-          'uid' : uid
-        };
+          showAlertDialog(context,"Please wait...");
 
-        PlanManager.getPlanList(data).then((reviewAndRatingList){
+          var data = {
+            'userType' : 2,
+            'uid' : uid
+          };
 
-          print("go");
+          PlanManager.getPlanList(data).then((reviewAndRatingList){
 
-          Navigator.of(context, rootNavigator: true).pop('dialog');
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) {
+            Navigator.of(context, rootNavigator: true).pop('dialog');
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) {
 
-                return ConsultantProfile(uid: uid,reviewAndRatingList: reviewAndRatingList);
+                  return ConsultantProfile(uid: uid,reviewAndRatingList: reviewAndRatingList);
 
-              },
-            ),
-          );
+                },
+              ),
+            );
 
-        });
+          });
+
+        } else {
+          goToLoginPage();
+        }
 
       }
     });
@@ -155,27 +160,34 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       print("whan app in memory => shared text $uid");
       if (uid != null) {
 
-        showAlertDialog(context,"Please wait...");
+        if (isUserLoggedIn) {
 
-        var data = {
-          'userType' : 2,
-          'uid' : uid
-        };
+          showAlertDialog(context,"Please wait...");
 
-        PlanManager.getPlanList(data).then((reviewAndRatingList){
+          var data = {
+            'userType' : 2,
+            'uid' : uid
+          };
 
-          Navigator.of(context, rootNavigator: true).pop('dialog');
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) {
+          PlanManager.getPlanList(data).then((reviewAndRatingList){
 
-                return ConsultantProfile(uid: uid,reviewAndRatingList: reviewAndRatingList);
+            Navigator.of(context, rootNavigator: true).pop('dialog');
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) {
 
-              },
-            ),
-          );
+                  return ConsultantProfile(uid: uid,reviewAndRatingList: reviewAndRatingList);
 
-        });
+                },
+              ),
+            );
+
+          });
+
+        }else {
+          goToLoginPage();
+        }
+
       }
     }, onError: (err) {
       print("getLinkStream error: $err");
@@ -199,6 +211,8 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         print('Data connection is available.');
       }
     });
+
+    // checkServer();
 
   }
 
@@ -1332,5 +1346,32 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     connectivitySubscription.cancel();
     rsiSubscription.cancel();
     super.dispose();
+  }
+
+  Future<void> checkServer() async {
+
+    String url = serverBaseUrl + '/app/test';
+    Map<String, String> headers = {"Content-type": "application/json"};
+
+    Response response = await get(url,headers: headers);
+
+    print("server status = ${response.body}");
+
+    if (response.statusCode == 200) {
+
+      var body = json.decode(response.body);
+      if (body['code'] == 200) {
+        Fluttertoast.showToast(msg: "Server side application running.");
+      }else {
+        Fluttertoast.showToast(msg: "Server side application error.");
+      }
+
+    }else {
+
+      Fluttertoast.showToast(msg: "Sever status code ${response.statusCode}");
+
+    }
+
+
   }
 }

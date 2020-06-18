@@ -15,6 +15,22 @@
       },
       "oauth_client": [
         {
+          "client_id": "1008185790163-l8h5e2sic1sc54o5pdutpii3c9m1ecsa.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dannygroupllc.cms.peopeo",
+            "certificate_hash": "98c70ce7faaec5484318f3364d70953c6afd7207"
+          }
+        },
+        {
+          "client_id": "1008185790163-q0bn40osmgsonja32g3dqqc0v4f73e70.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dannygroupllc.cms.peopeo",
+            "certificate_hash": "a58916cfd6724d1d0d8617f79a4c46b104e20200"
+          }
+        },
+        {
           "client_id": "1008185790163-9crkl8ciu2e86s2rbt008r9cf1d1qms2.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

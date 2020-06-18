@@ -139,8 +139,13 @@ class ConsultantProfileState extends State<ConsultantProfile>
                                                   fontFamily: 'Armata',
                                                   fontWeight: FontWeight.bold)),
                                           onPressed: () {
+
+                                            showAlertDialog(context,"Please wait...");
+
                                             logOut().then((isDataCleared) {
                                               if (isDataCleared) {
+                                                Navigator.of(context)
+                                                    .pop(false);
                                                 Navigator.of(context)
                                                     .pop(false);
                                                 redirectLoginPage();

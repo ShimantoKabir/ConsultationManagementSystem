@@ -42,12 +42,30 @@
 
             $("#afterActionBtn").unbind("click").bind("click", function (e) {
 
-                let screenDate = new Date($('#calendar').fullCalendar('getDate').toString());
-                let fSd = screenDate.getFullYear()+"-"+(screenDate.getMonth()+1).toString().padStart(2, '0')+"-"+screenDate.getDate().toString().padStart(2, '0');
-                let newLocation = window.location.href+"&screen-date="+fSd;
+                let sd = $('#calendar').fullCalendar('getView').start.format('YYYY-MM-DD');
+                let newLocation = removeExtraFromUrl()+"&screen-date="+sd;
                 window.location.href = newLocation;
 
             });
+
+            function removeExtraFromUrl() {
+
+                let newUrl = '';
+                let arrayUrl = window.location.href.split("&");
+                console.log(arrayUrl.length);
+                if (arrayUrl.length>5) {
+
+                    for (var i = 0; i < 5; i++) {
+                        newUrl = newUrl + arrayUrl[i] + '&';
+                    }
+
+                }else {
+                    newUrl = window.location.href;
+                }
+
+                return newUrl;
+
+            }
 
             function showAlert(data) {
 
@@ -206,6 +224,7 @@
             let timeZone = null;
             let topicPlaceHolder = '';
             let chatDurationMinLimit = 20;
+
             let screenDate = urlParameters.has('screen-date') ? urlParameters.get('screen-date') : null;
 
             if (urlParameters.has('conid')) {

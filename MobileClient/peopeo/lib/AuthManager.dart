@@ -7,7 +7,7 @@ import 'package:uuid/uuid.dart';
 
 class AuthManager{
 
-  static Future<String> init() async {
+  static Future<Map<String, dynamic>> init() async {
 
     try{
 
@@ -27,7 +27,12 @@ class AuthManager{
 
       print("auth init authId = $authId");
 
-      return Future.value(authId);
+      var authInfo = {
+        'uid' : ui['uid'],
+        'authId' : authId,
+      };
+
+      return Future.value(authInfo);
 
     }catch (e) {
       print(e);

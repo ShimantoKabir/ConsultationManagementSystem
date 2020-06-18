@@ -20,22 +20,24 @@ class CustomerProfile extends StatefulWidget {
   final String uid;
   final List<Plan> reviewAndRatingList;
 
-  CustomerProfile({Key key, @required this.uid,this.reviewAndRatingList}) : super(key: key);
+  CustomerProfile({Key key, @required this.uid, this.reviewAndRatingList})
+      : super(key: key);
 
   @override
-  CustomerProfileState createState() => new CustomerProfileState(uid: uid,reviewAndRatingList : reviewAndRatingList);
+  CustomerProfileState createState() => new CustomerProfileState(
+      uid: uid, reviewAndRatingList: reviewAndRatingList);
 }
 
 class CustomerProfileState extends State<CustomerProfile>
     with TickerProviderStateMixin {
-
   String uid;
   List<Plan> reviewAndRatingList;
   bool needToShowEditButton = false;
   bool isInternetAvailable = true;
   StreamSubscription<ConnectivityResult> connectivitySubscription;
 
-  CustomerProfileState({Key key, @required this.uid, @required this.reviewAndRatingList});
+  CustomerProfileState(
+      {Key key, @required this.uid, @required this.reviewAndRatingList});
 
   List<Tab> tabList = List();
   TabController tabController;
@@ -144,8 +146,13 @@ class CustomerProfileState extends State<CustomerProfile>
                                                   fontFamily: 'Armata',
                                                   fontWeight: FontWeight.bold)),
                                           onPressed: () {
+                                            showAlertDialog(
+                                                context, "Please wait...");
+
                                             logOut().then((isDataCleared) {
                                               if (isDataCleared) {
+                                                Navigator.of(context)
+                                                    .pop(false);
                                                 Navigator.of(context)
                                                     .pop(false);
                                                 redirectLoginPage();
@@ -166,9 +173,8 @@ class CustomerProfileState extends State<CustomerProfile>
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.hasData) {
-
-                  print("profile photo url = ${snapshot
-                      .data.documents[0]['photoUrl']}");
+                  print(
+                      "profile photo url = ${snapshot.data.documents[0]['photoUrl']}");
 
                   return ListView(
                     children: <Widget>[
@@ -193,17 +199,18 @@ class CustomerProfileState extends State<CustomerProfile>
                                         shape: BoxShape.circle,
                                         image: new DecorationImage(
                                             fit: BoxFit.cover,
-                                            image: new CachedNetworkImageProvider(snapshot
-                                                .data.documents[0]['photoUrl']))
-                                    ),
+                                            image:
+                                                new CachedNetworkImageProvider(
+                                                    snapshot.data.documents[0]
+                                                        ['photoUrl']))),
                                   ),
-                                  onTap: (){
+                                  onTap: () {
                                     Navigator.of(context).push(
                                       MaterialPageRoute(
                                         builder: (context) {
                                           return FullPhoto(
                                               url: snapshot.data.documents[0]
-                                              ['photoUrl']);
+                                                  ['photoUrl']);
                                         },
                                       ),
                                     );
@@ -361,8 +368,7 @@ class CustomerProfileState extends State<CustomerProfile>
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
-                          valueColor:
-                          AlwaysStoppedAnimation<Color>(Colors.red),
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
                           strokeWidth: 1.0,
                         )),
                     SizedBox(width: 10),
@@ -375,8 +381,7 @@ class CustomerProfileState extends State<CustomerProfile>
                         ))
                   ],
                 ),
-              )
-          ),
+              )),
           floatingActionButton: Visibility(
               visible: needToShowEditButton,
               child: FloatingActionButton(
@@ -534,36 +539,29 @@ class CustomerProfileState extends State<CustomerProfile>
   }
 
   showReviewAndRating(BuildContext context) {
-
-    if(reviewAndRatingList.length == 0){
-
+    if (reviewAndRatingList.length == 0) {
       return Wrap(
         children: <Widget>[
           Padding(
             padding: EdgeInsets.all(15.0),
             child: Center(
-              child: Text(
-                  "[No review and rating found]",
+              child: Text("[No review and rating found]",
                   style: TextStyle(
                     fontSize: 15.0,
                     color: Colors.red,
-                    fontWeight:
-                    FontWeight.bold,
+                    fontWeight: FontWeight.bold,
                     fontFamily: 'Armata',
                   )),
             ),
           )
         ],
       );
-
-    }else {
-
+    } else {
       return ListView.builder(
         itemBuilder: (context, index) =>
             buildItem(context, reviewAndRatingList[index]),
         itemCount: reviewAndRatingList.length,
       );
-
     }
   }
 
@@ -599,4 +597,20 @@ class CustomerProfileState extends State<CustomerProfile>
     }
   }
 
+  showAlertDialog(BuildContext context, String msg) {
+    AlertDialog alert = AlertDialog(
+      content: ListTile(
+        leading: CircularProgressIndicator(),
+        title: Text("Loading"),
+        subtitle: Text(msg),
+      ),
+    );
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (BuildContext context) {
+        return alert;
+      },
+    );
+  }
 }

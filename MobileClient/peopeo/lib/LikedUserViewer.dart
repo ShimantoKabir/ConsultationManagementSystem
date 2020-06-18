@@ -296,7 +296,7 @@ class LikedUserViewerState extends State<LikedUserViewer> {
                     showAlertDialog(context,"Please wait...");
 
                     var data = {
-                      'userType' : 1,
+                      'userType' : 2,
                       'uid' : document['uid']
                     };
 

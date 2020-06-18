@@ -52,7 +52,8 @@ public class PlanDaoImp implements PlanDao {
                     + "   con_uid, "
                     + "   topic, "
                     + "   DATE_FORMAT(CONVERT_TZ(start_time, 'UTC', time_zone), '%Y-%m-%d %r') AS f_start_time, "
-                    + "   DATE_FORMAT(CONVERT_TZ(end_time, 'UTC', time_zone), '%Y-%m-%d %r') AS f_end_time "
+                    + "   DATE_FORMAT(CONVERT_TZ(end_time, 'UTC', time_zone), '%Y-%m-%d %r') AS f_end_time, "
+                    + "   IF(is_accept_by_con IS TRUE,'y','n') AS is_accept_by_con "
                     + "FROM "
                     + "   plan "
                     + "WHERE "
@@ -64,45 +65,62 @@ public class PlanDaoImp implements PlanDao {
 
             if (results.size() > 0) {
 
-                Plan plan = new Plan();
-                plan.setCusUid((String) results.get(0)[0]);
-                plan.setConUid((String) results.get(0)[1]);
-                plan.setTopic((String) results.get(0)[2]);
-                plan.setfStartTime((String) results.get(0)[3]);
-                plan.setfEndTime((String) results.get(0)[4]);
+                String isAcceptByCon = (String) results.get(0)[5];
 
-                Notification cusNotification = new Notification();
-                cusNotification.setUid(plan.getCusUid());
-                cusNotification.setTitle("Booking Request Cancellation");
-                cusNotification.setBody("Topic " + plan.getTopic() + ", start time " + plan.getfStartTime()
-                        + ", end time " + plan.getfEndTime());
-                cusNotification.setStartTime(plan.getfStartTime());
-                cusNotification.setEndTime(plan.getfEndTime());
-                cusNotification.setType(2);
-                cusNotification.setTopic(plan.getTopic());
-                NotificationSender.send(cusNotification);
+                if (isAcceptByCon.equalsIgnoreCase("n")){
 
-                Notification conNotification = new Notification();
-                conNotification.setUid(plan.getConUid());
-                conNotification.setTitle("Booking Request Cancellation");
-                conNotification.setBody("Topic " + plan.getTopic() + ", start time " + plan.getfStartTime()
-                        + ", end time " + plan.getfEndTime());
-                conNotification.setStartTime(plan.getfStartTime());
-                conNotification.setEndTime(plan.getfEndTime());
-                conNotification.setType(2);
-                conNotification.setTopic(plan.getTopic());
-                NotificationSender.send(conNotification);
+                    Plan plan = new Plan();
+                    plan.setCusUid((String) results.get(0)[0]);
+                    plan.setConUid((String) results.get(0)[1]);
+                    plan.setTopic((String) results.get(0)[2]);
+                    plan.setfStartTime((String) results.get(0)[3]);
+                    plan.setfEndTime((String) results.get(0)[4]);
+
+                    Notification cusNotification = new Notification();
+                    cusNotification.setUid(plan.getCusUid());
+                    cusNotification.setTitle("Booking Request Cancellation");
+                    cusNotification.setBody("Topic " + plan.getTopic() + ", start time " + plan.getfStartTime()
+                            + ", end time " + plan.getfEndTime());
+                    cusNotification.setStartTime(plan.getfStartTime());
+                    cusNotification.setEndTime(plan.getfEndTime());
+                    cusNotification.setType(2);
+                    cusNotification.setTopic(plan.getTopic());
+                    NotificationSender.send(cusNotification);
+
+                    Notification conNotification = new Notification();
+                    conNotification.setUid(plan.getConUid());
+                    conNotification.setTitle("Booking Request Cancellation");
+                    conNotification.setBody("Topic " + plan.getTopic() + ", start time " + plan.getfStartTime()
+                            + ", end time " + plan.getfEndTime());
+                    conNotification.setStartTime(plan.getfStartTime());
+                    conNotification.setEndTime(plan.getfEndTime());
+                    conNotification.setType(2);
+                    conNotification.setTopic(plan.getTopic());
+                    NotificationSender.send(conNotification);
+
+
+                    String planDeleteSql = "DELETE FROM plan WHERE id = :id";
+
+                    Query planDeleteQry = entityManager.createNativeQuery(planDeleteSql);
+                    planDeleteQry.setParameter("id", p.getId());
+                    planDeleteQry.executeUpdate();
+
+                    planRes.setCode(200);
+                    planRes.setMsg("Event deleted successfully!");
+
+                }else {
+
+                    planRes.setCode(404);
+                    planRes.setMsg("Schedule already accepted by expert!");
+
+                }
+
+            }else {
+
+                planRes.setCode(404);
+                planRes.setMsg("No schedule found to delete");
 
             }
-
-            String planDeleteSql = "DELETE FROM plan WHERE id = :id";
-
-            Query planDeleteQry = entityManager.createNativeQuery(planDeleteSql);
-            planDeleteQry.setParameter("id", p.getId());
-            planDeleteQry.executeUpdate();
-
-            planRes.setCode(200);
-            planRes.setMsg("Event deleted successfully!");
 
         } catch (Exception e) {
 

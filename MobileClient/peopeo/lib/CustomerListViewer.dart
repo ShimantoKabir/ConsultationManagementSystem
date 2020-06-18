@@ -149,16 +149,17 @@ class CustomerListViewerState extends State<CustomerListViewer> {
                       showAlertDialog(context,"Please wait...");
 
                       var data = {
-                        'userType' : 2,
+                        'userType' : 1,
                         'uid' : document['uid']
                       };
 
                       PlanManager.getPlanList(data).then((reviewAndRatingList){
+
                         Navigator.of(context, rootNavigator: true).pop('dialog');
                         Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (context) {
-                              return CustomerProfile(uid: document['uid']);
+                              return CustomerProfile(uid: document['uid'],reviewAndRatingList: reviewAndRatingList);
                             },
                           ),
                         );

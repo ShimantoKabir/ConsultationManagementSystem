@@ -425,9 +425,9 @@ class NotificationViewerState extends State<NotificationViewer> {
 
   Future<int> payout(data, document, BuildContext context) async {
     int res;
-    String authId = await AuthManager.init();
+    Map<String, dynamic> authInfo = await AuthManager.init();
 
-    if (authId == null) {
+    if (authInfo == null) {
       Fluttertoast.showToast(msg: "Auth initialization error.");
       res = 404;
     } else {
@@ -438,8 +438,8 @@ class NotificationViewerState extends State<NotificationViewer> {
         'planId': data['planId'],
         'email': data['email'],
         'amount': data['amount'],
-        'authId': authId,
-        'uid': uid
+        'authId': authInfo['authId'],
+        'uid': authInfo['uid']
       };
 
       Response response =

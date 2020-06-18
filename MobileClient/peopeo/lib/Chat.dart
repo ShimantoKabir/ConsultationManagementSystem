@@ -23,7 +23,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:peopeo/PaymentWebView.dart';
 
 class Chat extends StatefulWidget {
-
   final String peerId;
   final String peerAvatar;
   final String displayName;
@@ -31,37 +30,37 @@ class Chat extends StatefulWidget {
   final int userType;
   final String uid;
 
-  Chat({Key key,
-    @required this.peerId,
-    @required this.peerAvatar,
-    @required this.displayName,
-    @required this.plan,
-    @required this.userType,
-    @required this.uid})
+  Chat(
+      {Key key,
+      @required this.peerId,
+      @required this.peerAvatar,
+      @required this.displayName,
+      @required this.plan,
+      @required this.userType,
+      @required this.uid})
       : super(key: key);
 
   @override
-  ChatState createState() =>
-      new ChatState(
-          peerId: peerId,
-          peerAvatar: peerAvatar,
-          displayName: displayName,
-          plan: plan,
-          userType: userType,
-          uid: uid);
+  ChatState createState() => new ChatState(
+      peerId: peerId,
+      peerAvatar: peerAvatar,
+      displayName: displayName,
+      plan: plan,
+      userType: userType,
+      uid: uid);
 }
 
 class ChatState extends State<Chat> with TickerProviderStateMixin {
-
   // type: 0 = text, 1 = image, 2 = sticker , 3 = payment success status
 
-  ChatState({Key key,
-    @required this.peerId,
-    @required this.peerAvatar,
-    @required this.displayName,
-    @required this.plan,
-    @required this.userType,
-    @required this.uid});
+  ChatState(
+      {Key key,
+      @required this.peerId,
+      @required this.peerAvatar,
+      @required this.displayName,
+      @required this.plan,
+      @required this.userType,
+      @required this.uid});
 
   String peerId;
   String peerAvatar;
@@ -93,7 +92,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
   BuildContext buildContext;
 
   final TextEditingController textEditingController =
-  new TextEditingController();
+      new TextEditingController();
 
   final ScrollController listScrollController = new ScrollController();
   final FocusNode focusNode = new FocusNode();
@@ -122,7 +121,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
     final DateTime endDateTime = DateTime.parse(plan.fEndTime);
     // fee min + start date time
     final DateTime fmAddWithStartDateTime =
-    (fm == null) ? null : startDateTime.add(Duration(minutes: fm));
+        (fm == null) ? null : startDateTime.add(Duration(minutes: fm));
     totalChatDuration = calculateDuration(endDateTime, startDateTime);
 
     // if free minutes[10] equal to
@@ -131,7 +130,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
     // then free minutes[10]
     // then no need to showed up payment ui
     needToShowPaymentUi =
-    (fm != null && fm >= totalChatDuration) ? false : true;
+        (fm != null && fm >= totalChatDuration) ? false : true;
 
     Timer.periodic(Duration(seconds: 5), (timer) {
       DateTime dateTimeNow = DateTime.now();
@@ -164,7 +163,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
 
           int passedAwayMinutes = calculateDuration(dateTimeNow, startDateTime);
           int detectedChatDuration =
-          (needToShowPaymentUi) ? fm : totalChatDuration;
+              (needToShowPaymentUi) ? fm : totalChatDuration;
           int chatDuration = detectedChatDuration - passedAwayMinutes;
           isTimeTickerRunning = true;
           startTimeTicker(controller, chatDuration);
@@ -212,9 +211,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
 
   String get timerString {
     Duration duration = controller.duration * controller.value;
-    return '${duration.inMinutes}:${(duration.inSeconds % 60)
-        .toString()
-        .padLeft(2, '0')}';
+    return '${duration.inMinutes}:${(duration.inSeconds % 60).toString().padLeft(2, '0')}';
   }
 
   void onFocusChange() {
@@ -260,10 +257,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
   }
 
   Future uploadFile() async {
-    String fileName = DateTime
-        .now()
-        .millisecondsSinceEpoch
-        .toString();
+    String fileName = DateTime.now().millisecondsSinceEpoch.toString();
     StorageReference reference = FirebaseStorage.instance.ref().child(fileName);
     StorageUploadTask uploadTask = reference.putFile(imageFile);
     StorageTaskSnapshot storageTaskSnapshot = await uploadTask.onComplete;
@@ -295,7 +289,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
 
   Widget buildItem(int index, DocumentSnapshot document) {
     idOfCusSuccessPaymentMsg = (document['type'] == 3 &&
-        !document['isTimerStartedAfterPaymentSuccess'])
+            !document['isTimerStartedAfterPaymentSuccess'])
         ? document.documentID
         : idOfCusSuccessPaymentMsg;
 
@@ -304,108 +298,102 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
       return Row(
         children: <Widget>[
           document['type'] == 0
-          // Text
+              // Text
               ? Container(
-              child: Text(
-                document['content'],
-                style: TextStyle(color: primaryColor),
-              ),
-              padding: EdgeInsets.fromLTRB(15.0, 10.0, 15.0, 10.0),
-              width: 200.0,
-              decoration: BoxDecoration(
-                  color: greyColor2,
-                  borderRadius: BorderRadius.circular(8.0)),
-              margin: EdgeInsets.only(
-                  bottom: isLastMessageRight(index) ? 20.0 : 10.0,
-                  right: 10.0))
-          // payment
-              : document['type'] == 3
-              ? Container(
-              child: Text(
-                document['content'],
-                style: TextStyle(color: primaryColor),
-              ),
-              padding: EdgeInsets.fromLTRB(15.0, 10.0, 15.0, 10.0),
-              width: 200.0,
-              decoration: BoxDecoration(
-                  color: greyColor2,
-                  borderRadius: BorderRadius.circular(8.0)),
-              margin: EdgeInsets.only(
-                  bottom: isLastMessageRight(index) ? 20.0 : 10.0,
-                  right: 10.0))
-              : document['type'] == 1
-          // Image
-              ? Container(
-            child: FlatButton(
-              child: Material(
-                child: CachedNetworkImage(
-                  placeholder: (context, url) =>
-                      Container(
-                        child: CircularProgressIndicator(
-                          valueColor:
-                          AlwaysStoppedAnimation<Color>(
-                              themeColor),
-                        ),
-                        width: 200.0,
-                        height: 200.0,
-                        padding: EdgeInsets.all(70.0),
-                        decoration: BoxDecoration(
-                          color: greyColor2,
-                          borderRadius: BorderRadius.all(
-                            Radius.circular(8.0),
-                          ),
-                        ),
-                      ),
-                  errorWidget: (context, url, error) =>
-                      Material(
-                        child: Image.asset(
-                          'assets/images/img_not_available.jpeg',
-                          width: 200.0,
-                          height: 200.0,
-                          fit: BoxFit.cover,
-                        ),
-                        borderRadius: BorderRadius.all(
-                          Radius.circular(8.0),
-                        ),
-                        clipBehavior: Clip.hardEdge,
-                      ),
-                  imageUrl: document['content'],
+                  child: Text(
+                    document['content'],
+                    style: TextStyle(color: primaryColor),
+                  ),
+                  padding: EdgeInsets.fromLTRB(15.0, 10.0, 15.0, 10.0),
                   width: 200.0,
-                  height: 200.0,
-                  fit: BoxFit.cover,
-                ),
-                borderRadius:
-                BorderRadius.all(Radius.circular(8.0)),
-                clipBehavior: Clip.hardEdge,
-              ),
-              onPressed: () {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) =>
-                            FullPhoto(
-                                url: document['content'])));
-              },
-              padding: EdgeInsets.all(0),
-            ),
-            margin: EdgeInsets.only(
-                bottom:
-                isLastMessageRight(index) ? 20.0 : 10.0,
-                right: 10.0),
-          )
-          // Sticker
-              : Container(
-            child: new Image.asset(
-              'assets/images/${document['content']}.gif',
-              width: 100.0,
-              height: 100.0,
-              fit: BoxFit.cover,
-            ),
-            margin: EdgeInsets.only(
-                bottom:
-                isLastMessageRight(index) ? 20.0 : 10.0,
-                right: 10.0),
-          )
+                  decoration: BoxDecoration(
+                      color: greyColor2,
+                      borderRadius: BorderRadius.circular(8.0)),
+                  margin: EdgeInsets.only(
+                      bottom: isLastMessageRight(index) ? 20.0 : 10.0,
+                      right: 10.0))
+              // payment
+              : document['type'] == 3
+                  ? Container(
+                      child: Text(
+                        document['content'],
+                        style: TextStyle(color: primaryColor),
+                      ),
+                      padding: EdgeInsets.fromLTRB(15.0, 10.0, 15.0, 10.0),
+                      width: 200.0,
+                      decoration: BoxDecoration(
+                          color: greyColor2,
+                          borderRadius: BorderRadius.circular(8.0)),
+                      margin: EdgeInsets.only(
+                          bottom: isLastMessageRight(index) ? 20.0 : 10.0,
+                          right: 10.0))
+                  : document['type'] == 1
+                      // Image
+                      ? Container(
+                          child: FlatButton(
+                            child: Material(
+                              child: CachedNetworkImage(
+                                placeholder: (context, url) => Container(
+                                  child: CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        themeColor),
+                                  ),
+                                  width: 200.0,
+                                  height: 200.0,
+                                  padding: EdgeInsets.all(70.0),
+                                  decoration: BoxDecoration(
+                                    color: greyColor2,
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(8.0),
+                                    ),
+                                  ),
+                                ),
+                                errorWidget: (context, url, error) => Material(
+                                  child: Image.asset(
+                                    'assets/images/img_not_available.jpeg',
+                                    width: 200.0,
+                                    height: 200.0,
+                                    fit: BoxFit.cover,
+                                  ),
+                                  borderRadius: BorderRadius.all(
+                                    Radius.circular(8.0),
+                                  ),
+                                  clipBehavior: Clip.antiAliasWithSaveLayer,
+                                ),
+                                imageUrl: document['content'],
+                                width: 200.0,
+                                height: 200.0,
+                                fit: BoxFit.cover,
+                              ),
+                              borderRadius:
+                                  BorderRadius.all(Radius.circular(8.0)),
+                              clipBehavior: Clip.hardEdge,
+                            ),
+                            onPressed: () {
+                              Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          FullPhoto(url: document['content'])));
+                            },
+                            padding: EdgeInsets.all(0),
+                          ),
+                          margin: EdgeInsets.only(
+                              bottom: isLastMessageRight(index) ? 20.0 : 10.0,
+                              right: 10.0),
+                        )
+                      // Sticker
+                      : Container(
+                          child: new Image.asset(
+                            'assets/images/${document['content']}.gif',
+                            width: 100.0,
+                            height: 100.0,
+                            fit: BoxFit.cover,
+                          ),
+                          margin: EdgeInsets.only(
+                              bottom: isLastMessageRight(index) ? 20.0 : 10.0,
+                              right: 10.0),
+                        )
         ],
         mainAxisAlignment: MainAxisAlignment.end,
       );
@@ -418,125 +406,121 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
               children: <Widget>[
                 isLastMessageLeft(index)
                     ? Material(
-                  child: CachedNetworkImage(
-                    placeholder: (context, url) =>
-                        Container(
-                          child: CircularProgressIndicator(
-                            strokeWidth: 1.0,
-                            valueColor:
-                            AlwaysStoppedAnimation<Color>(themeColor),
+                        child: CachedNetworkImage(
+                          placeholder: (context, url) => Container(
+                            child: CircularProgressIndicator(
+                              strokeWidth: 1.0,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(themeColor),
+                            ),
+                            width: 35.0,
+                            height: 35.0,
+                            padding: EdgeInsets.all(10.0),
                           ),
+                          imageUrl: peerAvatar,
                           width: 35.0,
                           height: 35.0,
-                          padding: EdgeInsets.all(10.0),
+                          fit: BoxFit.cover,
                         ),
-                    imageUrl: peerAvatar,
-                    width: 35.0,
-                    height: 35.0,
-                    fit: BoxFit.cover,
-                  ),
-                  borderRadius: BorderRadius.all(
-                    Radius.circular(18.0),
-                  ),
-                  clipBehavior: Clip.hardEdge,
-                )
+                        borderRadius: BorderRadius.all(
+                          Radius.circular(18.0),
+                        ),
+                        clipBehavior: Clip.antiAliasWithSaveLayer,
+                      )
                     : Container(width: 35.0),
                 document['type'] == 0
                     ? Container(
-                  child: Text(
-                    document['content'],
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  padding: EdgeInsets.fromLTRB(15.0, 10.0, 15.0, 10.0),
-                  width: 200.0,
-                  decoration: BoxDecoration(
-                      color: primaryColor,
-                      borderRadius: BorderRadius.circular(8.0)),
-                  margin: EdgeInsets.only(left: 10.0),
-                )
-                    : document['type'] == 3
-                    ? Container(
-                  child: Text(
-                    document['content'],
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  padding:
-                  EdgeInsets.fromLTRB(15.0, 10.0, 15.0, 10.0),
-                  width: 200.0,
-                  decoration: BoxDecoration(
-                      color: primaryColor,
-                      borderRadius: BorderRadius.circular(8.0)),
-                  margin: EdgeInsets.only(left: 10.0),
-                )
-                    : document['type'] == 1
-                    ? Container(
-                  child: FlatButton(
-                    child: Material(
-                      child: CachedNetworkImage(
-                        placeholder: (context, url) =>
-                            Container(
-                              child: CircularProgressIndicator(
-                                valueColor:
-                                AlwaysStoppedAnimation<Color>(
-                                    themeColor),
-                              ),
-                              width: 200.0,
-                              height: 200.0,
-                              padding: EdgeInsets.all(70.0),
-                              decoration: BoxDecoration(
-                                color: greyColor2,
-                                borderRadius: BorderRadius.all(
-                                  Radius.circular(8.0),
-                                ),
-                              ),
-                            ),
-                        errorWidget: (context, url, error) =>
-                            Material(
-                              child: Image.asset(
-                                'assets/images/img_not_available.jpeg',
-                                width: 200.0,
-                                height: 200.0,
-                                fit: BoxFit.cover,
-                              ),
-                              borderRadius: BorderRadius.all(
-                                Radius.circular(8.0),
-                              ),
-                              clipBehavior: Clip.hardEdge,
-                            ),
-                        imageUrl: document['content'],
+                        child: Text(
+                          document['content'],
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        padding: EdgeInsets.fromLTRB(15.0, 10.0, 15.0, 10.0),
                         width: 200.0,
-                        height: 200.0,
-                        fit: BoxFit.cover,
-                      ),
-                      borderRadius: BorderRadius.all(
-                          Radius.circular(8.0)),
-                      clipBehavior: Clip.hardEdge,
-                    ),
-                    onPressed: () {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) =>
-                                  FullPhoto(
-                                      url: document['content'])));
-                    },
-                    padding: EdgeInsets.all(0),
-                  ),
-                  margin: EdgeInsets.only(left: 10.0),
-                )
-                    : Container(
-                  child: new Image.asset(
-                    'assets/images/${document['content']}.gif',
-                    width: 100.0,
-                    height: 100.0,
-                    fit: BoxFit.cover,
-                  ),
-                  margin: EdgeInsets.only(
-                      bottom: isLastMessageRight(index)
-                          ? 20.0
-                          : 10.0,
-                      right: 10.0),
-                ),
+                        decoration: BoxDecoration(
+                            color: primaryColor,
+                            borderRadius: BorderRadius.circular(8.0)),
+                        margin: EdgeInsets.only(left: 10.0),
+                      )
+                    : document['type'] == 3
+                        ? Container(
+                            child: Text(
+                              document['content'],
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            padding:
+                                EdgeInsets.fromLTRB(15.0, 10.0, 15.0, 10.0),
+                            width: 200.0,
+                            decoration: BoxDecoration(
+                                color: primaryColor,
+                                borderRadius: BorderRadius.circular(8.0)),
+                            margin: EdgeInsets.only(left: 10.0),
+                          )
+                        : document['type'] == 1
+                            ? Container(
+                                child: FlatButton(
+                                  child: Material(
+                                    child: CachedNetworkImage(
+                                      placeholder: (context, url) => Container(
+                                        child: CircularProgressIndicator(
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                  themeColor),
+                                        ),
+                                        width: 200.0,
+                                        height: 200.0,
+                                        padding: EdgeInsets.all(70.0),
+                                        decoration: BoxDecoration(
+                                          color: greyColor2,
+                                          borderRadius: BorderRadius.all(
+                                            Radius.circular(8.0),
+                                          ),
+                                        ),
+                                      ),
+                                      errorWidget: (context, url, error) =>
+                                          Material(
+                                        child: Image.asset(
+                                          'assets/images/img_not_available.jpeg',
+                                          width: 200.0,
+                                          height: 200.0,
+                                          fit: BoxFit.cover,
+                                        ),
+                                        borderRadius: BorderRadius.all(
+                                          Radius.circular(8.0),
+                                        ),
+                                        clipBehavior: Clip.antiAliasWithSaveLayer,
+                                      ),
+                                      imageUrl: document['content'],
+                                      width: 200.0,
+                                      height: 200.0,
+                                      fit: BoxFit.cover,
+                                    ),
+                                    borderRadius:
+                                        BorderRadius.all(Radius.circular(8.0)),
+                                    clipBehavior: Clip.hardEdge,
+                                  ),
+                                  onPressed: () {
+                                    Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                            builder: (context) => FullPhoto(
+                                                url: document['content'])));
+                                  },
+                                  padding: EdgeInsets.all(0),
+                                ),
+                                margin: EdgeInsets.only(left: 10.0),
+                              )
+                            : Container(
+                                child: new Image.asset(
+                                  'assets/images/${document['content']}.gif',
+                                  width: 100.0,
+                                  height: 100.0,
+                                  fit: BoxFit.cover,
+                                ),
+                                margin: EdgeInsets.only(
+                                    bottom:
+                                        isLastMessageRight(index) ? 20.0 : 10.0,
+                                    right: 10.0),
+                              ),
               ],
             )
           ],
@@ -549,8 +533,8 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
 
   bool isLastMessageLeft(int index) {
     if ((index > 0 &&
-        listMessage != null &&
-        listMessage[index - 1]['idFrom'] == id) ||
+            listMessage != null &&
+            listMessage[index - 1]['idFrom'] == id) ||
         index == 0) {
       return true;
     } else {
@@ -560,8 +544,8 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
 
   bool isLastMessageRight(int index) {
     if ((index > 0 &&
-        listMessage != null &&
-        listMessage[index - 1]['idFrom'] != id) ||
+            listMessage != null &&
+            listMessage[index - 1]['idFrom'] != id) ||
         index == 0) {
       return true;
     } else {
@@ -571,58 +555,57 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
 
   Future<bool> onBackPress() {
     return showDialog(
-      context: context,
-      builder: (context) =>
-      new AlertDialog(
-        title: new Text('Alert',
-            style: TextStyle(
-              fontSize: 18.0,
-              color: Colors.black,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'Armata',
-            )),
-        content: new Text('Do you want to leave the chat room?',
-            style: TextStyle(
-              fontSize: 18.0,
-              color: Colors.black,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'Armata',
-            )),
-        actions: <Widget>[
-          FlatButton(
-              child: Text('No',
-                  style: TextStyle(
-                      color: Colors.black,
-                      fontFamily: 'Armata',
-                      fontWeight: FontWeight.bold)),
-              onPressed: () => Navigator.of(context).pop(false)),
-          FlatButton(
-              child: Text('Yes',
-                  style: TextStyle(
-                      color: Colors.green,
-                      fontFamily: 'Armata',
-                      fontWeight: FontWeight.bold)),
-              onPressed: () {
-                if (isShowSticker) {
-                  setState(() {
-                    isShowSticker = false;
-                  });
-                } else {
-                  Firestore.instance
-                      .collection('userInfoList')
-                      .document(id)
-                      .updateData({'chattingWith': null});
-                }
+          context: context,
+          builder: (context) => new AlertDialog(
+            title: new Text('Alert',
+                style: TextStyle(
+                  fontSize: 18.0,
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Armata',
+                )),
+            content: new Text('Do you want to leave the chat room?',
+                style: TextStyle(
+                  fontSize: 18.0,
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Armata',
+                )),
+            actions: <Widget>[
+              FlatButton(
+                  child: Text('No',
+                      style: TextStyle(
+                          color: Colors.black,
+                          fontFamily: 'Armata',
+                          fontWeight: FontWeight.bold)),
+                  onPressed: () => Navigator.of(context).pop(false)),
+              FlatButton(
+                  child: Text('Yes',
+                      style: TextStyle(
+                          color: Colors.green,
+                          fontFamily: 'Armata',
+                          fontWeight: FontWeight.bold)),
+                  onPressed: () {
+                    if (isShowSticker) {
+                      setState(() {
+                        isShowSticker = false;
+                      });
+                    } else {
+                      Firestore.instance
+                          .collection('userInfoList')
+                          .document(id)
+                          .updateData({'chattingWith': null});
+                    }
 
-                sendMsgContent(
-                    "$displayName has ended the chat session.", 3, false);
-                controller.stop();
-                Navigator.of(context).pop(false);
-                reviewAndRatingPopUp();
-              })
-        ],
-      ),
-    ) ??
+                    sendMsgContent(
+                        "$displayName has ended the chat session.", 3, false);
+                    controller.stop();
+                    Navigator.of(context).pop(false);
+                    reviewAndRatingPopUp();
+                  })
+            ],
+          ),
+        ) ??
         false;
   }
 
@@ -655,7 +638,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                       decoration: BoxDecoration(
                           border: Border.all(color: Colors.blueAccent),
                           borderRadius: BorderRadius.all(Radius.circular(5.0) //
-                          )),
+                              )),
                       child: Center(
                         child: AnimatedBuilder(
                             animation: controller,
@@ -705,7 +688,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                           height: 20,
                           child: CircularProgressIndicator(
                             valueColor:
-                            AlwaysStoppedAnimation<Color>(Colors.red),
+                                AlwaysStoppedAnimation<Color>(Colors.red),
                             strokeWidth: 1.0,
                           )),
                       SizedBox(width: 10),
@@ -826,7 +809,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
       ),
       decoration: new BoxDecoration(
           border:
-          new Border(top: new BorderSide(color: greyColor2, width: 0.5)),
+              new Border(top: new BorderSide(color: greyColor2, width: 0.5)),
           color: Colors.white),
       padding: EdgeInsets.all(5.0),
       height: 180.0,
@@ -837,12 +820,12 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
     return Positioned(
       child: isLoading
           ? Container(
-        child: Center(
-          child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(themeColor)),
-        ),
-        color: Colors.white.withOpacity(0.8),
-      )
+              child: Center(
+                child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(themeColor)),
+              ),
+              color: Colors.white.withOpacity(0.8),
+            )
           : Container(),
     );
   }
@@ -908,7 +891,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
       height: 50.0,
       decoration: new BoxDecoration(
           border:
-          new Border(top: new BorderSide(color: greyColor2, width: 0.5)),
+              new Border(top: new BorderSide(color: greyColor2, width: 0.5)),
           color: Colors.white),
     );
   }
@@ -917,43 +900,41 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
     return Flexible(
       child: groupChatId == ''
           ? Center(
-          child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(themeColor)))
+              child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(themeColor)))
           : StreamBuilder(
-        stream: Firestore.instance
-            .collection('messages')
-            .document(groupChatId)
-            .collection('conversations')
-            .orderBy('timestamp', descending: true)
-            .limit(20)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(themeColor));
-          } else {
-            listMessage = snapshot.data.documents;
-            WidgetsBinding.instance.addPostFrameCallback(
-                    (_) => actionAfterPaymentSuccess(context));
+              stream: Firestore.instance
+                  .collection('messages')
+                  .document(groupChatId)
+                  .collection('conversations')
+                  .orderBy('timestamp', descending: true)
+                  .limit(20)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(themeColor));
+                } else {
+                  listMessage = snapshot.data.documents;
+                  WidgetsBinding.instance.addPostFrameCallback(
+                      (_) => actionAfterPaymentSuccess(context));
 
-            return ListView.builder(
-              padding: EdgeInsets.all(10.0),
-              itemBuilder: (context, index) =>
-                  buildItem(index, snapshot.data.documents[index]),
-              itemCount: snapshot.data.documents.length,
-              reverse: true,
-              controller: listScrollController,
-            );
-          }
-        },
-      ),
+                  return ListView.builder(
+                    padding: EdgeInsets.all(10.0),
+                    itemBuilder: (context, index) =>
+                        buildItem(index, snapshot.data.documents[index]),
+                    itemCount: snapshot.data.documents.length,
+                    reverse: true,
+                    controller: listScrollController,
+                  );
+                }
+              },
+            ),
     );
   }
 
   int calculateDuration(DateTime endDateTime, DateTime startDateTime) {
-    int milliseconds = endDateTime
-        .difference(startDateTime)
-        .inMilliseconds;
+    int milliseconds = endDateTime.difference(startDateTime).inMilliseconds;
     double minutes = (milliseconds / 1000) / 60;
     return minutes.round();
   }
@@ -972,12 +953,8 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
         return AlertDialog(
           content: Wrap(children: <Widget>[
             Container(
-              width: MediaQuery
-                  .of(context)
-                  .size
-                  .width,
-              margin: EdgeInsets.fromLTRB(
-                  10.0, 0.0, 0.0, 0.0),
+              width: MediaQuery.of(context).size.width,
+              margin: EdgeInsets.fromLTRB(10.0, 0.0, 0.0, 0.0),
               child: Text("Rating",
                   style: TextStyle(
                     fontSize: 15.0,
@@ -993,11 +970,10 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                 itemCount: 5,
                 itemSize: 30,
                 itemPadding: EdgeInsets.symmetric(horizontal: 4.0),
-                itemBuilder: (context, index) =>
-                    Icon(
-                      Icons.star,
-                      color: Colors.amber,
-                    ),
+                itemBuilder: (context, index) => Icon(
+                  Icons.star,
+                  color: Colors.amber,
+                ),
                 onRatingUpdate: (r) {
                   setState(() {
                     rating = r.toInt();
@@ -1006,12 +982,8 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
               ),
             ),
             Container(
-              width: MediaQuery
-                  .of(context)
-                  .size
-                  .width,
-              margin: EdgeInsets.fromLTRB(
-                  10.0, 0.0, 0.0, 0.0),
+              width: MediaQuery.of(context).size.width,
+              margin: EdgeInsets.fromLTRB(10.0, 0.0, 0.0, 0.0),
               child: Text("Review",
                   style: TextStyle(
                     fontSize: 15.0,
@@ -1027,8 +999,8 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                   maxLines: 4,
                   keyboardType: TextInputType.multiline,
                   decoration: InputDecoration(
-                      contentPadding: EdgeInsets.fromLTRB(
-                          15.0, 15.0, 15.0, 15.0),
+                      contentPadding:
+                          EdgeInsets.fromLTRB(15.0, 15.0, 15.0, 15.0),
                       border: OutlineInputBorder()),
                   controller: reviewTECtl,
                 ),
@@ -1045,9 +1017,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
               onPressed: () {
                 if (rating == null) {
                   Fluttertoast.showToast(msg: "Please give a rating.");
-                } else if (reviewTECtl.text
-                    .toString()
-                    .isEmpty) {
+                } else if (reviewTECtl.text.toString().isEmpty) {
                   Fluttertoast.showToast(msg: "Please give a review.");
                 } else {
                   var planRes;
@@ -1085,16 +1055,16 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
   void saveReviewAndRating(planRes, uid, userType) async {
     showAlertDialog(context, "Please wait....");
 
-    String authId = await AuthManager.init();
+    Map<String, dynamic> authInfo = await AuthManager.init();
 
-    if (authId == null) {
+    if (authInfo == null) {
       print("need to pop up notification = [yes] in chat when finish");
     } else {
       String url = serverBaseUrl + '/plan/save-review-and-rating';
       Map<String, String> headers = {"Content-type": "application/json"};
       Response response = await post(url,
           headers: headers,
-          body: json.encode({'authId': authId, 'uid': uid, 'plan': planRes}));
+          body: json.encode({'authId': authInfo['authId'], 'uid': authInfo['uid'], 'plan': planRes}));
 
       print("response body = ${response.body}");
     }
@@ -1192,17 +1162,17 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
 
     Navigator.of(buildContext)
         .push(MaterialPageRoute(
-        builder: (BuildContext context) =>
-            MyWebView(
-              title: "Payment",
-              url: url,
-            )))
+            builder: (BuildContext context) => MyWebView(
+                  title: "Payment",
+                  url: url,
+                )))
         .whenComplete(() {
       MySharedPreferences.getBooleanValue('isPaymentSuccessful')
           .then((isPaymentSuccessful) {
         if (isPaymentSuccessful) {
           sendMsgContent(
-              "I have successfully completed my pamyment, let's chat.", 3,
+              "I have successfully completed my pamyment, let's chat.",
+              3,
               false);
           Navigator.of(buildContext).pop();
 
@@ -1229,9 +1199,9 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
   }
 
   void changeChattedStatus(int planId, String cusUid, String conUid) async {
-    String authId = await AuthManager.init();
+    Map<String, dynamic> authInfo = await AuthManager.init();
 
-    if (authId == null) {
+    if (authInfo == null) {
       Fluttertoast.showToast(msg: "Auth initialization error.");
     } else {
       String url =
@@ -1239,12 +1209,12 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
       Map<String, String> headers = {"Content-type": "application/json"};
       var request = {
         'plan': {'id': planId, 'cusUid': cusUid, 'conUid': conUid},
-        'authId': authId,
-        'uid': uid
+        'authId': authInfo['authId'],
+        'uid': authInfo['uid']
       };
 
       Response response =
-      await post(url, headers: headers, body: json.encode(request));
+          await post(url, headers: headers, body: json.encode(request));
 
       print("response = $response");
     }
@@ -1261,7 +1231,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
         textEditingController.clear();
 
         var gcrDocumentReference =
-        Firestore.instance.collection('messages').document(groupChatId);
+            Firestore.instance.collection('messages').document(groupChatId);
 
         gcrDocumentReference.setData({
           'groupChatId': groupChatId,
@@ -1269,10 +1239,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
 
         var covDocumentReference = gcrDocumentReference
             .collection('conversations')
-            .document(DateTime
-            .now()
-            .millisecondsSinceEpoch
-            .toString());
+            .document(DateTime.now().millisecondsSinceEpoch.toString());
 
         var obj;
 
@@ -1280,10 +1247,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
           obj = {
             'idFrom': id,
             'idTo': peerId,
-            'timestamp': DateTime
-                .now()
-                .millisecondsSinceEpoch
-                .toString(),
+            'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
             'content': content,
             'type': type,
             'isTimerStartedAfterPaymentSuccess': false
@@ -1292,10 +1256,7 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
           obj = {
             'idFrom': id,
             'idTo': peerId,
-            'timestamp': DateTime
-                .now()
-                .millisecondsSinceEpoch
-                .toString(),
+            'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
             'content': content,
             'type': type
           };
@@ -1319,15 +1280,14 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
           .collection('conversations')
           .document(idOfCusSuccessPaymentMsg)
           .updateData(
-          <String, dynamic>{'isTimerStartedAfterPaymentSuccess': true});
+              <String, dynamic>{'isTimerStartedAfterPaymentSuccess': true});
 
-      DateTime fmAddedEndDateTime = DateTime.parse(plan.fEndTime).add(
-          Duration(minutes: paymentDuration));
-      int remainDuration = calculateDuration(
-          fmAddedEndDateTime, DateTime.now());
-      int finalChargeMinutes = (remainDuration > chargedMinutes)
-          ? chargedMinutes
-          : remainDuration;
+      DateTime fmAddedEndDateTime =
+          DateTime.parse(plan.fEndTime).add(Duration(minutes: paymentDuration));
+      int remainDuration =
+          calculateDuration(fmAddedEndDateTime, DateTime.now());
+      int finalChargeMinutes =
+          (remainDuration > chargedMinutes) ? chargedMinutes : remainDuration;
       print(
           "final charge min = $finalChargeMinutes, remain duration = $remainDuration, charge min = $chargedMinutes");
       startTimeTicker(controller, finalChargeMinutes);

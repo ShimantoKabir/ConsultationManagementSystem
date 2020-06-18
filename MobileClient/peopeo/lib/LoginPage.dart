@@ -116,7 +116,10 @@ class LoginPageState extends State<LoginPage> {
                 .document(val.user.uid)
                 .get()
                 .then((d) {
+
               fm.getToken().then((token) {
+
+                print("fcm token in lp = $token");
 
                 var data = {
                   'userType' : d.data['userType'],
@@ -139,18 +142,21 @@ class LoginPageState extends State<LoginPage> {
                 });
 
               }).catchError((err) {
+                print("fcm token error whan google login.");
                 Navigator.of(context).pop();
                 Fluttertoast.showToast(
-                    msg: "Something went wrong, please try again!");
+                    msg: "Please try again.");
               });
             }).catchError((err) {
+              print("user info fetch error when google login.");
+              Navigator.of(context).pop();
               Fluttertoast.showToast(
-                  msg: "Something went wrong, please try again!");
+                  msg: "Please try again.");
             });
           }
         }).catchError((err) {
-          Navigator.of(context).pop();
-          Fluttertoast.showToast(msg: "Something went wrong, please try again!");
+          print("google login error.$err");
+          Fluttertoast.showToast(msg: "Please try again.");
         });
       },
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -186,7 +192,7 @@ class LoginPageState extends State<LoginPage> {
       splashColor: Colors.grey,
       onPressed: () {
         signInWithFacebook().then((val) {
-          print("after facebook auth success = $val");
+
           if (val.additionalUserInfo.isNewUser) {
             setState(() {
               needToShowUserTypeCheckBox = true;
@@ -199,7 +205,10 @@ class LoginPageState extends State<LoginPage> {
                 .document(val.user.uid)
                 .get()
                 .then((d) {
+
               fm.getToken().then((token) {
+
+                print("fcm token in lp = $token");
 
                 setUserCredential(val,{
                   'userType' : d.data['userType'],
@@ -220,21 +229,22 @@ class LoginPageState extends State<LoginPage> {
                   );
                 });
               }).catchError((err) {
+                print("fcm token error whan google login.");
                 Navigator.of(context).pop();
                 Fluttertoast.showToast(
-                    msg: "Something went wrong, please try again!");
+                    msg: "Please try again.");
               });
 
             }).catchError((err) {
+              print("user info fetch error when google login.");
               Navigator.of(context).pop();
               Fluttertoast.showToast(
-                  msg: "Something went wrong, please try again!");
+                  msg: "Please try again.");
             });
-
-
           }
         }).catchError((err) {
-          Fluttertoast.showToast(msg: "Something went wrong, please try again!");
+          print("facebook login error.");
+          Fluttertoast.showToast(msg: "Please try again.");
         });
       },
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -303,8 +313,7 @@ class LoginPageState extends State<LoginPage> {
                       fontFamily: 'Armata',
                       fontWeight: FontWeight.bold)),
               onPressed: () {
-                Navigator.of(context).pop();
-                processUserRegistration();
+                processUserRegistration(context);
               },
             )
           ],
@@ -330,17 +339,20 @@ class LoginPageState extends State<LoginPage> {
     );
   }
 
-  void processUserRegistration() {
+  void processUserRegistration(BuildContext context) {
     showAlertDialog(context, "Please wait user registration processing.");
     fm.getToken().then((token) {
+
+      print("fcm token in lp = $token");
 
       setUserCredential(authResult,{
         'userType' : userType,
         'token' : token
       }).then((val) {
 
-        Phoenix.rebirth(context);
         Navigator.of(context).pop();
+        Navigator.of(context).pop();
+        Phoenix.rebirth(context);
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -351,11 +363,13 @@ class LoginPageState extends State<LoginPage> {
         );
       }).catchError((err) {
         Navigator.of(context).pop();
-        Fluttertoast.showToast(msg: "Something went wrong, please try again!");
+        Navigator.of(context).pop();
+        Fluttertoast.showToast(msg: "Please try again.");
       });
     }).catchError((err) {
       Navigator.of(context).pop();
-      Fluttertoast.showToast(msg: "Something went wrong, please try again!");
+      Navigator.of(context).pop();
+      Fluttertoast.showToast(msg: "Please try again.");
     });
   }
 

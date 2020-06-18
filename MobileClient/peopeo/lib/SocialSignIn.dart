@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_facebook_login/flutter_facebook_login.dart';
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -108,6 +109,8 @@ Future<bool> setUserCredential(
 
     MySharedPreferences.setStringValue('userInfo',jsonEncode(ui));
 
+    print("fcm token = ${data['token']}");
+
     databaseReference
         .collection("userInfoList")
         .document(user.uid)
@@ -165,9 +168,15 @@ Future<bool> logOut() async {
     preferences.remove(key);
   }
 
-  await googleSignIn.disconnect();
+  bool isSignInWithGoogle = await googleSignIn.isSignedIn();
+
+  if(isSignInWithGoogle){
+    await googleSignIn.disconnect();
+  }
+
   await FacebookLogin().logOut();
   await FirebaseAuth.instance.signOut();
+  await FirebaseMessaging().deleteInstanceID();
 
   return Future.value(true);
 
