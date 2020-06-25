@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "996664131953",
+    "firebase_url": "https://consultationmanagementsy-7b77c.firebaseio.com",
+    "project_id": "consultationmanagementsy-7b77c",
+    "storage_bucket": "consultationmanagementsy-7b77c.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:996664131953:android:9b1100284b9209f8d976d0",
+        "android_client_info": {
+          "package_name": "com.dannygroupllc.cms.mobileclient"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "996664131953-q0prfiqdiuid4pn91h4p7vitr9vb9aa5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dannygroupllc.cms.mobileclient",
+            "certificate_hash": "008c0f2b0b5648878fc454cc7816c38fae91b0df"
+          }
+        },
+        {
+          "client_id": "996664131953-16971c81gesfggd0scgk83mpmkt3pf6f.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAqaorkjctvXAimMZ4cWq0EPLKTrNGUlmc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "996664131953-16971c81gesfggd0scgk83mpmkt3pf6f.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

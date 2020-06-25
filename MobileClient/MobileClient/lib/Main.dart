@@ -38,7 +38,6 @@ bool isUserLoggedIn = false;
 var userInfo;
 
 class MyApp extends StatelessWidget {
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -51,7 +50,6 @@ class MyApp extends StatelessWidget {
           future: MySharedPreferences.getStringValue("userInfo"),
           builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
             if (snapshot.hasData) {
-
               isUserLoggedIn = true;
               userInfo = jsonDecode(snapshot.data);
               print("uid = ${userInfo['uid']}");
@@ -83,7 +81,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
-
   final FirebaseMessaging fm = FirebaseMessaging();
   int i = 0;
   DateFormat df = new DateFormat('dd-MM-yyyy hh:mm:ss a');
@@ -102,17 +99,14 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     fm.configure(onMessage: (Map<String, dynamic> message) async {
       if (i % 2 == 0) {
         print("onMessage: message = $message");
-        MySharedPreferences.getBooleanValue("needToPopUpNoti").then((needToPopUpNoti){
-
-          if(needToPopUpNoti){
-
+        MySharedPreferences.getBooleanValue("needToPopUpNoti")
+            .then((needToPopUpNoti) {
+          if (needToPopUpNoti) {
             print("need to pop up notification = [yes] in main init state");
             showNotification(context, message);
-
-          }else {
+          } else {
             print("need to pop up notification = [no] in main init state");
           }
-
         });
       }
       i++;
@@ -124,70 +118,54 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     ReceiveSharingIntent.getInitialText().then((String uid) {
       print("whan app not in memory => shared text $uid");
       if (uid != null) {
+        MySharedPreferences.getStringValue("userInfo").then((userInfo) {
+          if (userInfo == null) {
+            goToLoginPage();
+          } else {
+            showAlertDialog(context, "Please wait...");
 
-        if (isUserLoggedIn) {
+            var data = {'userType': 2, 'uid': uid};
 
-          showAlertDialog(context,"Please wait...");
-
-          var data = {
-            'userType' : 2,
-            'uid' : uid
-          };
-
-          PlanManager.getPlanList(data).then((reviewAndRatingList){
-
-            Navigator.of(context, rootNavigator: true).pop('dialog');
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) {
-
-                  return ConsultantProfile(uid: uid,reviewAndRatingList: reviewAndRatingList);
-
-                },
-              ),
-            );
-
-          });
-
-        } else {
-          goToLoginPage();
-        }
-
+            PlanManager.getPlanList(data).then((reviewAndRatingList) {
+              Navigator.of(context, rootNavigator: true).pop('dialog');
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) {
+                    return ConsultantProfile(
+                        uid: uid, reviewAndRatingList: reviewAndRatingList);
+                  },
+                ),
+              );
+            });
+          }
+        });
       }
     });
 
     rsiSubscription = ReceiveSharingIntent.getTextStream().listen((String uid) {
       print("whan app in memory => shared text $uid");
       if (uid != null) {
+        MySharedPreferences.getStringValue("userInfo").then((userInfo) {
+          if (userInfo == null) {
+            goToLoginPage();
+          } else {
+            showAlertDialog(context, "Please wait...");
 
-        if (isUserLoggedIn) {
+            var data = {'userType': 2, 'uid': uid};
 
-          showAlertDialog(context,"Please wait...");
-
-          var data = {
-            'userType' : 2,
-            'uid' : uid
-          };
-
-          PlanManager.getPlanList(data).then((reviewAndRatingList){
-
-            Navigator.of(context, rootNavigator: true).pop('dialog');
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) {
-
-                  return ConsultantProfile(uid: uid,reviewAndRatingList: reviewAndRatingList);
-
-                },
-              ),
-            );
-
-          });
-
-        }else {
-          goToLoginPage();
-        }
-
+            PlanManager.getPlanList(data).then((reviewAndRatingList) {
+              Navigator.of(context, rootNavigator: true).pop('dialog');
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) {
+                    return ConsultantProfile(
+                        uid: uid, reviewAndRatingList: reviewAndRatingList);
+                  },
+                ),
+              );
+            });
+          }
+        });
       }
     }, onError: (err) {
       print("getLinkStream error: $err");
@@ -213,7 +191,6 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     });
 
     // checkServer();
-
   }
 
   @override
@@ -344,7 +321,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                             if (isUserLoggedIn) {
                               if (userInfo['userType'] == 1) {
                                 showAlertDialog(context,
-                                    "Gathering user that you liked...");
+                                    "Gathering expert that you liked...");
 
                                 getLikedUserIdList(userInfo['uid'])
                                     .then((res) async {
@@ -362,8 +339,8 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                   );
                                 });
                               } else {
-                                showAlertDialog(
-                                    context, "Fetching customer list...");
+                                showAlertDialog(context,
+                                    "Gathering customer who liked you...");
 
                                 getLikedCustomerList(userInfo['uid'])
                                     .then((res) {
@@ -444,8 +421,8 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     );
   }
 
-  void redirectCalender(DocumentSnapshot document, String tz, BuildContext context) async {
-
+  void redirectCalender(
+      DocumentSnapshot document, String tz, BuildContext context) async {
     if (userInfo['userType'] == 1) {
       int hr = document['hourlyRate'];
       int fm = 0;
@@ -458,9 +435,8 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       print("fm = $fm");
 
       if (hr == null) {
-        Fluttertoast.showToast(msg: "This user didn't set hourly rate yet!");
+        Fluttertoast.showToast(msg: "This expert didn't set hourly rate yet!");
       } else {
-
         String calenderUrl = webClientBaseUrl +
             "/calendar.html?conid=" +
             conId +
@@ -483,13 +459,10 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                   url: calenderUrl);
             },
           ),
-        ).whenComplete((){
-
+        ).whenComplete(() {
           print("need to pop up notification = [yes] in main calendre button");
           MySharedPreferences.setBooleanValue("needToPopUpNoti", true);
-
         });
-
       }
     } else {
       Navigator.of(context).pop();
@@ -704,27 +677,24 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                         side: BorderSide(color: Colors.red)),
                     onPressed: () {
                       if (isUserLoggedIn) {
+                        showAlertDialog(context, "Please wait...");
 
-                        showAlertDialog(context,"Please wait...");
+                        var data = {'userType': 2, 'uid': document['uid']};
 
-                        var data = {
-                          'userType' : 2,
-                          'uid' : document['uid']
-                        };
-
-                        PlanManager.getPlanList(data).then((reviewAndRatingList){
-
-                          Navigator.of(context, rootNavigator: true).pop('dialog');
+                        PlanManager.getPlanList(data)
+                            .then((reviewAndRatingList) {
+                          Navigator.of(context, rootNavigator: true)
+                              .pop('dialog');
                           Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (context) {
-                                return ConsultantProfile(uid: document['uid'],reviewAndRatingList: reviewAndRatingList);
+                                return ConsultantProfile(
+                                    uid: document['uid'],
+                                    reviewAndRatingList: reviewAndRatingList);
                               },
                             ),
                           );
-
                         });
-
                       } else {
                         goToLoginPage();
                       }
@@ -747,6 +717,10 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                           Fluttertoast.showToast(
                               msg:
                                   "This expert didn't set his hourly rate yet!");
+                        } else if (document['hourlyRate'] == 0) {
+                          Fluttertoast.showToast(
+                              msg:
+                                  "This expert didn't set his hourly rate yet!");
                         } else {
                           bool isPortrait =
                               MediaQuery.of(context).orientation ==
@@ -764,9 +738,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                     msg: "No internet connection available!");
                               } else {
                                 getTimeZone().then((tz) {
-
-                                  redirectCalender(document, tz,context);
-
+                                  redirectCalender(document, tz, context);
                                 }).catchError((er) {
                                   Navigator.of(context).pop();
                                   print("Time zone error $er");
@@ -964,7 +936,6 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   }
 
   void addToBookMark(expertUid, String myUid) {
-
     CollectionReference cr = Firestore.instance
         .collection('userInfoList')
         .document(myUid)
@@ -1011,12 +982,11 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   }
 
   void showNotification(BuildContext context, Map<String, dynamic> message) {
-
     Firestore.instance
         .collection('notificationList')
         .document(message['data']['docId'])
-        .get().then((val){
-
+        .get()
+        .then((val) {
       showDialog<void>(
         context: context,
         barrierDismissible: true, // user must tap button!
@@ -1032,7 +1002,8 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                 Visibility(
                   visible: val.data['type'] == 6 || val.data['type'] == 7,
                   child: Text(val.data['body'],
-                      style: getTextStyle(Colors.black, FontWeight.normal,14.0)),
+                      style:
+                          getTextStyle(Colors.black, FontWeight.normal, 14.0)),
                 ),
                 Visibility(
                   visible: val.data['type'] == 1 ||
@@ -1047,17 +1018,20 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                           val.data['topic'] == null
                               ? "empty"
                               : "Topic ${val.data['topic']}",
-                          style: getTextStyle(Colors.black, FontWeight.bold,14.0)),
+                          style: getTextStyle(
+                              Colors.black, FontWeight.bold, 14.0)),
                       Text(
                           val.data['startTime'] == null
                               ? "empty"
                               : "Start at ${val.data['startTime']}",
-                          style: getTextStyle(Colors.black, FontWeight.normal,11.0)),
+                          style: getTextStyle(
+                              Colors.black, FontWeight.normal, 11.0)),
                       Text(
                           val.data['endTime'] == null
                               ? "empty"
                               : "End at ${val.data['endTime']}",
-                          style: getTextStyle(Colors.black, FontWeight.normal,11.0)),
+                          style: getTextStyle(
+                              Colors.black, FontWeight.normal, 11.0)),
                     ],
                   ),
                 )
@@ -1090,14 +1064,15 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
               ]);
         },
       );
-
     });
-
   }
 
-  TextStyle getTextStyle(Color color, FontWeight fontWeight,double fs) {
+  TextStyle getTextStyle(Color color, FontWeight fontWeight, double fs) {
     return TextStyle(
-        color: color, fontFamily: 'Armata', fontWeight: fontWeight,fontSize: fs);
+        color: color,
+        fontFamily: 'Armata',
+        fontWeight: fontWeight,
+        fontSize: fs);
   }
 
   void goToLoginPage() {
@@ -1216,34 +1191,28 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   getProfilePic() {
     if (isUserLoggedIn) {
       return FutureBuilder(
-        future: MySharedPreferences.getStringValue("userInfo"),
+          future: MySharedPreferences.getStringValue("userInfo"),
           builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
-
             if (snapshot.hasData) {
-
               var ui = jsonDecode(snapshot.data);
               return Container(
                 height: 10.0,
                 width: 10.0,
                 child: InkWell(
                   onTap: () {
+                    showAlertDialog(context, "Please wait...");
 
-                    showAlertDialog(context,"Please wait...");
+                    var data = {'userType': ui['userType'], 'uid': ui['uid']};
 
-                    var data = {
-                      'userType' : ui['userType'],
-                      'uid' : ui['uid']
-                    };
-
-                    PlanManager.getPlanList(data).then((reviewAndRatingList){
-
+                    PlanManager.getPlanList(data).then((reviewAndRatingList) {
                       Navigator.of(context, rootNavigator: true).pop('dialog');
                       if (ui['userType'] == 1) {
-
                         Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (context) {
-                              return CustomerProfile(uid: ui['uid'],reviewAndRatingList : reviewAndRatingList);
+                              return CustomerProfile(
+                                  uid: ui['uid'],
+                                  reviewAndRatingList: reviewAndRatingList);
                             },
                           ),
                         );
@@ -1251,14 +1220,14 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                         Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (context) {
-                              return ConsultantProfile(uid: ui['uid'],reviewAndRatingList : reviewAndRatingList);
+                              return ConsultantProfile(
+                                  uid: ui['uid'],
+                                  reviewAndRatingList: reviewAndRatingList);
                             },
                           ),
                         );
                       }
-
                     });
-
                   },
                 ),
                 decoration: BoxDecoration(
@@ -1270,18 +1239,14 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                           : AssetImage("assets/images/demo_profile_pic.png")),
                 ),
               );
-
-            }else {
-
+            } else {
               return Container(
                 child: CircularProgressIndicator(
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
                 ),
               );
-
             }
-          }
-      );
+          });
     } else {
       return Container(
         height: 5.0,
@@ -1320,9 +1285,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   void updateOnlineStatus() {
     if (isUserLoggedIn) {
       getTimeZone().then((tz) {
-
-        if(userInfo['userType'] == 2){
-
+        if (userInfo['userType'] == 2) {
           print("user type = ${userInfo['userType']}");
           print("last online update , timezone = $tz");
 
@@ -1334,9 +1297,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             "timeZone": tz,
             "isOnline": true,
           });
-
         }
-
       });
     }
   }
@@ -1349,29 +1310,22 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   }
 
   Future<void> checkServer() async {
-
     String url = serverBaseUrl + '/app/test';
     Map<String, String> headers = {"Content-type": "application/json"};
 
-    Response response = await get(url,headers: headers);
+    Response response = await get(url, headers: headers);
 
     print("server status = ${response.body}");
 
     if (response.statusCode == 200) {
-
       var body = json.decode(response.body);
       if (body['code'] == 200) {
         Fluttertoast.showToast(msg: "Server side application running.");
-      }else {
+      } else {
         Fluttertoast.showToast(msg: "Server side application error.");
       }
-
-    }else {
-
+    } else {
       Fluttertoast.showToast(msg: "Sever status code ${response.statusCode}");
-
     }
-
-
   }
 }

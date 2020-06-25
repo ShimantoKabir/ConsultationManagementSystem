@@ -15,7 +15,6 @@ import 'Const.dart';
 import 'ConsultantProfile.dart';
 
 class LikedUserViewer extends StatefulWidget {
-
   final List<Map<String, dynamic>> likedUserIdList;
   final String uid;
   final int userType;
@@ -33,7 +32,6 @@ class LikedUserViewer extends StatefulWidget {
 }
 
 class LikedUserViewerState extends State<LikedUserViewer> {
-
   LikedUserViewerState(
       {Key key,
       @required this.uid,
@@ -110,8 +108,7 @@ class LikedUserViewerState extends State<LikedUserViewer> {
         ));
   }
 
-  Widget buildItem(
-      BuildContext context, Map<String, dynamic> document) {
+  Widget buildItem(BuildContext context, Map<String, dynamic> document) {
     print("uid = ${document['uid']}");
     return Container(
       decoration: BoxDecoration(
@@ -168,7 +165,7 @@ class LikedUserViewerState extends State<LikedUserViewer> {
                           Column(
                             children: <Widget>[
                               IconButton(
-                                icon: Icon(Icons.thumb_up),
+                                icon: Icon(Icons.favorite),
                                 onPressed: () {},
                               ),
                               StreamBuilder(
@@ -182,12 +179,11 @@ class LikedUserViewerState extends State<LikedUserViewer> {
                                     String like;
 
                                     if (snapshot.data.documents.length > 0) {
-                                      if (snapshot.data.documents.length ==
-                                          1) {
+                                      if (snapshot.data.documents.length == 1) {
                                         like = "1 Like";
                                       } else {
                                         like = snapshot.data.documents.length
-                                            .toString() +
+                                                .toString() +
                                             " Likes";
                                       }
                                     } else {
@@ -258,9 +254,9 @@ class LikedUserViewerState extends State<LikedUserViewer> {
                         itemCount: 5,
                         itemSize: 25.0,
                         itemBuilder: (context, index) => Icon(
-                          Icons.star,
-                          color: Colors.amber,
-                        ))
+                              Icons.star,
+                              color: Colors.amber,
+                            ))
                   ],
                 ),
                 getDisplayName(document),
@@ -292,27 +288,22 @@ class LikedUserViewerState extends State<LikedUserViewer> {
                       borderRadius: new BorderRadius.circular(8.0),
                       side: BorderSide(color: Colors.red)),
                   onPressed: () {
+                    showAlertDialog(context, "Please wait...");
 
-                    showAlertDialog(context,"Please wait...");
+                    var data = {'userType': 2, 'uid': document['uid']};
 
-                    var data = {
-                      'userType' : 2,
-                      'uid' : document['uid']
-                    };
-
-                    PlanManager.getPlanList(data).then((reviewAndRatingList){
-
+                    PlanManager.getPlanList(data).then((reviewAndRatingList) {
                       Navigator.of(context, rootNavigator: true).pop('dialog');
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (context) {
-                            return ConsultantProfile(uid: document['uid'],reviewAndRatingList: reviewAndRatingList);
+                            return ConsultantProfile(
+                                uid: document['uid'],
+                                reviewAndRatingList: reviewAndRatingList);
                           },
                         ),
                       );
-
                     });
-
                   },
                   color: Colors.red,
                   textColor: Colors.white,
@@ -327,6 +318,9 @@ class LikedUserViewerState extends State<LikedUserViewer> {
                     if (document['hourlyRate'] == null) {
                       Fluttertoast.showToast(
                           msg: "This expert didn't set his hourly rate yet.");
+                    } else if (document['hourlyRate'] == 0) {
+                      Fluttertoast.showToast(
+                          msg: "This expert didn't set his hourly rate yet!");
                     } else {
                       bool isPortrait = MediaQuery.of(context).orientation ==
                           Orientation.portrait;
@@ -342,9 +336,7 @@ class LikedUserViewerState extends State<LikedUserViewer> {
                                 msg: "No internat connection available.");
                           } else {
                             getTimeZone().then((tz) {
-
                               redirectCalender(context, document, tz);
-
                             }).catchError((er) {
                               Navigator.of(context).pop();
                               print("Time zone error $er.");
@@ -356,7 +348,7 @@ class LikedUserViewerState extends State<LikedUserViewer> {
                       } else {
                         Fluttertoast.showToast(
                             msg:
-                            "Please change your app orientation to portrait.",
+                                "Please change your app orientation to portrait.",
                             toastLength: Toast.LENGTH_LONG);
                       }
                     }
@@ -415,7 +407,6 @@ class LikedUserViewerState extends State<LikedUserViewer> {
 
   void redirectCalender(
       BuildContext context, Map<String, dynamic> document, String tz) async {
-
     int hr = document['hourlyRate'];
     int fm = 0;
     String conId = document['uid'];
@@ -427,7 +418,6 @@ class LikedUserViewerState extends State<LikedUserViewer> {
     if (hr == null) {
       Fluttertoast.showToast(msg: "This user didn't set hourly rate yet!");
     } else {
-
       String calenderUrl = webClientBaseUrl +
           "/calendar.html?conid=" +
           conId +
@@ -451,11 +441,9 @@ class LikedUserViewerState extends State<LikedUserViewer> {
                 url: calenderUrl);
           },
         ),
-      ).whenComplete((){
-
+      ).whenComplete(() {
         print("need to pop up notification = [yes] in main calendre button");
         MySharedPreferences.setBooleanValue("needToPopUpNoti", true);
-
       });
     }
   }
@@ -565,7 +553,6 @@ class LikedUserViewerState extends State<LikedUserViewer> {
   }
 
   showLikedUser() {
-
     if (likedUserIdList.length > 0) {
       return ListView.builder(
         itemBuilder: (context, index) =>
@@ -588,5 +575,4 @@ class LikedUserViewerState extends State<LikedUserViewer> {
     connectivitySubscription.cancel();
     super.dispose();
   }
-
 }

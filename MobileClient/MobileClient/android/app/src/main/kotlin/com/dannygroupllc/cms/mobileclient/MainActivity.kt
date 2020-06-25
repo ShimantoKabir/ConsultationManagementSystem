@@ -1,4 +1,4 @@
-package com.dannygroupllc.cms.peopeo
+package com.dannygroupllc.cms.mobileclient
 
 import androidx.annotation.NonNull;
 import io.flutter.embedding.android.FlutterActivity

@@ -144,6 +144,9 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
           int chatDuration = totalChatDuration - passedAwayMinutes;
           print('time ticker started');
           isTimeTickerRunning = true;
+          // if no free minutes available that means
+          // customer paid before enter chat room
+          isPaymentComplete = true;
           startTimeTicker(controller, chatDuration);
         }
       } else {
@@ -1225,8 +1228,13 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
       if (connectivityResult == ConnectivityResult.none) {
         Fluttertoast.showToast(msg: "No internet connection available.");
       } else if (controller.isDismissed && needToStop) {
-        Fluttertoast.showToast(
-            msg: "You can only send message when time ticker is running.");
+        if(isPaymentComplete){
+          Fluttertoast.showToast(
+              msg: "Your chat session has ended. Tap on the Stop button to write a review and exit chat session.");
+        }else {
+          Fluttertoast.showToast(
+              msg: "You can only send message when time ticker is running.");
+        }
       } else {
         textEditingController.clear();
 
@@ -1281,6 +1289,8 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
           .document(idOfCusSuccessPaymentMsg)
           .updateData(
               <String, dynamic>{'isTimerStartedAfterPaymentSuccess': true});
+
+      isPaymentComplete = true;
 
       DateTime fmAddedEndDateTime =
           DateTime.parse(plan.fEndTime).add(Duration(minutes: paymentDuration));

@@ -331,7 +331,7 @@ class NotificationViewerState extends State<NotificationViewer> {
                       });
                     }
                   } else {
-                    Fluttertoast.showToast(msg: "Already paid!");
+                    Fluttertoast.showToast(msg: "Please check your paypal account!");
                   }
                 },
                 child: Text(showPayPalEmailBtnTxt(document),
@@ -481,12 +481,12 @@ class NotificationViewerState extends State<NotificationViewer> {
     String btnTxt;
 
     if (document['payPalEmail'] == null) {
-      btnTxt = "Set Paypal Email Address".toUpperCase();
+      btnTxt = "Paypal Email Address".toUpperCase();
     } else {
       if (document['isPaid'] == null) {
         btnTxt = "Get your payment".toUpperCase();
       } else {
-        btnTxt = "Paid".toUpperCase();
+        btnTxt = "Check Your PayPal Account For Payment".toUpperCase();
       }
     }
 

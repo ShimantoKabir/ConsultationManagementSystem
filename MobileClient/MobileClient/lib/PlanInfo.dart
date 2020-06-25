@@ -295,7 +295,7 @@ class PlanInfoState extends State<PlanInfo> {
                 int wm = subStartTime.difference(DateTime.now()).inMilliseconds;
                 int waitMinutes = ((wm / 1000) / 60).round();
                 Fluttertoast.showToast(
-                    msg: "Wait $waitMinutes minutess to enter the chat room!");
+                    msg: "Wait ${minToDayMinHour(waitMinutes)} to enter the chat room.");
               }
 
               if (DateTime.now().isAfter(fEndTime)) {
@@ -304,6 +304,7 @@ class PlanInfoState extends State<PlanInfo> {
               }
 
               if (p.freeMinutesForNewCustomer != null) {
+
                 final DateTime pDateTime = fStartTime
                     .add(Duration(minutes: p.freeMinutesForNewCustomer));
 
@@ -410,7 +411,7 @@ class PlanInfoState extends State<PlanInfo> {
                 int wm = subStartTime.difference(DateTime.now()).inMilliseconds;
                 int waitMinutes = ((wm / 1000) / 60).round();
                 Fluttertoast.showToast(
-                    msg: "Wait $waitMinutes minutes to enter the chat room!");
+                    msg: "Wait ${minToDayMinHour(waitMinutes)} to enter the chat room.");
               }
 
               if (DateTime.now().isAfter(fEndTime)) {
@@ -587,4 +588,21 @@ class PlanInfoState extends State<PlanInfo> {
       });
     });
   }
+
+  String minToDayMinHour(int min){
+
+    Duration x = new Duration(minutes: min);
+    int milliSeconds = x.inMilliseconds;
+
+    int days = (milliSeconds/(86400 * 1000)).floor();
+    milliSeconds -= days*(86400*1000);
+    int hours = (milliSeconds/(60 * 60 * 1000 )).floor();
+    milliSeconds -= hours * (60 * 60 * 1000);
+    int minutes = (milliSeconds/(60 * 1000)).floor();
+
+    return "$days days, $hours hours, $minutes minutes";
+
+  }
+
+
 }

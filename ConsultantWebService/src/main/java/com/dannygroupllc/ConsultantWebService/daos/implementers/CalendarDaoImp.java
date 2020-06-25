@@ -7,7 +7,6 @@ import com.dannygroupllc.ConsultantWebService.models.Plan;
 import com.dannygroupllc.ConsultantWebService.pojos.Notification;
 import com.dannygroupllc.ConsultantWebService.pojos.Response;
 import com.google.gson.Gson;
-import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
@@ -486,49 +485,42 @@ public class CalendarDaoImp implements CalendarDao {
 
             System.out.println(getClass().getName() + ".getSchedule : conUid = " + c.getConUid());
 
-            // common sense
-            // ============
-            // 1. no customer can't create a plan in future date
-            // 2. start time will never less then plan created date
-            // 3. if chat session has been passed then we don't have to worry about weather it accept by expert's
-            // or not
-
-            // logic
-            // =====
-            // 1. don't fetch passed date plan
-            // 2. don't fetch those plan which don't accept by expert's and 24 hour's left after created
-
-            String planFetchingSql = "SELECT \n" +
-                    "  p.id AS id,\n" +
-                    "  p.topic AS topic,\n" +
-                    "  DATE_FORMAT(CONVERT_TZ(start_time,'UTC',time_zone),'%Y-%m-%d %T') AS f_start_time,\n" +
-                    "  DATE_FORMAT(CONVERT_TZ(end_time,'UTC',time_zone),'%Y-%m-%d %T') AS f_end_time,\n" +
-                    "  p.is_accept_by_con AS is_accept_by_con,\n" +
-                    "  p.check_out_id AS check_out_id,\n" +
-                    "  p.free_minutes_for_new_customer AS free_minutes_for_new_customer,\n" +
-                    "  p.cus_uid AS cus_uid,\n" +
-                    "  p.con_uid AS con_uid,\n" +
-                    "  IF(\n" +
-                    "    p.time_diff < '00:00:00',\n" +
-                    "    'y',\n" +
-                    "    'n'\n" +
-                    "  ) AS is_booking_acceptance_time_passed,\n" +
-                    "  HOUR(p.time_diff) AS hour_diff,\n" +
-                    "  MINUTE(p.time_diff) AS minute_diff, \n" +
-                    "  DATE_FORMAT(DATE_SUB(CONVERT_TZ(start_time,'UTC',time_zone),INTERVAL 5 MINUTE),'%Y-%m-%d %T') AS before_padding, \n" +
-                    "  DATE_FORMAT(DATE_ADD(CONVERT_TZ(end_time,'UTC',time_zone),INTERVAL 5 MINUTE),'%Y-%m-%d %T') AS after_padding \n" +
-                    "FROM\n" +
-                    "  (SELECT \n" +
-                    "    *,\n" +
-                    "    CAST(TIMEDIFF(\n" +
-                    "      DATE_ADD(CONVERT_TZ(created_date,'UTC',time_zone), INTERVAL 1 DAY),\n" +
-                    "      CONVERT_TZ(NOW(),'UTC',time_zone)\n" +
-                    "    ) AS CHAR) AS time_diff \n" +
-                    "  FROM\n" +
-                    "    plan \n" +
-                    "  WHERE CONVERT_TZ(start_time,'UTC',time_zone) >= CONVERT_TZ(NOW(),'UTC',time_zone) \n" +
-                    "    AND con_uid = :conUid) AS p \n"+
-                    "  ORDER BY p.start_time ";
+            String planFetchingSql = ""
+                    + "SELECT "
+                    + "  p.id AS id, "
+                    + "  p.topic AS topic, "
+                    + "  DATE_FORMAT(CONVERT_TZ(start_time,'UTC',time_zone),'%Y-%m-%d %T') AS f_start_time, "
+                    + "  DATE_FORMAT(CONVERT_TZ(end_time,'UTC',time_zone),'%Y-%m-%d %T') AS f_end_time, "
+                    + "  p.is_accept_by_con AS is_accept_by_con, "
+                    + "  p.check_out_id AS check_out_id, "
+                    + "  p.free_minutes_for_new_customer AS free_minutes_for_new_customer, "
+                    + "  p.cus_uid AS cus_uid, "
+                    + "  p.con_uid AS con_uid, "
+                    + "  IF( "
+                    + "    p.time_diff_with_created_date < '00:00:00', "
+                    + "    'y', "
+                    + "    'n' "
+                    + "  ) AS is_booking_acceptance_time_passed, "
+                    + "  IF(HOUR(p.time_diff_with_start_time)> 24,HOUR(p.time_diff_with_created_date),HOUR(p.time_diff_with_start_time)) AS hour_diff, "
+                    + "  IF(HOUR(p.time_diff_with_start_time)> 24,MINUTE(p.time_diff_with_created_date),MINUTE(p.time_diff_with_start_time)) AS minute_diff, "
+                    + "  DATE_FORMAT(DATE_SUB(CONVERT_TZ(start_time,'UTC',time_zone),INTERVAL 5 MINUTE),'%Y-%m-%d %T') AS before_padding, "
+                    + "  DATE_FORMAT(DATE_ADD(CONVERT_TZ(end_time,'UTC',time_zone),INTERVAL 5 MINUTE),'%Y-%m-%d %T') AS after_padding "
+                    + "FROM "
+                    + "  (SELECT "
+                    + "    *, "
+                    + "    CAST(TIMEDIFF( "
+                    + "      DATE_ADD(CONVERT_TZ(created_date,'UTC',time_zone), INTERVAL 1 DAY), "
+                    + "      CONVERT_TZ(NOW(),'UTC',time_zone) "
+                    + "    ) AS CHAR) AS time_diff_with_created_date, "
+                    + "    CAST(TIMEDIFF( "
+                    + "      CONVERT_TZ(start_time,'UTC',time_zone), "
+                    + "      CONVERT_TZ(NOW(),'UTC',time_zone) "
+                    + "    ) AS CHAR) AS time_diff_with_start_time "
+                    + "  FROM "
+                    + "    plan "
+                    + "  WHERE CONVERT_TZ(start_time,'UTC',time_zone) >= CONVERT_TZ(NOW(),'UTC',time_zone) "
+                    + "    AND con_uid = :conUid) AS p "
+                    + "  ORDER BY p.start_time";
 
             Query planFetchingQry = entityManager.createNativeQuery(planFetchingSql);
             planFetchingQry.setParameter("conUid", c.getConUid());

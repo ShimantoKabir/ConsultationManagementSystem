@@ -7,29 +7,30 @@ const functions = require('firebase-functions');
 // firebase login
 // firebase init functions
 // firebase deploy --only functions
-//
 
 const admin = require("firebase-admin");
 admin.initializeApp(functions.config().firebase);
 let data;
 let payload;
-let tokenList = [];
 
 exports.notificationTrigger = functions.firestore.document('notificationList/{id}')
     .onCreate((snapshot, context) => {
 
         data = snapshot.data();
-        tokenList.push(data.fcmRegistrationToken);
+        console.log("fcmRegistrationToken = "+data.fcmRegistrationToken);
 
         payload = {
             "notification": {
                 "title": data.title,
                 "body": data.body,
                 "click_action": 'FLUTTER_NOTIFICATION_CLICK'
+            },
+            "data": {
+                "docId": context.params.id
             }
         };
 
-        return admin.messaging().sendToDevice(tokenList, payload).then((res) => {
+        return admin.messaging().sendToDevice(data.fcmRegistrationToken, payload).then((res) => {
 
             console.log(res);
             console.log("Notification send successfully!");
