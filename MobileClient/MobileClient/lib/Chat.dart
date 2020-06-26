@@ -1024,22 +1024,26 @@ class ChatState extends State<Chat> with TickerProviderStateMixin {
                   Fluttertoast.showToast(msg: "Please give a review.");
                 } else {
                   var planRes;
+
+                  // customer
                   if (userType == 1) {
                     planRes = {
                       'id': plan.id,
                       'conUid': peerId,
                       'cusUid': uid,
-                      'conReview': reviewTECtl.text.toString(),
-                      'conRating': rating,
+                      'cusReview': reviewTECtl.text.toString(),
+                      'cusRating': rating,
                       'userType': 1
                     };
+
+                    // consultant
                   } else {
                     planRes = {
                       'id': plan.id,
                       'conUid': uid,
                       'cusUid': peerId,
-                      'cusReview': reviewTECtl.text.toString(),
-                      'cusRating': rating,
+                      'conReview': reviewTECtl.text.toString(),
+                      'conRating': rating,
                       'userType': 2
                     };
                   }

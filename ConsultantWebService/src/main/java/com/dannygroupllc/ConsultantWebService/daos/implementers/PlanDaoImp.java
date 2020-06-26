@@ -464,8 +464,8 @@ public class PlanDaoImp implements PlanDao {
 
             String sql;
 
-            // customer
-            if (plan.getUserType() == 1) {
+            // consultant
+            if (plan.getUserType() == 2) {
 
                 sql = "UPDATE \n" +
                         "  plan \n" +
@@ -474,7 +474,7 @@ public class PlanDaoImp implements PlanDao {
                         "  con_rating = :conRating \n" +
                         "WHERE id = :id ";
 
-                // consultant
+                // customer
             } else {
 
                 sql = "UPDATE \n" +
@@ -488,7 +488,7 @@ public class PlanDaoImp implements PlanDao {
 
             Query planCasQry = entityManager.createNativeQuery(sql);
 
-            if (plan.getUserType() == 1) {
+            if (plan.getUserType() == 2) {
 
                 planCasQry.setParameter("conReview", plan.getConReview());
                 planCasQry.setParameter("conRating", plan.getConRating());
@@ -506,13 +506,18 @@ public class PlanDaoImp implements PlanDao {
 
             // if customer give review and rating
             // then update expert rating in FireBase
-            if (plan.getUserType() == 1) {
 
-                updateRating(plan.getConUid(), 2);
-
-            } else {
+            // consultant giving rating
+            // sou update customer rating
+            if (plan.getUserType() == 2) {
 
                 updateRating(plan.getCusUid(), 1);
+
+            // customer giving rating
+            // so update consultant rating
+            } else {
+
+                updateRating(plan.getConUid(), 2);
 
             }
 
@@ -534,25 +539,25 @@ public class PlanDaoImp implements PlanDao {
     private void updateRating(String uid, int userType) {
 
         // (5 * 252 + 4 * 124 + 3 * 40 + 2 * 29 + 1 * 33) / 478 = 4.11
-        String planSelectSql = (userType == 1) ? ""
-                + "SELECT "
-                + " SUM(cus_rating = 5) AS five_star, "
-                + " SUM(cus_rating = 4) AS four_star , "
-                + " SUM(cus_rating = 3) AS three_star, "
-                + " SUM(cus_rating = 2) AS two_star, "
-                + " SUM(cus_rating = 1) AS one_star "
-                + "FROM "
-                + " plan "
-                + "WHERE cus_uid = :uid " : ""
-                + "SELECT "
-                + " SUM(con_rating = 5) AS five_star, "
-                + " SUM(con_rating = 4) AS four_star , "
-                + " SUM(con_rating = 3) AS three_star, "
-                + " SUM(con_rating = 2) AS two_star, "
-                + " SUM(con_rating = 1) AS one_star "
-                + "FROM "
-                + " plan "
-                + "WHERE con_uid = :uid";
+        String planSelectSql = (userType == 2) ? ""
+            + "SELECT "
+            + " SUM(cus_rating = 5) AS five_star, "
+            + " SUM(cus_rating = 4) AS four_star , "
+            + " SUM(cus_rating = 3) AS three_star, "
+            + " SUM(cus_rating = 2) AS two_star, "
+            + " SUM(cus_rating = 1) AS one_star "
+            + "FROM "
+            + " plan "
+            + "WHERE con_uid = :uid " : ""
+            + "SELECT "
+            + " SUM(con_rating = 5) AS five_star, "
+            + " SUM(con_rating = 4) AS four_star , "
+            + " SUM(con_rating = 3) AS three_star, "
+            + " SUM(con_rating = 2) AS two_star, "
+            + " SUM(con_rating = 1) AS one_star "
+            + "FROM "
+            + " plan "
+            + "WHERE cus_uid = :uid";
 
         Query planSelectQry = entityManager.createNativeQuery(planSelectSql);
         planSelectQry.setParameter("uid", uid);
