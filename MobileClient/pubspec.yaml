@@ -1,7 +1,7 @@
 name: peopeo
 description: A new Flutter application.
 
-version: 1.0.2+1.2
+version: 1.0.4+1.4
 
 environment:
   sdk: ">=2.1.0 <3.0.0"

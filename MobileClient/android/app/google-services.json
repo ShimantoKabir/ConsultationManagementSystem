@@ -15,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "996664131953-dgjqd2bnu6ifu5b6meg8h4ht97612q46.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dannygroupllc.cms.mobileclient",
+            "certificate_hash": "348d40298ed5df55bf8b05f465d63d7719e20756"
+          }
+        },
+        {
           "client_id": "996664131953-q0prfiqdiuid4pn91h4p7vitr9vb9aa5.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
